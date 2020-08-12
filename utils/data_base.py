@@ -1,0 +1,162 @@
+from datetime import datetime, timedelta
+import logging
+
+import pytz
+from sqlalchemy import create_engine, and_, desc, func
+from sqlalchemy import Column, ForeignKey, String, Integer, DateTime, Float
+from sqlalchemy.pool import NullPool
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+
+logger = logging.getLogger("happeninglogger")
+
+Base = declarative_base()
+
+
+def session_factory(DATABASE_URL: str, echo: bool = False):
+    engine = create_engine(DATABASE_URL, poolclass=NullPool, echo=echo)
+    Base.metadata.create_all(engine)
+    _SessionFactory = sessionmaker(bind=engine)
+    return _SessionFactory()
+
+
+class Tiles(Base):
+    '''To drop this table, run Tiles.metadata.drop_all(engine)
+    '''
+    __tablename__ = 'tiles'
+
+    id = Column(Integer, primary_key=True)
+    west_lon = Column(Float(precision=4), nullable=False)
+    east_lon = Column(Float(precision=4), nullable=False)
+    south_lat = Column(Float(precision=4), nullable=False)
+    north_lat = Column(Float(precision=4), nullable=False)
+    recent_tweets = relationship('RecentTweets')
+    historical_stats = relationship('HistoricalStats')
+
+    @classmethod
+    def get_num_tiles(cls, session):
+        return session.query(func.max(cls.id)).scalar()
+
+    @classmethod
+    def find_id_by_coords(cls, session, longitude, latitude):
+        return session.query(cls).filter(
+            longitude >= cls.west_lon).filter(
+            longitude < cls.east_lon).filter(
+            latitude >= cls.south_lat).filter(
+            latitude < cls.north_lat).all()
+
+    def __repr__(self):
+        return f'Tile {self.id}'
+
+
+class RecentTweets(Base):
+    '''To drop this table, run RecentTweets.metadata.drop_all(engine)
+    '''
+    __tablename__ = 'recent_tweets'
+
+    id = Column(Integer, primary_key=True)
+    status_id_str = Column(String, nullable=False)
+    user_screen_name = Column(String, nullable=False)
+    user_id_str = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    tweet_body = Column(String, nullable=False)
+    tweet_language = Column(String, nullable=True)
+    longitude = Column(Float(precision=8), nullable=False)
+    latitude = Column(Float(precision=8), nullable=False)
+    place_name = Column(String, nullable=True)
+    place_type = Column(String, nullable=True)
+    tile_id = Column(Integer, ForeignKey('tiles.id'), nullable=False)
+    tile = relationship('Tiles')
+
+    @classmethod
+    def count_tweets_per_tile(cls, session, hours: float = 0, tile_id: int = None):
+        filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
+
+        q = session.query(
+            cls.tile_id, func.count(cls.status_id_str)).filter(
+                cls.created_at >= filter_td)
+
+        if tile_id:
+            q = q.filter(cls.tile_id == tile_id)
+
+        return q.group_by(cls.tile_id).order_by(cls.tile_id).all()
+
+    @classmethod
+    def get_recent_tweets(cls, session, hours: float = 1, tile_id: int = None):
+        filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
+
+        q = session.query(cls).filter(
+            cls.created_at >= filter_td)
+
+        if tile_id:
+            q = q.filter(cls.tile_id == tile_id)
+
+        return q.order_by(desc(cls.created_at)).all()
+
+    @classmethod
+    def get_oldest_tweet(cls, session):
+        return session.query(cls).order_by(cls.created_at).first()
+
+    @classmethod
+    def get_most_recent_tweet(cls, session):
+        return session.query(cls).order_by(desc(cls.created_at)).first()
+
+    @classmethod
+    def delete_older_than_hours(cls, session, hours: float = None):
+        '''Delete all records older than N hours
+        '''
+        if hours:
+            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
+            try:
+                delete_q = cls.__table__.delete().where(
+                    cls.created_at < filter_td)
+
+                session.execute(delete_q)
+                session.commit()
+            except Exception:
+                logger.exception(f'Exception when deleting tweets older than {hours} hours')
+                session.rollback()
+
+
+class HistoricalStats(Base):
+    '''To drop this table, run HistoricalStats.metadata.drop_all(engine)
+    '''
+    __tablename__ = 'historical_stats'
+
+    id = Column(Integer, primary_key=True)
+    tile_id = Column(Integer, ForeignKey('tiles.id'), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    count = Column(Integer, nullable=False)
+    mean = Column(Float, nullable=False)
+    variance = Column(Float, nullable=False)
+    stddev = Column(Float, nullable=False)
+    tile = relationship('Tiles')
+
+    @classmethod
+    def get_recent_stats(cls, session, hours: float = 0, days: float = 0, weeks: float = 0):
+        """returns a tuple (tile_id, row)
+        """
+        filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=days, hours=hours, weeks=weeks)
+
+        subq = session.query(
+            cls.tile_id, func.max(cls.timestamp).label("maxtimestamp")).filter(
+                cls.timestamp < filter_td).group_by(
+                    cls.tile_id).subquery()
+        return session.query(cls.tile_id, cls).join(
+            subq, and_(cls.tile_id == subq.c.tile_id, cls.timestamp == subq.c.maxtimestamp)).order_by(cls.tile_id).all()
+
+    @classmethod
+    def delete_older_than_weeks(cls, session, weeks: float = None):
+        '''Delete all records older than N weeks
+        '''
+        if weeks:
+            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(weeks=weeks)
+            try:
+                delete_q = cls.__table__.delete().where(
+                    cls.timestamp < filter_td)
+
+                session.execute(delete_q)
+                session.commit()
+            except Exception:
+                logger.exception(f'Exception when deleting historical stats older than {weeks} weeks')
+                session.rollback()
