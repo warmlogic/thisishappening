@@ -102,19 +102,24 @@ class RecentTweets(Base):
         return session.query(cls).order_by(desc(cls.created_at)).first()
 
     @classmethod
-    def delete_older_than_hours(cls, session, hours: float = None):
-        '''Delete all records older than N hours
+    def delete_tweets_older_than(cls, session, hours: float = None, days: float = None, weeks: float = None):
+        '''Delete all records older than the specified time window
         '''
-        if hours:
-            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
+        hours = hours if hours else 0
+        days = days if days else 0
+        weeks = weeks if weeks else 0
+
+        if any([hours, days, weeks]):
+            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours, days=days, weeks=weeks)
             try:
+                logger.info(f'Deleting tweets older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 delete_q = cls.__table__.delete().where(
                     cls.created_at < filter_td)
 
                 session.execute(delete_q)
                 session.commit()
             except Exception:
-                logger.exception(f'Exception when deleting tweets older than {hours} hours')
+                logger.exception(f'Exception when deleting tweets older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 session.rollback()
 
 
@@ -146,17 +151,22 @@ class HistoricalStats(Base):
             subq, and_(cls.tile_id == subq.c.tile_id, cls.timestamp == subq.c.maxtimestamp)).order_by(cls.tile_id).all()
 
     @classmethod
-    def delete_older_than_weeks(cls, session, weeks: float = None):
-        '''Delete all records older than N weeks
+    def delete_stats_older_than(cls, session, hours: float = None, days: float = None, weeks: float = None):
+        '''Delete all records older than the specified time window
         '''
-        if weeks:
-            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(weeks=weeks)
+        hours = hours if hours else 0
+        days = days if days else 0
+        weeks = weeks if weeks else 0
+
+        if any([hours, days, weeks]):
+            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours, days=days, weeks=weeks)
             try:
+                logger.info(f'Deleting historical stats older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 delete_q = cls.__table__.delete().where(
                     cls.timestamp < filter_td)
 
                 session.execute(delete_q)
                 session.commit()
             except Exception:
-                logger.exception(f'Exception when deleting historical stats older than {weeks} weeks')
+                logger.exception(f'Exception when deleting historical stats older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 session.rollback()

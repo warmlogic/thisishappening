@@ -57,6 +57,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
 LANGUAGE = os.getenv("LANGUAGE", default="en")
 
+event_min_tweets = 4
+
 tile_size = 0.01
 
 # Set the bounding box: longitude and latitude pairs for SW and NE corner (in that order)
@@ -191,7 +193,6 @@ class MyStreamer(TwythonStreamer):
                         )
                         session.add(hs)
 
-                        event_min_tweets = 4
                         event_hour = False
                         event_day = False
                         event_week = False
@@ -216,7 +217,11 @@ class MyStreamer(TwythonStreamer):
                                 logger.info(f'    week time: {hs_week[tile_id].timestamp}, count: {hs_week[tile_id].count}')
                                 logger.info(f'    week threshold: {threshold} = {hs_week[tile_id].mean} + ({hs_week[tile_id].stddev} * 2)')
 
-                        if any([event_hour, event_day, event_week]):
+                        if any([
+                            event_hour,
+                            event_day,
+                            event_week,
+                        ]):
                             events[tile_id] = True
 
                     if any(events.values()):
@@ -237,11 +242,11 @@ class MyStreamer(TwythonStreamer):
 
                     # Delete old historical stats rows
                     logger.info('Deleting old historical stats')
-                    HistoricalStats.delete_older_than_weeks(session, weeks=1)
+                    HistoricalStats.delete_stats_older_than(session, days=3)
 
                     # # Delete old recent tweets rows
                     # logger.info('Deleting old recent tweets')
-                    # RecentTweets.delete_older_than_hours(session, hours=1)
+                    # RecentTweets.delete_tweets_older_than(session, days=1)
             else:
                 logger.warning(f'Tweet {status_id_str} coordinates ({longitude}, {latitude}) matched incorrect number of tiles: {len(tiles)}')
 
