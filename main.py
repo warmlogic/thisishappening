@@ -104,12 +104,12 @@ class MyTwitterClient(Twython):
 
 
 class MyStreamer(TwythonStreamer):
-    def __init__(self, running_stats=None, comparison_tweet_time=None, *args, **kwargs):
+    def __init__(self, running_stats=None, comparison_timestamp=None, *args, **kwargs):
         super(MyStreamer, self).__init__(*args, **kwargs)
         self.running_stats = running_stats if running_stats else {}
-        if comparison_tweet_time is None:
-            comparison_tweet_time = datetime.utcnow().replace(tzinfo=pytz.UTC)
-        self.comparison_tweet_time = comparison_tweet_time
+        if comparison_timestamp is None:
+            comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        self.comparison_timestamp = comparison_timestamp
 
     def on_success(self, status):
         if check_tweet(status):
@@ -149,7 +149,7 @@ class MyStreamer(TwythonStreamer):
                     logger.exception(f'Exception when adding recent tweet {status_id_str}')
                     session.rollback()
 
-                if created_at - self.comparison_tweet_time >= timedelta(hours=1):
+                if created_at - self.comparison_timestamp >= timedelta(hours=1):
                     logger.info(f'current time: {created_at}')
                     logger.info('Been more than 1 hour between oldest and current tweet')
                     # Get tweets from the last hour
@@ -161,9 +161,6 @@ class MyStreamer(TwythonStreamer):
 
                     hs_day = HistoricalStats.get_recent_stats(session, days=1)
                     hs_day = {tile_id: row for tile_id, row in hs_day}
-
-                    # hs_week = HistoricalStats.get_recent_stats(session, weeks=1)
-                    # hs_week = {tile_id: row for tile_id, row in hs_week}
 
                     events = {i: False for i in range(1, num_tiles + 1)}
                     for tile_id, stats in self.running_stats.items():
@@ -211,19 +208,9 @@ class MyStreamer(TwythonStreamer):
                                 # logger.info(f'Now vs day: {event_day}')
                                 # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
                                 # logger.info(f'    day threshold: {threshold} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
-                            # if hs_week:
-                            #     threshold = hs_week[tile_id].mean + (hs_week[tile_id].stddev * 2)
-                            #     event_week = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
-                            #     logger.info(f'Now vs week: {event_week}')
-                            #     logger.info(f'    week time: {hs_week[tile_id].timestamp}, count: {hs_week[tile_id].count}')
-                            #     logger.info(f'    week threshold: {threshold} = {hs_week[tile_id].mean} + ({hs_week[tile_id].stddev} * 2)')
 
                         # Note that this tile had an event
-                        if all([
-                            event_hour,
-                            event_day,
-                            # event_week,
-                        ]):
+                        if event_hour and event_day:
                             events[tile_id] = True
 
                     if any(events.values()):
@@ -246,7 +233,8 @@ class MyStreamer(TwythonStreamer):
                             ]
                             place = Counter(places).most_common(1)[0][0] if places else []
 
-                            event_str = f"Something's happening in {place}" if place else 'Found event'
+                            event_str = "Something's happening"
+                            event_str = f'{event_str} in {place}' if place else event_str
                             event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
                             logger.info(f'Found event with {len(tile_event_tweets)} tweets')
                             logger.info(event_str)
@@ -259,17 +247,17 @@ class MyStreamer(TwythonStreamer):
                         session.rollback()
 
                     # Update the comparison tweet time
-                    self.comparison_tweet_time = created_at
+                    self.comparison_timestamp = created_at
 
                     # Delete old historical stats rows
                     logger.info('Deleting old historical stats')
-                    HistoricalStats.delete_stats_older_than(session, days=3)
+                    HistoricalStats.delete_stats_older_than(session, days=1)
 
                     # Delete old recent tweets rows
                     logger.info('Deleting old recent tweets')
                     RecentTweets.delete_tweets_older_than(session, days=7)
             else:
-                logger.warning(f'Tweet {status_id_str} coordinates ({longitude}, {latitude}) matched incorrect number of tiles: {len(tiles)}')
+                logger.warning(f'Tweet {status_id_str} coordinates ({latitude}, {longitude}, {place_name}, {place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, status):
         logger.info(f'Error while streaming. status_code: {status_code}, status: {status}')
@@ -334,19 +322,21 @@ else:
     # Initialize new running stats objects
     running_stats = {i: Statistics() for i in range(1, num_tiles + 1)}
 
-# comparison_tweet = RecentTweets.get_oldest_tweet(session)
-# comparison_tweet = RecentTweets.get_most_recent_tweet(session)
-comparison_tweet = []
-if comparison_tweet:
-    comparison_tweet_time = comparison_tweet.created_at.replace(tzinfo=pytz.UTC)
+# Decide how long to collect new tweets for before assessing event
+comparison = HistoricalStats.get_recent_stats(session)
+if comparison:
+    comparison_timestamp = comparison[0][1].timestamp.replace(tzinfo=pytz.UTC)
+    # If there are no stats in the recent past, wait the full time
+    if comparison_timestamp + timedelta(minutes=30) < datetime.utcnow().replace(tzinfo=pytz.UTC):
+        comparison_timestamp = None
 else:
-    comparison_tweet_time = None
+    comparison_timestamp = None
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
     stream = MyStreamer(
         running_stats=running_stats,
-        comparison_tweet_time=comparison_tweet_time,
+        comparison_timestamp=comparison_timestamp,
         app_key=APP_KEY,
         app_secret=APP_SECRET,
         oauth_token=OAUTH_TOKEN,
