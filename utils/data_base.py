@@ -158,7 +158,8 @@ class HistoricalStats(Base):
 
     @classmethod
     def get_recent_stats(cls, session, hours: float = 0, days: float = 0, weeks: float = 0):
-        """returns a tuple (tile_id, row)
+        """Get recent stats; may be prior to a point in the past if using hours, days, weeks
+        returns a tuple (tile_id, row)
         """
         filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=days, hours=hours, weeks=weeks)
 
