@@ -246,10 +246,11 @@ class MyStreamer(TwythonStreamer):
                             ]
                             place = Counter(places).most_common(1)[0][0] if places else []
 
-                            event_str = f'Found event in {place}' if place else 'Found event'
+                            event_str = f"Something's happening in {place}" if place else 'Found event'
                             event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
                             logger.info(f'Found event with {len(tile_event_tweets)} tweets')
                             logger.info(event_str)
+                            twitter.update_status(status=event_str[:280])
 
                     try:
                         session.commit()
@@ -264,9 +265,9 @@ class MyStreamer(TwythonStreamer):
                     logger.info('Deleting old historical stats')
                     HistoricalStats.delete_stats_older_than(session, days=3)
 
-                    # # Delete old recent tweets rows
-                    # logger.info('Deleting old recent tweets')
-                    # RecentTweets.delete_tweets_older_than(session, days=3)
+                    # Delete old recent tweets rows
+                    logger.info('Deleting old recent tweets')
+                    RecentTweets.delete_tweets_older_than(session, days=7)
             else:
                 logger.warning(f'Tweet {status_id_str} coordinates ({longitude}, {latitude}) matched incorrect number of tiles: {len(tiles)}')
 
