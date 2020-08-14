@@ -57,7 +57,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
 LANGUAGE = os.getenv("LANGUAGE", default="en")
 
-event_min_tweets = 4
+event_min_tweets = 8
 
 tile_size = 0.01
 
@@ -195,7 +195,7 @@ class MyStreamer(TwythonStreamer):
 
                         event_hour = False
                         event_day = False
-                        event_week = False
+                        # event_week = False
                         if tweet_count > 0:
                             logger.info(f'tile_id: {tile_id}, tweet_count: {tweet_count}')
                             if hs_hour:
@@ -210,17 +210,18 @@ class MyStreamer(TwythonStreamer):
                                 logger.info(f'Now vs day: {event_day}')
                                 logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
                                 logger.info(f'    day threshold: {threshold} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
-                            if hs_week:
-                                threshold = hs_week[tile_id].mean + (hs_week[tile_id].stddev * 2)
-                                event_week = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
-                                logger.info(f'Now vs week: {event_week}')
-                                logger.info(f'    week time: {hs_week[tile_id].timestamp}, count: {hs_week[tile_id].count}')
-                                logger.info(f'    week threshold: {threshold} = {hs_week[tile_id].mean} + ({hs_week[tile_id].stddev} * 2)')
+                            # if hs_week:
+                            #     threshold = hs_week[tile_id].mean + (hs_week[tile_id].stddev * 2)
+                            #     event_week = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
+                            #     logger.info(f'Now vs week: {event_week}')
+                            #     logger.info(f'    week time: {hs_week[tile_id].timestamp}, count: {hs_week[tile_id].count}')
+                            #     logger.info(f'    week threshold: {threshold} = {hs_week[tile_id].mean} + ({hs_week[tile_id].stddev} * 2)')
 
-                        if any([
+                        # Note that this tile had an event
+                        if all([
                             event_hour,
                             event_day,
-                            event_week,
+                            # event_week,
                         ]):
                             events[tile_id] = True
 
@@ -303,7 +304,7 @@ num_tiles = Tiles.get_num_tiles(session)
 stats_all = session.query(HistoricalStats.tile_id, HistoricalStats).order_by(HistoricalStats.tile_id, HistoricalStats.timestamp).all()
 if stats_all:
     logger.info('Retrieved existing running stats counts per tile')
-    # Populate running stats objects for each tile from table
+    # Populate running stats objects for each tile from table using the counts
     stats_counts = {i: [] for i in range(1, num_tiles + 1)}
     for i, stats in stats_all:
         stats_counts[i].append(stats.count)
