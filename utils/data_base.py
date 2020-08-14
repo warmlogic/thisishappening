@@ -32,6 +32,7 @@ class Tiles(Base):
     north_lat = Column(Float(precision=4), nullable=False)
     recent_tweets = relationship('RecentTweets')
     historical_stats = relationship('HistoricalStats')
+    # events = relationship('Events')
 
     @classmethod
     def get_num_tiles(cls, session):
@@ -47,6 +48,24 @@ class Tiles(Base):
 
     def __repr__(self):
         return f'Tile {self.id}'
+
+
+# class Events(Base):
+#     '''To drop this table, run Events.metadata.drop_all(engine)
+#     '''
+#     __tablename__ = 'events'
+
+#     id = Column(Integer, primary_key=True)
+#     timestamp = Column(DateTime, nullable=False)
+#     tile_id = Column(Integer, ForeignKey('tiles.id'), nullable=False)
+#     tile = relationship('Tiles')
+
+#     @classmethod
+#     def get_event_tweets(cls, session):
+#         pass
+
+#     def __repr__(self):
+#         return f'Event {self.id}'
 
 
 class RecentTweets(Base):
