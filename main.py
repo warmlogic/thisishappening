@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import datetime, timedelta
 import logging
 import os
@@ -12,7 +13,7 @@ from twython import Twython
 from twython import TwythonStreamer
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats
-from utils.tweet_utils import check_tweet, date_string_to_datetime
+from utils.tweet_utils import check_tweet, date_string_to_datetime, clean_text, stopword_lemma
 from utils.data_utils import n_wise
 
 
@@ -161,8 +162,8 @@ class MyStreamer(TwythonStreamer):
                     hs_day = HistoricalStats.get_recent_stats(session, days=1)
                     hs_day = {tile_id: row for tile_id, row in hs_day}
 
-                    hs_week = HistoricalStats.get_recent_stats(session, weeks=1)
-                    hs_week = {tile_id: row for tile_id, row in hs_week}
+                    # hs_week = HistoricalStats.get_recent_stats(session, weeks=1)
+                    # hs_week = {tile_id: row for tile_id, row in hs_week}
 
                     events = {i: False for i in range(1, num_tiles + 1)}
                     for tile_id, stats in self.running_stats.items():
@@ -201,15 +202,15 @@ class MyStreamer(TwythonStreamer):
                             if hs_hour:
                                 threshold = hs_hour[tile_id].mean + (hs_hour[tile_id].stddev * 2)
                                 event_hour = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
-                                logger.info(f'Now vs hour: {event_hour}')
-                                logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
-                                logger.info(f'    hour threshold: {threshold} = {hs_hour[tile_id].mean} + ({hs_hour[tile_id].stddev} * 2)')
+                                # logger.info(f'Now vs hour: {event_hour}')
+                                # logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
+                                # logger.info(f'    hour threshold: {threshold} = {hs_hour[tile_id].mean} + ({hs_hour[tile_id].stddev} * 2)')
                             if hs_day:
                                 threshold = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
                                 event_day = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
-                                logger.info(f'Now vs day: {event_day}')
-                                logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
-                                logger.info(f'    day threshold: {threshold} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
+                                # logger.info(f'Now vs day: {event_day}')
+                                # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
+                                # logger.info(f'    day threshold: {threshold} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
                             # if hs_week:
                             #     threshold = hs_week[tile_id].mean + (hs_week[tile_id].stddev * 2)
                             #     event_week = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
@@ -230,7 +231,25 @@ class MyStreamer(TwythonStreamer):
                         event_tweets = RecentTweets.get_recent_tweets(session, hours=1)
                         for tile_id in tiles_with_events:
                             tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
-                            logger.info(f'Tile {tile_id} event: Found {len(tile_event_tweets)} tweets')
+                            tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
+                            tokens = [token.lower() for tweet in tile_event_tokens for token in tweet.split()]
+                            counter = Counter(tokens)
+                            tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
+                            tokens_str = ' '.join([t[0] for t in tokens_to_show])
+
+                            longitude = np.mean([et.longitude for et in tile_event_tweets])
+                            latitude = np.mean([et.latitude for et in tile_event_tweets])
+                            lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+
+                            places = [
+                                et.place_name for et in tile_event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
+                            ]
+                            place = Counter(places).most_common(1)[0][0] if places else []
+
+                            event_str = f'Found event in {place}' if place else 'Found event'
+                            event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
+                            logger.info(f'Found event with {len(tile_event_tweets)} tweets')
+                            logger.info(event_str)
 
                     try:
                         session.commit()
@@ -247,7 +266,7 @@ class MyStreamer(TwythonStreamer):
 
                     # # Delete old recent tweets rows
                     # logger.info('Deleting old recent tweets')
-                    # RecentTweets.delete_tweets_older_than(session, days=1)
+                    # RecentTweets.delete_tweets_older_than(session, days=3)
             else:
                 logger.warning(f'Tweet {status_id_str} coordinates ({longitude}, {latitude}) matched incorrect number of tiles: {len(tiles)}')
 
@@ -315,7 +334,8 @@ else:
     running_stats = {i: Statistics() for i in range(1, num_tiles + 1)}
 
 # comparison_tweet = RecentTweets.get_oldest_tweet(session)
-comparison_tweet = RecentTweets.get_most_recent_tweet(session)
+# comparison_tweet = RecentTweets.get_most_recent_tweet(session)
+comparison_tweet = []
 if comparison_tweet:
     comparison_tweet_time = comparison_tweet.created_at.replace(tzinfo=pytz.UTC)
 else:
