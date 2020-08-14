@@ -1,12 +1,18 @@
 from datetime import datetime
+import re
 
-# import en_core_web_sm
-# import pandas as pd
+import en_core_web_sm
 import pytz
 
-# NLP_DISABLE = ["tagger", "parser", "ner"]
+# Regex to look for all URLs (mailto:, x-whatever://, etc.) https://gist.github.com/gruber/249502
+# Removed case insensitive flag from the start: (?i)
+url_all_re = r'\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
+url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
-# nlp = en_core_web_sm.load(disable=NLP_DISABLE)
+# # TODO implement word ignore list
+# ignore_words = []
+
+nlp = en_core_web_sm.load(disable=["tagger", "parser", "ner"])
 
 
 def check_tweet(status) -> bool:
@@ -28,14 +34,17 @@ def date_string_to_datetime(
     return datetime.strptime(date_string, fmt).replace(tzinfo=tzinfo)
 
 
-# def stopword_lemma(X: pd.DataFrame, col: str) -> pd.DataFrame:
-#     def _token_filter(token):
-#         return not (token.is_punct | token.is_space | token.is_stop | (token.lemma_ == '-PRON-') | (len(token.text) <= 1))
+def clean_text(text: str) -> str:
+    # Remove URLs
+    text = re.sub(url_all_re, '', text)
 
-#     Xa = X.copy()
+    return text
 
-#     for doc, idx in nlp.pipe(((text, i) for i, text in Xa[col].fillna('').iteritems()), as_tuples=True, n_process=1):
-#         tokens = [token.lemma_ for token in doc if _token_filter(token)]
-#         Xa.loc[idx, col] = ' '.join(tokens)
 
-#     return Xa
+def stopword_lemma(text: str) -> str:
+    def _token_filter(token):
+        return not (token.is_punct | token.is_space | token.is_stop | (token.lemma_ == '-PRON-') | (len(token.text) <= 1))
+
+    tokens = [token.lemma_ for token in nlp(text) if _token_filter(token)]
+
+    return ' '.join(tokens)
