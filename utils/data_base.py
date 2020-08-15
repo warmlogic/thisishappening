@@ -104,8 +104,7 @@ class RecentTweets(Base):
     def get_recent_tweets(cls, session, hours: float = 1, tile_id: int = None):
         filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
 
-        q = session.query(cls).filter(
-            cls.created_at >= filter_td)
+        q = session.query(cls).filter(cls.created_at >= filter_td)
 
         if tile_id:
             q = q.filter(cls.tile_id == tile_id)
@@ -157,11 +156,23 @@ class HistoricalStats(Base):
     tile = relationship('Tiles')
 
     @classmethod
-    def get_recent_stats(cls, session, hours: float = 0, days: float = 0, weeks: float = 0):
-        """Get recent stats; may be prior to a point in the past if using hours, days, weeks
+    def get_recent_stats(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = 0,
+        days: float = 0,
+        weeks: float = 0,
+    ):
+        """Get the most recent stats for each tile.
+        Can filter to only consider rows prior to an earlier point in time.
+        Set all time values to 0 to return the most recent row per tile.
         returns a tuple (tile_id, row)
         """
-        filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=days, hours=hours, weeks=weeks)
+        if timestamp is None:
+            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        filter_td = timestamp - timedelta(days=days, hours=hours, weeks=weeks)
 
         subq = session.query(
             cls.tile_id, func.max(cls.timestamp).label("maxtimestamp")).filter(

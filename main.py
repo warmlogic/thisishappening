@@ -156,13 +156,17 @@ class MyStreamer(TwythonStreamer):
                     tweet_counts = RecentTweets.count_tweets_per_tile(session, hours=1)
                     tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
 
-                    hs_hour = HistoricalStats.get_recent_stats(session, hours=1)
+                    # Get historical stats for the previous hour
+                    hs_hour = HistoricalStats.get_recent_stats(session, timestamp=created_at, hours=1)
                     hs_hour = {tile_id: row for tile_id, row in hs_hour}
 
-                    hs_day = HistoricalStats.get_recent_stats(session, days=1)
+                    # Get historical stats for the previous day
+                    hs_day = HistoricalStats.get_recent_stats(session, timestamp=created_at, days=1)
                     hs_day = {tile_id: row for tile_id, row in hs_day}
 
+                    # Initialize to state whether an event occurred
                     events = {i: False for i in range(1, num_tiles + 1)}
+
                     for tile_id, stats in self.running_stats.items():
                         # Update each tile's running stats with the current count
                         if tile_id in tweet_counts:
@@ -193,7 +197,6 @@ class MyStreamer(TwythonStreamer):
 
                         event_hour = False
                         event_day = False
-                        # event_week = False
                         if tweet_count > 0:
                             logger.info(f'tile_id: {tile_id}, tweet_count: {tweet_count}')
                             if hs_hour:
@@ -257,7 +260,7 @@ class MyStreamer(TwythonStreamer):
                     logger.info('Deleting old recent tweets')
                     RecentTweets.delete_tweets_older_than(session, days=7)
             else:
-                logger.warning(f'Tweet {status_id_str} coordinates ({latitude}, {longitude}, {place_name}, {place_type}) matched incorrect number of tiles: {len(tiles)}')
+                logger.info(f'Tweet {status_id_str} coordinates ({latitude}, {longitude}, {place_name}, {place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, status):
         logger.info(f'Error while streaming. status_code: {status_code}, status: {status}')
