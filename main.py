@@ -226,8 +226,11 @@ class MyStreamer(TwythonStreamer):
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
-    def on_error(self, status_code, status):
-        logger.info(f'Error while streaming. status_code: {status_code}, status: {status}')
+    def on_error(self, status_code, content, headers):
+        logger.info('Error while streaming.')
+        logger.info(f'status_code: {status_code}')
+        logger.info(f'content: {content}')
+        logger.info(f'headers: {headers}')
 
 
 def get_tweet_info(status: Dict) -> Dict:
