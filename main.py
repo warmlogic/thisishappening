@@ -335,8 +335,12 @@ session = session_factory(DATABASE_URL, echo=ECHO)
 # Add tile rows if none exist
 if session.query(Tiles).count() == 0:
     logger.info('Populating tiles table')
-    tile_longitudes = np.arange(BOUNDING_BOX[0], BOUNDING_BOX[2], TILE_SIZE)
-    tile_latitudes = np.arange(BOUNDING_BOX[1], BOUNDING_BOX[3], TILE_SIZE)
+    tile_longitudes = np.arange(BOUNDING_BOX[0], BOUNDING_BOX[2], TILE_SIZE).tolist()
+    # np.arange does not include the end point; add the edge of bounding box
+    tile_longitudes.append(BOUNDING_BOX[2])
+    tile_latitudes = np.arange(BOUNDING_BOX[1], BOUNDING_BOX[3], TILE_SIZE).tolist()
+    # np.arange does not include the end point; add the edge of bounding box
+    tile_latitudes.append(BOUNDING_BOX[3])
 
     num_tiles = len(list(n_wise(tile_latitudes, 2))) * len(list(n_wise(tile_longitudes, 2)))
     assert (num_tiles * HISTORICAL_STATS_DAYS_TO_KEEP * 24) <= MAX_ROWS_HISTORICAL_STATS
