@@ -244,8 +244,10 @@ def get_tweet_info(status: Dict) -> Dict:
         longitude = status['coordinates']['coordinates'][0]
         latitude = status['coordinates']['coordinates'][1]
     elif status['place']:
-        longitude = np.mean([x[0] for x in status['place']['bounding_box']['coordinates'][0]])
-        latitude = np.mean([x[1] for x in status['place']['bounding_box']['coordinates'][0]])
+        lons = [x[0] for x in status['place']['bounding_box']['coordinates'][0]]
+        longitude = sum(lons) / len(lons)
+        lats = [x[1] for x in status['place']['bounding_box']['coordinates'][0]]
+        latitude = sum(lats) / len(lats)
     place_name = status['place']['full_name']
     # Possible values: country, admin, city, neighborhood, poi; more?
     place_type = status['place']['place_type']
@@ -293,8 +295,10 @@ def post_event_status(events: Dict):
         tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
         tokens_str = ' '.join([t[0] for t in tokens_to_show])
 
-        longitude = np.mean([et.longitude for et in tile_event_tweets])
-        latitude = np.mean([et.latitude for et in tile_event_tweets])
+        lons = [et.longitude for et in tile_event_tweets]
+        longitude = sum(lons) / len(lons)
+        lats = [et.latitude for et in tile_event_tweets]
+        latitude = sum(lats) / len(lats)
         lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
         places = [
