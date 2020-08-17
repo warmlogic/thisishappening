@@ -1,8 +1,9 @@
-from collections import Counter
+from collections import Counter, namedtuple
 from datetime import datetime, timedelta
 import logging
 import os
 from pathlib import Path
+from typing import Dict
 # from pprint import pformat, pprint
 
 from dotenv import load_dotenv
@@ -57,6 +58,22 @@ OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
 LANGUAGE = os.getenv("LANGUAGE", default="en")
+
+TweetInfo = namedtuple(
+    'TweetInfo',
+    [
+        'status_id_str',
+        'user_screen_name',
+        'user_id_str',
+        'created_at',
+        'tweet_body',
+        'tweet_language',
+        'longitude',
+        'latitude',
+        'place_name',
+        'place_type',
+    ],
+)
 
 event_min_tweets = 8
 
@@ -115,60 +132,38 @@ class MyStreamer(TwythonStreamer):
 
     def on_success(self, status):
         if check_tweet(status):
-            status_id_str = status['id_str']
-            user_screen_name = status['user']['screen_name']
-            user_id_str = status['user']['id_str']
-            created_at = date_string_to_datetime(status['created_at'])
-            tweet_body = status['text']
-            tweet_language = status['lang']
-            if 'coordinates' in status:
-                longitude = status['coordinates']['coordinates'][0]
-                latitude = status['coordinates']['coordinates'][1]
-            elif 'place' in status:
-                longitude = np.mean([x[0] for x in status['place']['bounding_box']['coordinates'][0]])
-                latitude = np.mean([x[1] for x in status['place']['bounding_box']['coordinates'][0]])
-            place_name = status['place']['full_name']
-            # Possible values: country, admin, city, neighborhood, poi; more?
-            place_type = status['place']['place_type']
-            tiles = Tiles.find_id_by_coords(session, longitude, latitude)
+            tweet_info = get_tweet_info(status)
+            tiles = Tiles.find_id_by_coords(session, tweet_info.longitude, tweet_info.latitude)
 
             if tiles:
                 tile = tiles[0]
                 tweet = RecentTweets(
-                    status_id_str=status_id_str,
-                    user_screen_name=user_screen_name,
-                    user_id_str=user_id_str,
-                    created_at=created_at,
-                    tweet_body=tweet_body,
-                    tweet_language=tweet_language,
-                    longitude=longitude,
-                    latitude=latitude,
-                    place_name=place_name,
-                    place_type=place_type,
+                    status_id_str=tweet_info.status_id_str,
+                    user_screen_name=tweet_info.user_screen_name,
+                    user_id_str=tweet_info.user_id_str,
+                    created_at=tweet_info.created_at,
+                    tweet_body=tweet_info.tweet_body,
+                    tweet_language=tweet_info.tweet_language,
+                    longitude=tweet_info.longitude,
+                    latitude=tweet_info.latitude,
+                    place_name=tweet_info.place_name,
+                    place_type=tweet_info.place_type,
                     tile_id=tile.id,
                 )
                 session.add(tweet)
                 try:
                     session.commit()
-                    logger.info(f'Logged tweet {status_id_str}')
+                    logger.info(f'Logged tweet {tweet_info.status_id_str}')
                 except Exception:
-                    logger.exception(f'Exception when adding recent tweet {status_id_str}')
+                    logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
                     session.rollback()
 
-                if created_at - self.comparison_timestamp >= timedelta(hours=1):
-                    logger.info(f'current time: {created_at}')
+                if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=1):
+                    logger.info(f'current time: {tweet_info.created_at}')
                     logger.info('Been more than 1 hour between oldest and current tweet')
-                    # Get tweets from the last hour
-                    tweet_counts = RecentTweets.count_tweets_per_tile(session, hours=1)
-                    tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
 
-                    # Get historical stats for the previous hour
-                    hs_hour = HistoricalStats.get_recent_stats(session, timestamp=created_at, hours=1)
-                    hs_hour = {tile_id: row for tile_id, row in hs_hour}
-
-                    # Get historical stats for the previous day
-                    hs_day = HistoricalStats.get_recent_stats(session, timestamp=created_at, days=1)
-                    hs_day = {tile_id: row for tile_id, row in hs_day}
+                    # Get recent stats
+                    tweet_counts, hs_hour, hs_day = get_stats(tweet_info.created_at)
 
                     # Initialize to state whether an event occurred
                     events = {i: False for i in range(1, num_tiles + 1)}
@@ -193,7 +188,7 @@ class MyStreamer(TwythonStreamer):
                         # Add current stats to historical stats table
                         hs = HistoricalStats(
                             tile_id=tile_id,
-                            timestamp=created_at,
+                            timestamp=tweet_info.created_at,
                             count=tweet_count,
                             mean=mean,
                             variance=variance,
@@ -223,40 +218,16 @@ class MyStreamer(TwythonStreamer):
                             events[tile_id] = True
 
                     if any(events.values()):
-                        tiles_with_events = [tile_id for tile_id, event in events.items() if event]
-                        event_tweets = RecentTweets.get_recent_tweets(session, hours=1)
-                        for tile_id in tiles_with_events:
-                            tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
-                            tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
-                            tokens = [token.lower() for tweet in tile_event_tokens for token in tweet.split()]
-                            counter = Counter(tokens)
-                            tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
-                            tokens_str = ' '.join([t[0] for t in tokens_to_show])
-
-                            longitude = np.mean([et.longitude for et in tile_event_tweets])
-                            latitude = np.mean([et.latitude for et in tile_event_tweets])
-                            lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
-
-                            places = [
-                                et.place_name for et in tile_event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
-                            ]
-                            place = Counter(places).most_common(1)[0][0] if places else []
-
-                            event_str = "Something's happening"
-                            event_str = f'{event_str} in {place}' if place else event_str
-                            event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
-                            logger.info(f'Found event with {len(tile_event_tweets)} tweets')
-                            logger.info(event_str)
-                            twitter.update_status(status=event_str[:tweet_max_length])
+                        post_event_status(events)
 
                     try:
                         session.commit()
                     except Exception:
-                        logger.exception(f'Exception when adding historical stats for {created_at}')
+                        logger.exception(f'Exception when adding historical stats for {tweet_info.created_at}')
                         session.rollback()
 
                     # Update the comparison tweet time
-                    self.comparison_timestamp = created_at
+                    self.comparison_timestamp = tweet_info.created_at
 
                     # Delete old historical stats rows
                     logger.info('Deleting old historical stats')
@@ -266,10 +237,87 @@ class MyStreamer(TwythonStreamer):
                     logger.info('Deleting old recent tweets')
                     RecentTweets.delete_tweets_older_than(session, days=7)
             else:
-                logger.info(f'Tweet {status_id_str} coordinates ({latitude}, {longitude}, {place_name}, {place_type}) matched incorrect number of tiles: {len(tiles)}')
+                logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, status):
         logger.info(f'Error while streaming. status_code: {status_code}, status: {status}')
+
+
+def get_tweet_info(status: Dict) -> Dict:
+    status_id_str = status['id_str']
+    user_screen_name = status['user']['screen_name']
+    user_id_str = status['user']['id_str']
+    created_at = date_string_to_datetime(status['created_at'])
+    tweet_body = status['text']
+    tweet_language = status['lang']
+    if 'coordinates' in status:
+        longitude = status['coordinates']['coordinates'][0]
+        latitude = status['coordinates']['coordinates'][1]
+    elif 'place' in status:
+        longitude = np.mean([x[0] for x in status['place']['bounding_box']['coordinates'][0]])
+        latitude = np.mean([x[1] for x in status['place']['bounding_box']['coordinates'][0]])
+    place_name = status['place']['full_name']
+    # Possible values: country, admin, city, neighborhood, poi; more?
+    place_type = status['place']['place_type']
+
+    tweet_info = TweetInfo(
+        status_id_str=status_id_str,
+        user_screen_name=user_screen_name,
+        user_id_str=user_id_str,
+        created_at=created_at,
+        tweet_body=tweet_body,
+        tweet_language=tweet_language,
+        longitude=longitude,
+        latitude=latitude,
+        place_name=place_name,
+        place_type=place_type,
+    )
+
+    return tweet_info
+
+
+def get_stats(timestamp: datetime):
+    # Get tweets from the last hour
+    tweet_counts = RecentTweets.count_tweets_per_tile(session, hours=1)
+    tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
+
+    # Get historical stats for the previous hour
+    hs_hour = HistoricalStats.get_recent_stats(session, timestamp=timestamp, hours=1)
+    hs_hour = {tile_id: row for tile_id, row in hs_hour}
+
+    # Get historical stats for the previous day
+    hs_day = HistoricalStats.get_recent_stats(session, timestamp=timestamp, days=1)
+    hs_day = {tile_id: row for tile_id, row in hs_day}
+
+    return tweet_counts, hs_hour, hs_day
+
+
+def post_event_status(events: Dict):
+    tiles_with_events = [tile_id for tile_id, event in events.items() if event]
+    event_tweets = RecentTweets.get_recent_tweets(session, hours=1)
+    for tile_id in tiles_with_events:
+        tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
+        tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
+        tokens = [token.lower() for tweet in tile_event_tokens for token in tweet.split()]
+        counter = Counter(tokens)
+        tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
+        tokens_str = ' '.join([t[0] for t in tokens_to_show])
+
+        longitude = np.mean([et.longitude for et in tile_event_tweets])
+        latitude = np.mean([et.latitude for et in tile_event_tweets])
+        lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+
+        places = [
+            et.place_name for et in tile_event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
+        ]
+        place = Counter(places).most_common(1)[0][0] if places else []
+
+        event_str = "Something's happening"
+        event_str = f'{event_str} in {place}' if place else event_str
+        event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
+        logger.info(f'Found event with {len(tile_event_tweets)} tweets')
+        logger.info(event_str)
+        twitter.update_status(status=event_str[:tweet_max_length])
 
 
 # Establish connection to Twitter
