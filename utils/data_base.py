@@ -32,7 +32,7 @@ class Tiles(Base):
     north_lat = Column(Float(precision=4), nullable=False)
     recent_tweets = relationship('RecentTweets')
     historical_stats = relationship('HistoricalStats')
-    # events = relationship('Events')
+    events = relationship('Events')
 
     @classmethod
     def get_num_tiles(cls, session):
@@ -50,22 +50,23 @@ class Tiles(Base):
         return f'Tile {self.id}'
 
 
-# class Events(Base):
-#     '''To drop this table, run Events.metadata.drop_all(engine)
-#     '''
-#     __tablename__ = 'events'
+class Events(Base):
+    '''To drop this table, run Events.metadata.drop_all(engine)
+    '''
+    __tablename__ = 'events'
 
-#     id = Column(Integer, primary_key=True)
-#     timestamp = Column(DateTime, nullable=False)
-#     tile_id = Column(Integer, ForeignKey('tiles.id'), nullable=False)
-#     tile = relationship('Tiles')
+    id = Column(Integer, primary_key=True)
+    tile_id = Column(Integer, ForeignKey('tiles.id'), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    count = Column(Integer, nullable=False)
+    longitude = Column(Float(precision=8), nullable=False)
+    latitude = Column(Float(precision=8), nullable=False)
+    place_name = Column(String, nullable=True)
+    description = Column(String, nullable=False)
+    tile = relationship('Tiles')
 
-#     @classmethod
-#     def get_event_tweets(cls, session):
-#         pass
-
-#     def __repr__(self):
-#         return f'Event {self.id}'
+    def __repr__(self):
+        return f'Event {self.id}'
 
 
 class RecentTweets(Base):
@@ -101,8 +102,11 @@ class RecentTweets(Base):
         return q.group_by(cls.tile_id).order_by(cls.tile_id).all()
 
     @classmethod
-    def get_recent_tweets(cls, session, hours: float = 1, tile_id: int = None):
-        filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
+    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, tile_id: int = None):
+        if timestamp is None:
+            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        filter_td = timestamp - timedelta(hours=hours)
 
         q = session.query(cls).filter(cls.created_at >= filter_td)
 
