@@ -240,10 +240,10 @@ def get_tweet_info(status: Dict) -> Dict:
     created_at = date_string_to_datetime(status['created_at'])
     tweet_body = status['text']
     tweet_language = status['lang']
-    if 'coordinates' in status:
+    if status['coordinates']:
         longitude = status['coordinates']['coordinates'][0]
         latitude = status['coordinates']['coordinates'][1]
-    elif 'place' in status:
+    elif status['place']:
         longitude = np.mean([x[0] for x in status['place']['bounding_box']['coordinates'][0]])
         latitude = np.mean([x[1] for x in status['place']['bounding_box']['coordinates'][0]])
     place_name = status['place']['full_name']
