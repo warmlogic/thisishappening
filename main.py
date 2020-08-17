@@ -12,7 +12,7 @@ from runstats import Statistics
 from twython import Twython
 from twython import TwythonStreamer
 
-from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats
+from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
 from utils.tweet_utils import check_tweet, date_string_to_datetime, clean_text, stopword_lemma
 from utils.data_utils import n_wise
 
@@ -205,7 +205,9 @@ class MyStreamer(TwythonStreamer):
                             events[tile_id] = True
 
                     if any(events.values()):
-                        post_event_status(events)
+                        tiles_with_events = [tile_id for tile_id, event in events.items() if event]
+                        for tile_id in tiles_with_events:
+                            post_event_status(tile_id=tile_id, timestamp=tweet_info.created_at)
 
                     try:
                         session.commit()
@@ -284,34 +286,44 @@ def get_stats(timestamp: datetime):
     return tweet_counts, hs_hour, hs_day
 
 
-def post_event_status(events: Dict):
-    tiles_with_events = [tile_id for tile_id, event in events.items() if event]
-    event_tweets = RecentTweets.get_recent_tweets(session, hours=1)
-    for tile_id in tiles_with_events:
-        tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
-        tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
-        tokens = [token.lower() for tweet in tile_event_tokens for token in tweet.split()]
-        counter = Counter(tokens)
-        tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
-        tokens_str = ' '.join([t[0] for t in tokens_to_show])
+def post_event_status(tile_id: int, timestamp: datetime):
+    event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=1, tile_id=tile_id)
+    tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
+    tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
+    tokens = [token.lower() for tweet in tile_event_tokens for token in tweet.split()]
+    counter = Counter(tokens)
+    tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
+    tokens_str = ' '.join([t[0] for t in tokens_to_show])
 
-        lons = [et.longitude for et in tile_event_tweets]
-        longitude = sum(lons) / len(lons)
-        lats = [et.latitude for et in tile_event_tweets]
-        latitude = sum(lats) / len(lats)
-        lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+    lons = [et.longitude for et in tile_event_tweets]
+    longitude = sum(lons) / len(lons)
+    lats = [et.latitude for et in tile_event_tweets]
+    latitude = sum(lats) / len(lats)
+    lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
-        places = [
-            et.place_name for et in tile_event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
-        ]
-        place = Counter(places).most_common(1)[0][0] if places else []
+    place_names = [
+        et.place_name for et in tile_event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
+    ]
+    place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
 
-        event_str = "Something's happening"
-        event_str = f'{event_str} in {place}' if place else event_str
-        event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
-        logger.info(f'Found event with {len(tile_event_tweets)} tweets')
-        logger.info(event_str)
-        twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
+    event_str = "Something's happening"
+    event_str = f'{event_str} in {place_name}' if place_name else event_str
+    event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
+    logger.info(f'Found event with {len(tile_event_tweets)} tweets')
+    logger.info(event_str)
+    twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
+
+    # Add to events table
+    ev = Events(
+        tile_id=tile_id,
+        timestamp=timestamp,
+        count=len(tile_event_tweets),
+        longitude=longitude,
+        latitude=latitude,
+        place_name=place_name,
+        description=tokens_str,
+    )
+    session.add(ev)
 
 
 # Establish connection to Twitter
