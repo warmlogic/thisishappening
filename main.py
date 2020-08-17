@@ -4,7 +4,6 @@ import logging
 import os
 from pathlib import Path
 from typing import Dict
-# from pprint import pformat, pprint
 
 from dotenv import load_dotenv
 import numpy as np
@@ -58,6 +57,10 @@ OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
 LANGUAGE = os.getenv("LANGUAGE", default="en")
+BOUNDING_BOX = [float(coord) for coord in os.getenv("BOUNDING_BOX", default=[]).split()]
+TILE_SIZE = float(os.getenv("TILE_SIZE", default="0.01"))
+EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="8"))
+TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 
 TweetInfo = namedtuple(
     'TweetInfo',
@@ -74,26 +77,6 @@ TweetInfo = namedtuple(
         'place_type',
     ],
 )
-
-event_min_tweets = 8
-
-tile_size = 0.01
-
-tweet_max_length = 280
-
-# Set the bounding box: longitude and latitude pairs for SW and NE corner (in that order)
-
-# # San Francisco down to SFO
-# bounding_box = [-122.52, 37.59, -122.36, 37.82]  # 432 tiles
-
-# SF only
-bounding_box = [-122.52, 37.71, -122.36, 37.82]  # 150 tiles
-
-# # Bay Area including Oakland and Santa Cruz
-# bounding_box = [-122.52, 36.94, -121.8, 38.0]
-
-# # Bay Area including Santa Cruz, from Twitter's dev site
-# bounding_box = [-122.75, 36.8, -121.75, 37.8]
 
 
 class MyTwitterClient(Twython):
@@ -118,7 +101,7 @@ class MyTwitterClient(Twython):
             logger.info('Success')
             return True
         else:
-            logger.info('Not posting haiku due to rate limit')
+            logger.info('Not posting due to rate limit')
             return False
 
 
@@ -202,13 +185,13 @@ class MyStreamer(TwythonStreamer):
                             logger.info(f'tile_id: {tile_id}, tweet_count: {tweet_count}')
                             if hs_hour:
                                 threshold = hs_hour[tile_id].mean + (hs_hour[tile_id].stddev * 2)
-                                event_hour = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
+                                event_hour = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold)
                                 # logger.info(f'Now vs hour: {event_hour}')
                                 # logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
                                 # logger.info(f'    hour threshold: {threshold} = {hs_hour[tile_id].mean} + ({hs_hour[tile_id].stddev} * 2)')
                             if hs_day:
                                 threshold = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
-                                event_day = (tweet_count >= event_min_tweets) and (tweet_count > threshold)
+                                event_day = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold)
                                 # logger.info(f'Now vs day: {event_day}')
                                 # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
                                 # logger.info(f'    day threshold: {threshold} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
@@ -317,7 +300,7 @@ def post_event_status(events: Dict):
         event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
         logger.info(f'Found event with {len(tile_event_tweets)} tweets')
         logger.info(event_str)
-        twitter.update_status(status=event_str[:tweet_max_length])
+        twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
 
 
 # Establish connection to Twitter
@@ -341,8 +324,8 @@ session = session_factory(DATABASE_URL, echo=ECHO)
 # Add tile rows if none exist
 if session.query(Tiles).count() == 0:
     logger.info('Populating tiles table')
-    tile_longitudes = np.arange(bounding_box[0], bounding_box[2], tile_size)
-    tile_latitudes = np.arange(bounding_box[1], bounding_box[3], tile_size)
+    tile_longitudes = np.arange(BOUNDING_BOX[0], BOUNDING_BOX[2], TILE_SIZE)
+    tile_latitudes = np.arange(BOUNDING_BOX[1], BOUNDING_BOX[3], TILE_SIZE)
 
     for tile_lats in n_wise(tile_latitudes, 2):
         south_lat, north_lat = tile_lats[0], tile_lats[1]
@@ -400,7 +383,7 @@ if __name__ == '__main__':
         oauth_token_secret=OAUTH_TOKEN_SECRET,
     )
 
-    bounding_box_str = ','.join([str(x) for x in bounding_box])
+    bounding_box_str = ','.join([str(x) for x in BOUNDING_BOX])
     logger.info(f'Looking for tweets in bounding box: {bounding_box_str}')
     while True:
         try:
