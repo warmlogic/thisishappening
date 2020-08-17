@@ -57,10 +57,14 @@ OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
 LANGUAGE = os.getenv("LANGUAGE", default="en")
-BOUNDING_BOX = [float(coord) for coord in os.getenv("BOUNDING_BOX", default=[]).split()]
+BOUNDING_BOX = [float(coord) for coord in os.getenv("BOUNDING_BOX", default=[]).split(',')]
+assert len(BOUNDING_BOX) == 4
 TILE_SIZE = float(os.getenv("TILE_SIZE", default="0.01"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="8"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
+HISTORICAL_STATS_DAYS_TO_KEEP = float(os.getenv("HISTORICAL_STATS_DAYS_TO_KEEP", default="1.0"))
+RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="7.0"))
+MAX_ROWS_HISTORICAL_STATS = int(os.getenv("MAX_ROWS_HISTORICAL_STATS", default="8000"))
 
 TweetInfo = namedtuple(
     'TweetInfo',
@@ -214,11 +218,11 @@ class MyStreamer(TwythonStreamer):
 
                     # Delete old historical stats rows
                     logger.info('Deleting old historical stats')
-                    HistoricalStats.delete_stats_older_than(session, days=1)
+                    HistoricalStats.delete_stats_older_than(session, days=HISTORICAL_STATS_DAYS_TO_KEEP)
 
                     # Delete old recent tweets rows
                     logger.info('Deleting old recent tweets')
-                    RecentTweets.delete_tweets_older_than(session, days=7)
+                    RecentTweets.delete_tweets_older_than(session, days=RECENT_TWEETS_DAYS_TO_KEEP)
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
@@ -326,6 +330,9 @@ if session.query(Tiles).count() == 0:
     logger.info('Populating tiles table')
     tile_longitudes = np.arange(BOUNDING_BOX[0], BOUNDING_BOX[2], TILE_SIZE)
     tile_latitudes = np.arange(BOUNDING_BOX[1], BOUNDING_BOX[3], TILE_SIZE)
+
+    num_tiles = len(list(n_wise(tile_latitudes, 2))) * len(list(n_wise(tile_longitudes, 2)))
+    assert (num_tiles * HISTORICAL_STATS_DAYS_TO_KEEP * 24) <= MAX_ROWS_HISTORICAL_STATS
 
     for tile_lats in n_wise(tile_latitudes, 2):
         south_lat, north_lat = tile_lats[0], tile_lats[1]
