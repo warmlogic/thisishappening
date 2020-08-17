@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+from typing import List
 
 import en_core_web_sm
 import pytz
@@ -15,14 +16,14 @@ url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 nlp = en_core_web_sm.load(disable=["tagger", "parser", "ner"])
 
 
-def check_tweet(status) -> bool:
+def check_tweet(status, valid_place_types: List[str] = ['neighborhood', 'poi']) -> bool:
     '''Return True if tweet satisfies specific criteria
     '''
     return all([
         ('text' in status),
-        (status['coordinates']),
-        (status['user']['friends_count'] > 0),  # following
-        (status['user']['followers_count'] > 0),  # followers
+        (status['coordinates'] or (status['place'] and status['place']['place_type'] in valid_place_types)),
+        # (status['user']['friends_count'] > 0),  # following
+        # (status['user']['followers_count'] > 0),  # followers
     ])
 
 
