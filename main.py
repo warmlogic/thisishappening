@@ -62,6 +62,8 @@ event_min_tweets = 8
 
 tile_size = 0.01
 
+tweet_max_length = 280
+
 # Set the bounding box: longitude and latitude pairs for SW and NE corner (in that order)
 
 # # San Francisco down to SFO
@@ -119,8 +121,12 @@ class MyStreamer(TwythonStreamer):
             created_at = date_string_to_datetime(status['created_at'])
             tweet_body = status['text']
             tweet_language = status['lang']
-            longitude = status['coordinates']['coordinates'][0]
-            latitude = status['coordinates']['coordinates'][1]
+            if 'coordinates' in status:
+                longitude = status['coordinates']['coordinates'][0]
+                latitude = status['coordinates']['coordinates'][1]
+            elif 'place' in status:
+                longitude = np.mean([x[0] for x in status['place']['bounding_box']['coordinates'][0]])
+                latitude = np.mean([x[1] for x in status['place']['bounding_box']['coordinates'][0]])
             place_name = status['place']['full_name']
             # Possible values: country, admin, city, neighborhood, poi; more?
             place_type = status['place']['place_type']
@@ -241,7 +247,7 @@ class MyStreamer(TwythonStreamer):
                             event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
                             logger.info(f'Found event with {len(tile_event_tweets)} tweets')
                             logger.info(event_str)
-                            twitter.update_status(status=event_str[:280])
+                            twitter.update_status(status=event_str[:tweet_max_length])
 
                     try:
                         session.commit()
@@ -347,6 +353,7 @@ if __name__ == '__main__':
     )
 
     bounding_box_str = ','.join([str(x) for x in bounding_box])
+    logger.info(f'Looking for tweets in bounding box: {bounding_box_str}')
     while True:
         try:
             stream.statuses.filter(locations=bounding_box_str)
