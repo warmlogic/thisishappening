@@ -89,8 +89,11 @@ class RecentTweets(Base):
     tile = relationship('Tiles')
 
     @classmethod
-    def count_tweets_per_tile(cls, session, hours: float = 0, tile_id: int = None):
-        filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours)
+    def count_tweets_per_tile(cls, session, timestamp: datetime = None, hours: float = 0, tile_id: int = None):
+        if timestamp is None:
+            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+        filter_td = timestamp - timedelta(hours=hours)
 
         q = session.query(
             cls.tile_id, func.count(cls.status_id_str)).filter(
@@ -124,15 +127,25 @@ class RecentTweets(Base):
         return session.query(cls).order_by(desc(cls.created_at)).first()
 
     @classmethod
-    def delete_tweets_older_than(cls, session, hours: float = None, days: float = None, weeks: float = None):
-        '''Delete all records older than the specified time window
+    def delete_tweets_older_than(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = None,
+        days: float = None,
+        weeks: float = None,
+    ):
+        '''Delete all records older than the specified time window, optionally relative to a timestamp
         '''
         hours = hours if hours else 0
         days = days if days else 0
         weeks = weeks if weeks else 0
 
         if any([hours, days, weeks]):
-            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours, days=days, weeks=weeks)
+            if timestamp is None:
+                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+            filter_td = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
                 logger.info(f'Deleting tweets older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 delete_q = cls.__table__.delete().where(
@@ -186,15 +199,25 @@ class HistoricalStats(Base):
             subq, and_(cls.tile_id == subq.c.tile_id, cls.timestamp == subq.c.maxtimestamp)).order_by(cls.tile_id).all()
 
     @classmethod
-    def delete_stats_older_than(cls, session, hours: float = None, days: float = None, weeks: float = None):
-        '''Delete all records older than the specified time window
+    def delete_stats_older_than(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = None,
+        days: float = None,
+        weeks: float = None,
+    ):
+        '''Delete all records older than the specified time window, optionally relative to a timestamp
         '''
         hours = hours if hours else 0
         days = days if days else 0
         weeks = weeks if weeks else 0
 
         if any([hours, days, weeks]):
-            filter_td = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=hours, days=days, weeks=weeks)
+            if timestamp is None:
+                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+            filter_td = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
                 logger.info(f'Deleting historical stats older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 delete_q = cls.__table__.delete().where(
