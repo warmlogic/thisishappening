@@ -57,7 +57,8 @@ OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
 LANGUAGE = os.getenv("LANGUAGE", default="en")
-BOUNDING_BOX = [float(coord) for coord in os.getenv("BOUNDING_BOX", default=[]).split(',')]
+BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
+BOUNDING_BOX = [float(coord) for coord in BOUNDING_BOX.split(',')] if BOUNDING_BOX else []
 assert len(BOUNDING_BOX) == 4
 TILE_SIZE = float(os.getenv("TILE_SIZE", default="0.01"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="8"))
@@ -65,6 +66,15 @@ TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 HISTORICAL_STATS_DAYS_TO_KEEP = float(os.getenv("HISTORICAL_STATS_DAYS_TO_KEEP", default="1.0"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="7.0"))
 MAX_ROWS_HISTORICAL_STATS = int(os.getenv("MAX_ROWS_HISTORICAL_STATS", default="6000"))
+
+VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
+VALID_PLACE_TYPES = [x.strip() for x in VALID_PLACE_TYPES.split(',')] if VALID_PLACE_TYPES else []
+IGNORE_WORDS = os.getenv("IGNORE_WORDS", default=None)
+IGNORE_WORDS = [x.strip() for x in IGNORE_WORDS.split(',')] if IGNORE_WORDS else []
+IGNORE_USER_SCREEN_NAMES = os.getenv("IGNORE_USER_SCREEN_NAMES", default=None)
+IGNORE_USER_SCREEN_NAMES = [x.strip() for x in IGNORE_USER_SCREEN_NAMES.split(',')] if IGNORE_USER_SCREEN_NAMES else []
+IGNORE_USER_ID_STR = os.getenv("IGNORE_USER_ID_STR", default=None)
+IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNORE_USER_ID_STR else []
 
 TweetInfo = namedtuple(
     'TweetInfo',
@@ -130,7 +140,13 @@ class MyStreamer(TwythonStreamer):
         self.comparison_timestamp = comparison_timestamp
 
     def on_success(self, status):
-        if check_tweet(status):
+        if check_tweet(
+            status=status,
+            valid_place_types=VALID_PLACE_TYPES,
+            ignore_words=IGNORE_WORDS,
+            ignore_user_screen_names=IGNORE_USER_SCREEN_NAMES,
+            ignore_user_id_str=IGNORE_USER_ID_STR,
+        ):
             tweet_info = get_tweet_info(status)
             tiles = Tiles.find_id_by_coords(session, tweet_info.longitude, tweet_info.latitude)
 
