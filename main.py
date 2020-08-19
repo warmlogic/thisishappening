@@ -152,7 +152,7 @@ class MyStreamer(TwythonStreamer):
                 session.add(tweet)
                 try:
                     session.commit()
-                    logger.info(f'Logged tweet {tweet_info.status_id_str}')
+                    logger.info(f'Logged tweet {tweet_info.status_id_str} in {tweet_info.place_name} (tile {tile.id})')
                 except Exception:
                     logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
                     session.rollback()
@@ -195,6 +195,13 @@ class MyStreamer(TwythonStreamer):
                         )
                         session.add(hs)
 
+                        try:
+                            session.commit()
+                            logger.debug(f'Added historical stats: tile {tile_id} {tweet_info.created_at}')
+                        except Exception:
+                            logger.exception(f'Exception when adding historical stats: tile {tile_id} {tweet_info.created_at}')
+                            session.rollback()
+
                         event_hour = False
                         event_day = False
                         if tweet_count > 0:
@@ -228,12 +235,6 @@ class MyStreamer(TwythonStreamer):
                                 logger.exception('Rate limit error')
                             except TwythonError:
                                 logger.exception('Encountered some other error')
-
-                    try:
-                        session.commit()
-                    except Exception:
-                        logger.exception(f'Exception when adding historical stats for {tweet_info.created_at}')
-                        session.rollback()
 
                     # Update the comparison tweet time
                     self.comparison_timestamp = tweet_info.created_at
@@ -326,6 +327,12 @@ def event_log_and_string(tile_id: int, timestamp: datetime):
     ]
     place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
 
+    event_str = "Something's happening"
+    event_str = f'{event_str} in {place_name}' if place_name else event_str
+    event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
+    logger.info(f'{timestamp} Tile {tile_id}: Found event with {len(tile_event_tweets)} tweets')
+    logger.info(event_str)
+
     # Add to events table
     ev = Events(
         tile_id=tile_id,
@@ -338,11 +345,12 @@ def event_log_and_string(tile_id: int, timestamp: datetime):
     )
     session.add(ev)
 
-    event_str = "Something's happening"
-    event_str = f'{event_str} in {place_name}' if place_name else event_str
-    event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
-    logger.info(f'{timestamp} Tile {tile_id}: Found event with {len(tile_event_tweets)} tweets')
-    logger.info(event_str)
+    try:
+        session.commit()
+        logger.info(f'Added event for tile {tile_id} {timestamp} {tokens_str}')
+    except Exception:
+        logger.exception(f'Exception when adding event for tile {tile_id} {timestamp} {tokens_str}')
+        session.rollback()
 
     return event_str
 
