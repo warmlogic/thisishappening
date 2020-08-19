@@ -37,17 +37,17 @@ DEBUG_RUN = DEBUG_RUN == "True"
 if DEBUG_RUN:
     logger.setLevel(logging.DEBUG)
     # POST_EVENT = False
-    EVERY_N_SECONDS = 1
+    EVERY_N_SECONDS = 5
     TEMPORAL_GRANULARITY_HOURS = 1
-    INITIAL_TIME = datetime(1970, 1, 1)
+    INITIAL_TIME = datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
     # POST_EVENT = os.getenv("POST_EVENT", default="False") == "True"
-    EVERY_N_SECONDS = int(os.getenv("EVERY_N_SECONDS", default="3600"))
+    EVERY_N_SECONDS = int(os.getenv("EVERY_N_SECONDS", default="60"))
     TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
-    # Wait half the rate limit time before making first post
-    INITIAL_TIME = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(seconds=EVERY_N_SECONDS // 2)
+    # Wait the rate limit time before making first post
+    INITIAL_TIME = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(seconds=EVERY_N_SECONDS)
     ECHO = False
 
 APP_KEY = os.getenv("API_KEY", default=None)
@@ -91,7 +91,7 @@ class MyTwitterClient(Twython):
         super(MyTwitterClient, self).__init__(*args, **kwargs)
         if initial_time is None:
             # Wait half the rate limit time before making first post
-            initial_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(seconds=EVERY_N_SECONDS // 2)
+            initial_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=1)
         self.last_post_time = initial_time
 
     def update_status_check_rate(self, *args, **kwargs):
@@ -100,7 +100,7 @@ class MyTwitterClient(Twython):
         logger.info(f'Previous post time: {self.last_post_time}')
         logger.info(f'Difference: {current_time - self.last_post_time}')
         if (current_time - self.last_post_time).total_seconds() > EVERY_N_SECONDS:
-            self.update_status(*args, **kwargs)
+            _ = self.update_status(*args, **kwargs)
             self.last_post_time = current_time
             logger.info('Success')
             return True
@@ -207,7 +207,7 @@ class MyStreamer(TwythonStreamer):
                     if any(events.values()):
                         tiles_with_events = [tile_id for tile_id, event in events.items() if event]
                         for tile_id in tiles_with_events:
-                            post_event_status(tile_id=tile_id, timestamp=tweet_info.created_at)
+                            status = post_event_status(tile_id=tile_id, timestamp=tweet_info.created_at)
 
                     try:
                         session.commit()
@@ -306,13 +306,6 @@ def post_event_status(tile_id: int, timestamp: datetime):
     ]
     place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
 
-    event_str = "Something's happening"
-    event_str = f'{event_str} in {place_name}' if place_name else event_str
-    event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
-    logger.info(f'Found event with {len(tile_event_tweets)} tweets')
-    logger.info(event_str)
-    twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
-
     # Add to events table
     ev = Events(
         tile_id=tile_id,
@@ -324,6 +317,15 @@ def post_event_status(tile_id: int, timestamp: datetime):
         description=tokens_str,
     )
     session.add(ev)
+
+    event_str = "Something's happening"
+    event_str = f'{event_str} in {place_name}' if place_name else event_str
+    event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
+    logger.info(f'{timestamp} Tile {tile_id}: Found event with {len(tile_event_tweets)} tweets')
+    logger.info(event_str)
+    status = twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
+
+    return status
 
 
 # Establish connection to Twitter
