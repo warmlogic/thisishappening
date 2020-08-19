@@ -268,11 +268,11 @@ class MyStreamer(TwythonStreamer):
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, content, headers=None):
-        content = content.decode().strip()
         logger.info('Error while streaming.')
         logger.info(f'status_code: {status_code}')
         logger.info(f'content: {content}')
         logger.info(f'headers: {headers}')
+        content = content.decode().strip() if isinstance(content, bytes) else content.strip()
         if 'Server overloaded, try again in a few seconds'.lower() in content.lower():
             logger.info(f'Server overloaded. Sleeping for {self.sleep_seconds} seconds.')
             sleep(self.sleep_seconds)
