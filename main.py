@@ -152,7 +152,7 @@ class MyStreamer(TwythonStreamer):
                 session.add(tweet)
                 try:
                     session.commit()
-                    logger.debug(f'Logged tweet {tweet_info.status_id_str}')
+                    logger.info(f'Logged tweet {tweet_info.status_id_str}')
                 except Exception:
                     logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
                     session.rollback()
@@ -246,7 +246,7 @@ class MyStreamer(TwythonStreamer):
                     logger.info('Deleting old recent tweets')
                     RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
             else:
-                logger.debug(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
+                logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, content, headers=None):
         logger.info('Error while streaming.')
