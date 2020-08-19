@@ -140,7 +140,7 @@ class MyStreamer(TwythonStreamer):
                 session.add(tweet)
                 try:
                     session.commit()
-                    logger.info(f'Logged tweet {tweet_info.status_id_str}')
+                    logger.debug(f'Logged tweet {tweet_info.status_id_str}')
                 except Exception:
                     logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
                     session.rollback()
@@ -188,17 +188,17 @@ class MyStreamer(TwythonStreamer):
                         if tweet_count > 0:
                             logger.info(f'tile_id: {tile_id}, tweet_count: {tweet_count}')
                             if hs_hour:
-                                threshold = hs_hour[tile_id].mean + (hs_hour[tile_id].stddev * 2)
-                                event_hour = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold)
+                                threshold_hour = hs_hour[tile_id].mean + (hs_hour[tile_id].stddev * 2)
+                                event_hour = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_hour)
                                 # logger.info(f'Now vs hour: {event_hour}')
                                 # logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
-                                # logger.info(f'    hour threshold: {threshold} = {hs_hour[tile_id].mean} + ({hs_hour[tile_id].stddev} * 2)')
+                                logger.info(f'    hour threshold: {threshold_hour} = {hs_hour[tile_id].mean} + ({hs_hour[tile_id].stddev} * 2)')
                             if hs_day:
-                                threshold = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
-                                event_day = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold)
+                                threshold_day = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
+                                event_day = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_day)
                                 # logger.info(f'Now vs day: {event_day}')
                                 # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
-                                # logger.info(f'    day threshold: {threshold} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
+                                logger.info(f'    day threshold: {threshold_day} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
 
                         # Note that this tile had an event
                         if event_hour and event_day:
@@ -220,13 +220,13 @@ class MyStreamer(TwythonStreamer):
 
                     # Delete old historical stats rows
                     logger.info('Deleting old historical stats')
-                    HistoricalStats.delete_stats_older_than(session, days=HISTORICAL_STATS_DAYS_TO_KEEP)
+                    HistoricalStats.delete_stats_older_than(session, timestamp=tweet_info.created_at, days=HISTORICAL_STATS_DAYS_TO_KEEP)
 
                     # Delete old recent tweets rows
                     logger.info('Deleting old recent tweets')
-                    RecentTweets.delete_tweets_older_than(session, days=RECENT_TWEETS_DAYS_TO_KEEP)
+                    RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
             else:
-                logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
+                logger.debug(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, content, headers=None):
         logger.info('Error while streaming.')
@@ -272,7 +272,7 @@ def get_tweet_info(status: Dict) -> Dict:
 
 def get_stats(timestamp: datetime):
     # Get tweets from the last hour
-    tweet_counts = RecentTweets.count_tweets_per_tile(session, hours=1)
+    tweet_counts = RecentTweets.count_tweets_per_tile(session, timestamp=timestamp, hours=1)
     tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
 
     # Get historical stats for the previous hour
