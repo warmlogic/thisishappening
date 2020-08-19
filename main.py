@@ -139,9 +139,13 @@ class MyStreamer(TwythonStreamer):
         if comparison_timestamp is None:
             comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.comparison_timestamp = comparison_timestamp
-        self.sleep_seconds = 10
+        self.sleep_seconds = 2
+        self.sleep_exponent = 0
 
     def on_success(self, status):
+        # Reset sleep seconds exponent
+        self.sleep_exponent = 0
+
         if check_tweet(
             status=status,
             valid_place_types=VALID_PLACE_TYPES,
@@ -274,11 +278,19 @@ class MyStreamer(TwythonStreamer):
         logger.info(f'headers: {headers}')
         content = content.decode().strip() if isinstance(content, bytes) else content.strip()
         if 'Server overloaded, try again in a few seconds'.lower() in content.lower():
-            logger.info(f'Server overloaded. Sleeping for {self.sleep_seconds} seconds.')
-            sleep(self.sleep_seconds)
+            seconds = self.sleep_seconds ** self.sleep_exponent
+            logger.warning(f'Server overloaded. Sleeping for {seconds} seconds.')
+            sleep(seconds)
+            self.sleep_exponent += 1
         elif 'Exceeded connection limit for user'.lower() in content.lower():
-            logger.info(f'Exceeded connection limit. Sleeping for {self.sleep_seconds} seconds.')
-            sleep(self.sleep_seconds)
+            seconds = self.sleep_seconds ** self.sleep_exponent
+            logger.warning(f'Exceeded connection limit. Sleeping for {seconds} seconds.')
+            sleep(seconds)
+            self.sleep_exponent += 1
+        else:
+            seconds = self.sleep_seconds ** self.sleep_exponent
+            logger.warning(f'Some other error occurred. Sleeping for {seconds} seconds.')
+            sleep(seconds)
 
 
 def get_tweet_info(status: Dict) -> Dict:
