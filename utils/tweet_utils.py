@@ -10,8 +10,10 @@ import pytz
 url_all_re = r'\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
 url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
-# # TODO implement word ignore list
-# ignore_words = []
+# TODO implement word ignore list
+ignore_words = []
+ignore_user_screen_names = ['test5geo1798']
+ignore_user_id_str = []
 
 nlp = en_core_web_sm.load(disable=["tagger", "parser", "ner"])
 
@@ -21,9 +23,12 @@ def check_tweet(status, valid_place_types: List[str] = ['neighborhood', 'poi']) 
     '''
     return all([
         ('text' in status),
+        (all([x not in ignore_words for x in status['text'].split()])),
         (status['coordinates'] or (status['place'] and status['place']['place_type'] in valid_place_types)),
-        # (status['user']['friends_count'] > 0),  # following
-        # (status['user']['followers_count'] > 0),  # followers
+        (status['user']['screen_name'] not in ignore_user_screen_names),
+        (status['user']['id_str'] not in ignore_user_id_str),
+        (status['user']['friends_count'] > 0),  # following
+        (status['user']['followers_count'] > 0),  # followers
     ])
 
 
