@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 import numpy as np
 import pytz
 from runstats import Statistics
-from twython import Twython
-from twython import TwythonStreamer
+from twython import Twython, TwythonStreamer
+from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
 from utils.tweet_utils import check_tweet, date_string_to_datetime, clean_text, stopword_lemma
@@ -99,14 +99,26 @@ class MyTwitterClient(Twython):
         logger.info(f'Current time: {current_time}')
         logger.info(f'Previous post time: {self.last_post_time}')
         logger.info(f'Difference: {current_time - self.last_post_time}')
+        status = {}
         if (current_time - self.last_post_time).total_seconds() > EVERY_N_SECONDS:
-            _ = self.update_status(*args, **kwargs)
-            self.last_post_time = current_time
-            logger.info('Success')
-            return True
+            try:
+                status = self.update_status(*args, **kwargs)
+            except TwythonAuthError:
+                logger.exception('Authorization error, did you create read+write credentials?')
+            except TwythonRateLimitError:
+                logger.exception('Rate limit error')
+            except TwythonError:
+                logger.exception('Encountered some other error')
+
+            if status:
+                self.last_post_time = current_time
+                logger.info('Successfully posted')
+            else:
+                logger.info('Did not successfully post')
         else:
             logger.info('Not posting due to rate limit')
-            return False
+
+        return status
 
 
 class MyStreamer(TwythonStreamer):
@@ -207,7 +219,15 @@ class MyStreamer(TwythonStreamer):
                     if any(events.values()):
                         tiles_with_events = [tile_id for tile_id, event in events.items() if event]
                         for tile_id in tiles_with_events:
-                            status = post_event_status(tile_id=tile_id, timestamp=tweet_info.created_at)
+                            event_str = event_log_and_string(tile_id=tile_id, timestamp=tweet_info.created_at)
+                            try:
+                                status = twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
+                            except TwythonAuthError:
+                                logger.exception('Authorization error, did you create read+write credentials?')
+                            except TwythonRateLimitError:
+                                logger.exception('Rate limit error')
+                            except TwythonError:
+                                logger.exception('Encountered some other error')
 
                     try:
                         session.commit()
@@ -286,7 +306,7 @@ def get_stats(timestamp: datetime):
     return tweet_counts, hs_hour, hs_day
 
 
-def post_event_status(tile_id: int, timestamp: datetime):
+def event_log_and_string(tile_id: int, timestamp: datetime):
     event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=1, tile_id=tile_id)
     tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
     tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
@@ -323,9 +343,8 @@ def post_event_status(tile_id: int, timestamp: datetime):
     event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
     logger.info(f'{timestamp} Tile {tile_id}: Found event with {len(tile_event_tweets)} tweets')
     logger.info(event_str)
-    status = twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
 
-    return status
+    return event_str
 
 
 # Establish connection to Twitter
