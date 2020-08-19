@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import logging
 import os
 from pathlib import Path
+from time import sleep
 from typing import Dict
 
 from dotenv import load_dotenv
@@ -138,6 +139,7 @@ class MyStreamer(TwythonStreamer):
         if comparison_timestamp is None:
             comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.comparison_timestamp = comparison_timestamp
+        self.sleep_seconds = 10
 
     def on_success(self, status):
         if check_tweet(
@@ -266,10 +268,17 @@ class MyStreamer(TwythonStreamer):
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
     def on_error(self, status_code, content, headers=None):
+        content = content.decode().strip()
         logger.info('Error while streaming.')
         logger.info(f'status_code: {status_code}')
         logger.info(f'content: {content}')
         logger.info(f'headers: {headers}')
+        if 'Server overloaded, try again in a few seconds'.lower() in content.lower():
+            logger.info(f'Server overloaded. Sleeping for {self.sleep_seconds} seconds.')
+            sleep(self.sleep_seconds)
+        elif 'Exceeded connection limit for user'.lower() in content.lower():
+            logger.info(f'Exceeded connection limit. Sleeping for {self.sleep_seconds} seconds.')
+            sleep(self.sleep_seconds)
 
 
 def get_tweet_info(status: Dict) -> Dict:
