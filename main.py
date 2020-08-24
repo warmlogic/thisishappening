@@ -37,13 +37,19 @@ DEBUG_RUN = DEBUG_RUN == "True"
 
 if DEBUG_RUN:
     logger.setLevel(logging.DEBUG)
-    POST_EVENT = False
     TEMPORAL_GRANULARITY_HOURS = 1
+    POST_EVENT = False
+    LOG_TWEETS = False
+    LOG_STATS = False
+    LOG_EVENTS = False
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
-    POST_EVENT = os.getenv("POST_EVENT", default="False") == "True"
     TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
+    POST_EVENT = os.getenv("POST_EVENT", default="False") == "True"
+    LOG_TWEETS = True
+    LOG_STATS = True
+    LOG_EVENTS = True
     ECHO = False
 
 APP_KEY = os.getenv("API_KEY", default=None)
@@ -203,26 +209,29 @@ class MyStreamer(TwythonStreamer):
         return tweet_info
 
     def log_tweet(self, tweet_info: TweetInfo, tile_id: int):
-        tweet = RecentTweets(
-            status_id_str=tweet_info.status_id_str,
-            user_screen_name=tweet_info.user_screen_name,
-            user_id_str=tweet_info.user_id_str,
-            created_at=tweet_info.created_at,
-            tweet_body=tweet_info.tweet_body,
-            tweet_language=tweet_info.tweet_language,
-            longitude=tweet_info.longitude,
-            latitude=tweet_info.latitude,
-            place_name=tweet_info.place_name,
-            place_type=tweet_info.place_type,
-            tile_id=tile_id,
-        )
-        session.add(tweet)
-        try:
-            session.commit()
-            logger.info(f'Logged tweet {tweet_info.status_id_str} in {tweet_info.place_name} ({tweet_info.place_type}), tile {tile_id}')
-        except Exception:
-            logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
-            session.rollback()
+        if LOG_TWEETS:
+            tweet = RecentTweets(
+                status_id_str=tweet_info.status_id_str,
+                user_screen_name=tweet_info.user_screen_name,
+                user_id_str=tweet_info.user_id_str,
+                created_at=tweet_info.created_at,
+                tweet_body=tweet_info.tweet_body,
+                tweet_language=tweet_info.tweet_language,
+                longitude=tweet_info.longitude,
+                latitude=tweet_info.latitude,
+                place_name=tweet_info.place_name,
+                place_type=tweet_info.place_type,
+                tile_id=tile_id,
+            )
+            session.add(tweet)
+            try:
+                session.commit()
+                logger.info(f'Logged tweet {tweet_info.status_id_str} in {tweet_info.place_name} ({tweet_info.place_type}), tile {tile_id}')
+            except Exception:
+                logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
+                session.rollback()
+        else:
+            logger.info('Not logging tweet due to environment variable settings')
 
     def get_stats(self, timestamp: datetime):
         # Get tweets from the most recent period
@@ -257,22 +266,25 @@ class MyStreamer(TwythonStreamer):
             stddev = 0
 
         # Add current stats to historical stats table
-        hs = HistoricalStats(
-            tile_id=tile_id,
-            timestamp=timestamp,
-            count=tweet_count,
-            mean=mean,
-            variance=variance,
-            stddev=stddev,
-        )
-        session.add(hs)
+        if LOG_STATS:
+            hs = HistoricalStats(
+                tile_id=tile_id,
+                timestamp=timestamp,
+                count=tweet_count,
+                mean=mean,
+                variance=variance,
+                stddev=stddev,
+            )
+            session.add(hs)
 
-        try:
-            session.commit()
-            logger.debug(f'Added historical stats: tile {tile_id} {timestamp}')
-        except Exception:
-            logger.exception(f'Exception when adding historical stats: tile {tile_id} {timestamp}')
-            session.rollback()
+            try:
+                session.commit()
+                logger.debug(f'Added historical stats: tile {tile_id} {timestamp}')
+            except Exception:
+                logger.exception(f'Exception when adding historical stats: tile {tile_id} {timestamp}')
+                session.rollback()
+        else:
+            logger.info('Not logging stats due to environment variable settings')
 
         return tweet_count
 
@@ -331,23 +343,26 @@ class MyStreamer(TwythonStreamer):
         logger.info(event_str)
 
         # Add to events table
-        ev = Events(
-            tile_id=tile_id,
-            timestamp=timestamp,
-            count=len(event_tweets),
-            longitude=longitude,
-            latitude=latitude,
-            place_name=place_name,
-            description=tokens_str,
-        )
-        session.add(ev)
+        if LOG_EVENTS:
+            ev = Events(
+                tile_id=tile_id,
+                timestamp=timestamp,
+                count=len(event_tweets),
+                longitude=longitude,
+                latitude=latitude,
+                place_name=place_name,
+                description=tokens_str,
+            )
+            session.add(ev)
 
-        try:
-            session.commit()
-            logger.info(f'Added event for tile {tile_id} {timestamp} {tokens_str}')
-        except Exception:
-            logger.exception(f'Exception when adding event for tile {tile_id} {timestamp} {tokens_str}')
-            session.rollback()
+            try:
+                session.commit()
+                logger.info(f'Added event for tile {tile_id} {timestamp} {tokens_str}')
+            except Exception:
+                logger.exception(f'Exception when adding event for tile {tile_id} {timestamp} {tokens_str}')
+                session.rollback()
+        else:
+            logger.info('Not logging event due to environment variable settings')
 
         return event_str
 
