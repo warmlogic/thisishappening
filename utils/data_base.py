@@ -106,7 +106,7 @@ class RecentTweets(Base):
 
         q = session.query(
             cls.tile_id, func.count(cls.status_id_str)).filter(
-                cls.created_at >= filter_td)
+                cls.created_at >= filter_td).filter(cls.created_at <= timestamp)
 
         if tile_id:
             q = q.filter(cls.tile_id == tile_id)
@@ -120,7 +120,7 @@ class RecentTweets(Base):
 
         filter_td = timestamp - timedelta(hours=hours)
 
-        q = session.query(cls).filter(cls.created_at >= filter_td)
+        q = session.query(cls).filter(cls.created_at >= filter_td).filter(cls.created_at <= timestamp)
 
         if tile_id:
             q = q.filter(cls.tile_id == tile_id)
