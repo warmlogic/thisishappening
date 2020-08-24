@@ -37,18 +37,13 @@ DEBUG_RUN = DEBUG_RUN == "True"
 
 if DEBUG_RUN:
     logger.setLevel(logging.DEBUG)
-    # POST_EVENT = False
-    EVERY_N_SECONDS = 5
+    POST_EVENT = False
     TEMPORAL_GRANULARITY_HOURS = 1
-    INITIAL_TIME = datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
-    # POST_EVENT = os.getenv("POST_EVENT", default="False") == "True"
-    EVERY_N_SECONDS = int(os.getenv("EVERY_N_SECONDS", default="60"))
+    POST_EVENT = os.getenv("POST_EVENT", default="False") == "True"
     TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
-    # Wait the rate limit time before making first post
-    INITIAL_TIME = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(seconds=EVERY_N_SECONDS)
     ECHO = False
 
 APP_KEY = os.getenv("API_KEY", default=None)
@@ -95,44 +90,6 @@ TweetInfo = namedtuple(
         'place_type',
     ],
 )
-
-
-class MyTwitterClient(Twython):
-    '''Wrapper around the Twython Twitter client.
-    Limits status update rate.
-    '''
-    def __init__(self, initial_time=None, *args, **kwargs):
-        super(MyTwitterClient, self).__init__(*args, **kwargs)
-        if initial_time is None:
-            # Wait half the rate limit time before making first post
-            initial_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=1)
-        self.last_post_time = initial_time
-
-    def update_status_check_rate(self, *args, **kwargs):
-        current_time = datetime.utcnow().replace(tzinfo=pytz.UTC)
-        logger.info(f'Current time: {current_time}')
-        logger.info(f'Previous post time: {self.last_post_time}')
-        logger.info(f'Difference: {current_time - self.last_post_time}')
-        status = {}
-        if (current_time - self.last_post_time).total_seconds() > EVERY_N_SECONDS:
-            try:
-                status = self.update_status(*args, **kwargs)
-            except TwythonAuthError:
-                logger.exception('Authorization error, did you create read+write credentials?')
-            except TwythonRateLimitError:
-                logger.exception('Rate limit error')
-            except TwythonError:
-                logger.exception('Encountered some other error')
-
-            if status:
-                self.last_post_time = current_time
-                logger.info('Successfully posted')
-            else:
-                logger.info('Did not successfully post')
-        else:
-            logger.info('Not posting due to rate limit')
-
-        return status
 
 
 class MyStreamer(TwythonStreamer):
@@ -252,14 +209,17 @@ class MyStreamer(TwythonStreamer):
                         tiles_with_events = [tile_id for tile_id, event in events.items() if event]
                         for tile_id in tiles_with_events:
                             event_str = event_log_and_string(tile_id=tile_id, timestamp=tweet_info.created_at, token_count_min=TOKEN_COUNT_MIN)
-                            try:
-                                status = twitter.update_status(status=event_str)
-                            except TwythonAuthError:
-                                logger.exception('Authorization error, did you create read+write credentials?')
-                            except TwythonRateLimitError:
-                                logger.exception('Rate limit error')
-                            except TwythonError:
-                                logger.exception('Encountered some other error')
+                            if POST_EVENT:
+                                try:
+                                    status = twitter.update_status(status=event_str)
+                                except TwythonAuthError:
+                                    logger.exception('Authorization error, did you create read+write credentials?')
+                                except TwythonRateLimitError:
+                                    logger.exception('Rate limit error')
+                                except TwythonError:
+                                    logger.exception('Encountered some other error')
+                            else:
+                                logger.info('Not posting event due to environment variable settings')
 
                     # Update the comparison tweet time
                     self.comparison_timestamp = tweet_info.created_at
@@ -400,8 +360,7 @@ def event_log_and_string(tile_id: int, timestamp: datetime, token_count_min: int
 
 # Establish connection to Twitter
 # Uses OAuth1 ("user auth") for authentication
-twitter = MyTwitterClient(
-    initial_time=INITIAL_TIME,
+twitter = Twython(
     app_key=APP_KEY,
     app_secret=APP_SECRET,
     oauth_token=OAUTH_TOKEN,
