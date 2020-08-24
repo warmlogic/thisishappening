@@ -139,9 +139,9 @@ class MyStreamer(TwythonStreamer):
                     logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
                     session.rollback()
 
-                if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=1):
+                if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
                     logger.info(f'current time: {tweet_info.created_at}')
-                    logger.info('Been more than 1 hour between oldest and current tweet')
+                    logger.info(f'Been more than {TEMPORAL_GRANULARITY_HOURS} hours between oldest and current tweet')
 
                     # Get recent stats
                     tweet_counts, hs_hour, hs_day = get_stats(tweet_info.created_at)
@@ -292,15 +292,15 @@ def get_tweet_info(status: Dict) -> Dict:
 
 
 def get_stats(timestamp: datetime):
-    # Get tweets from the last hour
-    tweet_counts = RecentTweets.count_tweets_per_tile(session, timestamp=timestamp, hours=1)
+    # Get tweets from the most recent period
+    tweet_counts = RecentTweets.count_tweets_per_tile(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS)
     tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
 
-    # Get historical stats for the previous hour
-    hs_hour = HistoricalStats.get_recent_stats(session, timestamp=timestamp, hours=1)
+    # Get historical stats for the previous period
+    hs_hour = HistoricalStats.get_recent_stats(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS)
     hs_hour = {tile_id: row for tile_id, row in hs_hour}
 
-    # Get historical stats for the previous day
+    # Get historical stats for the same period on the previous day
     hs_day = HistoricalStats.get_recent_stats(session, timestamp=timestamp, days=1)
     hs_day = {tile_id: row for tile_id, row in hs_day}
 
@@ -308,7 +308,7 @@ def get_stats(timestamp: datetime):
 
 
 def event_log_and_string(tile_id: int, timestamp: datetime, token_count_min: int = None):
-    event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=1, tile_id=tile_id)
+    event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
 
     tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min)
     tokens_str = ' '.join(tokens_to_tweet)
