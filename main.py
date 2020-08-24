@@ -177,7 +177,7 @@ class MyStreamer(TwythonStreamer):
                 session.add(tweet)
                 try:
                     session.commit()
-                    logger.info(f'Logged tweet {tweet_info.status_id_str} in {tweet_info.place_name} (tile {tile.id})')
+                    logger.info(f'Logged tweet {tweet_info.status_id_str} in {tweet_info.place_name} ({tweet_info.place_type}), tile {tile.id}')
                 except Exception:
                     logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
                     session.rollback()
