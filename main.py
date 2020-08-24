@@ -14,7 +14,7 @@ from twython import Twython, TwythonStreamer
 from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
-from utils.tweet_utils import check_tweet, date_string_to_datetime, clean_text, stopword_lemma
+from utils.tweet_utils import check_tweet, date_string_to_datetime, get_tokens_to_tweet
 from utils.data_utils import n_wise
 
 
@@ -76,6 +76,9 @@ IGNORE_USER_SCREEN_NAMES = os.getenv("IGNORE_USER_SCREEN_NAMES", default=None)
 IGNORE_USER_SCREEN_NAMES = [x.strip() for x in IGNORE_USER_SCREEN_NAMES.split(',')] if IGNORE_USER_SCREEN_NAMES else []
 IGNORE_USER_ID_STR = os.getenv("IGNORE_USER_ID_STR", default=None)
 IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNORE_USER_ID_STR else []
+
+TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
+
 
 TweetInfo = namedtuple(
     'TweetInfo',
@@ -248,9 +251,9 @@ class MyStreamer(TwythonStreamer):
                     if any(events.values()):
                         tiles_with_events = [tile_id for tile_id, event in events.items() if event]
                         for tile_id in tiles_with_events:
-                            event_str = event_log_and_string(tile_id=tile_id, timestamp=tweet_info.created_at)
+                            event_str = event_log_and_string(tile_id=tile_id, timestamp=tweet_info.created_at, token_count_min=TOKEN_COUNT_MIN)
                             try:
-                                status = twitter.update_status(status=event_str[:TWEET_MAX_LENGTH])
+                                status = twitter.update_status(status=event_str)
                             except TwythonAuthError:
                                 logger.exception('Authorization error, did you create read+write credentials?')
                             except TwythonRateLimitError:
@@ -344,37 +347,40 @@ def get_stats(timestamp: datetime):
     return tweet_counts, hs_hour, hs_day
 
 
-def event_log_and_string(tile_id: int, timestamp: datetime):
+def event_log_and_string(tile_id: int, timestamp: datetime, token_count_min: int = None):
     event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=1, tile_id=tile_id)
-    tile_event_tweets = [et for et in event_tweets if et.tile_id == tile_id]
-    tile_event_tokens = [stopword_lemma(clean_text(et.tweet_body)) for et in tile_event_tweets]
-    tokens = [token.lower() for tweet in tile_event_tokens for token in tweet.split()]
-    counter = Counter(tokens)
-    tokens_to_show = [(k, v) for k, v in counter.items() if v > 1]
-    tokens_str = ' '.join([t[0] for t in tokens_to_show])
 
-    lons = [et.longitude for et in tile_event_tweets]
+    tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min)
+    tokens_str = ' '.join(tokens_to_tweet)
+
+    lons = [et.longitude for et in event_tweets]
     longitude = sum(lons) / len(lons)
-    lats = [et.latitude for et in tile_event_tweets]
+    lats = [et.latitude for et in event_tweets]
     latitude = sum(lats) / len(lats)
     lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
     place_names = [
-        et.place_name for et in tile_event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
+        et.place_name for et in event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
     ]
     place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
 
     event_str = "Something's happening"
     event_str = f'{event_str} in {place_name}' if place_name else event_str
-    event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
-    logger.info(f'{timestamp} Tile {tile_id} {timestamp}: Found event with {len(tile_event_tweets)} tweets')
+    event_str = f'{event_str} ({lat_long_str}):'
+    # find the longest set of tokens that satisfy the tweet length
+    for tokens in [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]:
+        event_str_tokens = f'{event_str} {tokens}'
+        if len(event_str_tokens) <= TWEET_MAX_LENGTH:
+            event_str = event_str_tokens
+            break
+    logger.info(f'{timestamp} Tile {tile_id} {timestamp}: Found event with {len(event_tweets)} tweets')
     logger.info(event_str)
 
     # Add to events table
     ev = Events(
         tile_id=tile_id,
         timestamp=timestamp,
-        count=len(tile_event_tweets),
+        count=len(event_tweets),
         longitude=longitude,
         latitude=latitude,
         place_name=place_name,
