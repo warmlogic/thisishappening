@@ -65,6 +65,15 @@ class Events(Base):
     description = Column(String, nullable=False)
     tile = relationship('Tiles')
 
+    @classmethod
+    def get_event_tweets(cls, session, event_id: int, hours: float = 1):
+
+        event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
+        timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
+        tile_id = event.tile_id
+
+        return RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=hours, tile_id=tile_id)
+
     def __repr__(self):
         return f'Event {self.id}'
 
