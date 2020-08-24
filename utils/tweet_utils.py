@@ -71,10 +71,7 @@ def stopword_lemma(text: str) -> str:
             (token.is_ascii and (len(token.text) <= 1)),
         ])
 
-    tokens = [
-        token.lemma_ if _token_filter(token) and not (token.startswith('#') and token.startswith('@')) else token
-        for token in nlp(text)
-    ]
+    tokens = [token.lemma_ for token in nlp(text) if _token_filter(token)]
 
     return ' '.join(tokens)
 
@@ -99,15 +96,15 @@ def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None):
     tokens = [token.lower() for tweet in tweets for token in tweet.split()]
     users_hashtags = [token for tweet in users_hashtags for token in tweet]
 
-    counter = Counter(tokens + users_hashtags)
-    # get tokens, reducing threshold if no tokens appear more than once
+    counter = Counter(tokens + users_hashtags).most_common()
+    # get tokens; reduce threshold if no tokens are above the threshold
     tokens_to_tweet = []
     while not tokens_to_tweet and token_count_min > 0:
         # keep those above the threshold
-        token_count = [(k, v) for k, v in counter.items() if v >= token_count_min]
-        # alphabetize
-        token_count.sort()
-        tokens_to_tweet = [t[0] for t in token_count]
+        tokens_to_tweet = [tc[0] for tc in counter if tc[1] >= token_count_min]
         token_count_min -= 1
+
+    if not tokens_to_tweet:
+        tokens_to_tweet = ['No tweet text found']
 
     return tokens_to_tweet
