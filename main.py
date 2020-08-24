@@ -286,13 +286,13 @@ class MyStreamer(TwythonStreamer):
                 event_hour = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_hour)
                 # logger.info(f'Now vs hour: {event_hour}')
                 # logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
-                logger.info(f'    hour threshold: {threshold_hour} = {hs_hour[tile_id].mean} + ({hs_hour[tile_id].stddev} * 2)')
+                logger.info(f'    hour threshold: {threshold_hour:.3f} = {hs_hour[tile_id].mean:.3f} + ({hs_hour[tile_id].stddev:.3f} * 2)')
             if hs_day:
                 threshold_day = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
                 event_day = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_day)
                 # logger.info(f'Now vs day: {event_day}')
                 # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
-                logger.info(f'    day threshold: {threshold_day} = {hs_day[tile_id].mean} + ({hs_day[tile_id].stddev} * 2)')
+                logger.info(f'    day threshold: {threshold_day:.3f} = {hs_day[tile_id].mean:.3f} + ({hs_day[tile_id].stddev:.3f} * 2)')
 
         found_event = False
         # Note that this tile had an event
