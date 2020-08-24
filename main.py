@@ -367,7 +367,7 @@ def event_log_and_string(tile_id: int, timestamp: datetime):
     event_str = "Something's happening"
     event_str = f'{event_str} in {place_name}' if place_name else event_str
     event_str = f'{event_str} ({lat_long_str}): {tokens_str}'
-    logger.info(f'{timestamp} Tile {tile_id}: Found event with {len(tile_event_tweets)} tweets')
+    logger.info(f'{timestamp} Tile {tile_id} {timestamp}: Found event with {len(tile_event_tweets)} tweets')
     logger.info(event_str)
 
     # Add to events table
