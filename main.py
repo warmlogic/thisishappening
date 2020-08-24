@@ -62,7 +62,7 @@ BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = [float(coord) for coord in BOUNDING_BOX.split(',')] if BOUNDING_BOX else []
 assert len(BOUNDING_BOX) == 4
 TILE_SIZE = float(os.getenv("TILE_SIZE", default="0.01"))
-EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="4"))
+EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="6"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 HISTORICAL_STATS_DAYS_TO_KEEP = float(os.getenv("HISTORICAL_STATS_DAYS_TO_KEEP", default="1.0"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="4.0"))
