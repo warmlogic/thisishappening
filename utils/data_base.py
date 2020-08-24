@@ -128,12 +128,22 @@ class RecentTweets(Base):
         return q.order_by(desc(cls.created_at)).all()
 
     @classmethod
-    def get_oldest_tweet(cls, session):
-        return session.query(cls).order_by(cls.created_at).first()
+    def get_oldest_tweet(cls, session, tile_id: int = None):
+        q = session.query(cls)
+
+        if tile_id:
+            q = q.filter(cls.tile_id == tile_id)
+
+        return q.order_by(cls.created_at).first()
 
     @classmethod
-    def get_most_recent_tweet(cls, session):
-        return session.query(cls).order_by(desc(cls.created_at)).first()
+    def get_most_recent_tweet(cls, session, tile_id: int = None):
+        q = session.query(cls)
+
+        if tile_id:
+            q = q.filter(cls.tile_id == tile_id)
+
+        return q.order_by(desc(cls.created_at)).first()
 
     @classmethod
     def delete_tweets_older_than(
