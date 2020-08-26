@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import logging
 
 import pytz
-from sqlalchemy import create_engine, and_, desc, func
+from sqlalchemy import create_engine, and_, desc, func, case
 from sqlalchemy import Column, ForeignKey, String, Integer, DateTime, Float
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
@@ -30,6 +30,10 @@ class Tiles(Base):
     east_lon = Column(Float(precision=4), nullable=False)
     south_lat = Column(Float(precision=4), nullable=False)
     north_lat = Column(Float(precision=4), nullable=False)
+    neighborhood = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    admin = Column(String, nullable=True)
+    country = Column(String, nullable=True)
     recent_tweets = relationship('RecentTweets')
     historical_stats = relationship('HistoricalStats')
     events = relationship('Events')
@@ -45,6 +49,39 @@ class Tiles(Base):
             longitude < cls.east_lon).filter(
             latitude >= cls.south_lat).filter(
             latitude < cls.north_lat).all()
+
+    @classmethod
+    def get_tile_center_lat_lon(cls, session, tile_id: int = None):
+        q = session.query(
+            cls.id,
+            ((cls.north_lat + cls.south_lat) / 2).label('latitude'),
+            ((cls.west_lon + cls.east_lon) / 2).label('longitude'),
+        )
+
+        if tile_id:
+            q = q.filter(cls.id == tile_id)
+
+        return q.group_by(cls.id).order_by(cls.id).all()
+
+    @classmethod
+    def get_tile_name(cls, session, tile_id: int = None):
+        q = session.query(
+            cls.id,
+            case(
+                [
+                    (cls.neighborhood.isnot(None), cls.neighborhood),
+                    (cls.city.isnot(None), cls.city),
+                    (cls.admin.isnot(None), cls.admin),
+                    (cls.country.isnot(None), cls.country),
+                ],
+                else_=None,
+            )
+        )
+
+        if tile_id:
+            q = q.filter(cls.id == tile_id)
+
+        return q.order_by(cls.id).all()
 
     def __repr__(self):
         return f'Tile {self.id}'
