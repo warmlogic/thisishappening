@@ -17,7 +17,6 @@ from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStat
 from utils.tweet_utils import check_tweet, date_string_to_datetime, get_tokens_to_tweet
 from utils.data_utils import n_wise
 
-
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
 logger = logging.getLogger("happeninglogger")
 
