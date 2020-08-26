@@ -397,24 +397,6 @@ class MyStreamer(TwythonStreamer):
             sleep(seconds)
 
 
-# Establish connection to Twitter
-# Uses OAuth1 ("user auth") for authentication
-twitter = Twython(
-    app_key=APP_KEY,
-    app_secret=APP_SECRET,
-    oauth_token=OAUTH_TOKEN,
-    oauth_token_secret=OAUTH_TOKEN_SECRET,
-)
-
-# If this screen_name has a recent tweet, use that timestamp as the time of the last post
-my_most_recent_tweet = twitter.get_user_timeline(screen_name=MY_SCREEN_NAME, count=1, trim_user=True)
-if my_most_recent_tweet:
-    twitter.last_post_time = date_string_to_datetime(my_most_recent_tweet[0]['created_at'])
-
-# Establish connection to database
-session = session_factory(DATABASE_URL, echo=ECHO)
-
-
 def get_geo_info(bounding_box: List[float], tile_size: float):
     tile_longitudes = np.arange(bounding_box[0], bounding_box[2], tile_size).tolist()
     # np.arange does not include the end point; add the edge of bounding box
@@ -484,6 +466,23 @@ def get_geo_info(bounding_box: List[float], tile_size: float):
 
     return geo_info
 
+
+# Establish connection to Twitter
+# Uses OAuth1 ("user auth") for authentication
+twitter = Twython(
+    app_key=APP_KEY,
+    app_secret=APP_SECRET,
+    oauth_token=OAUTH_TOKEN,
+    oauth_token_secret=OAUTH_TOKEN_SECRET,
+)
+
+# If this screen_name has a recent tweet, use that timestamp as the time of the last post
+my_most_recent_tweet = twitter.get_user_timeline(screen_name=MY_SCREEN_NAME, count=1, trim_user=True)
+if my_most_recent_tweet:
+    twitter.last_post_time = date_string_to_datetime(my_most_recent_tweet[0]['created_at'])
+
+# Establish connection to database
+session = session_factory(DATABASE_URL, echo=ECHO)
 
 # Add tile rows if none exist
 if session.query(Tiles).count() == 0:
