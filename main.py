@@ -208,8 +208,8 @@ class MyStreamer(TwythonStreamer):
         return tweet_info
 
     def log_tweet(self, tweet_info: TweetInfo, tile_id: int):
+        tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
         if LOG_TWEETS:
-            tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
             tweet = RecentTweets(
                 status_id_str=tweet_info.status_id_str,
                 user_screen_name=tweet_info.user_screen_name,
@@ -249,6 +249,7 @@ class MyStreamer(TwythonStreamer):
         return tweet_counts, hs_hour, hs_day
 
     def log_stats(self, tweet_counts: Dict[int, int], tile_id: int, stats: Statistics, timestamp: datetime):
+        tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
         if tile_id in tweet_counts:
             tweet_count = tweet_counts[tile_id]
         else:
@@ -267,7 +268,6 @@ class MyStreamer(TwythonStreamer):
 
         # Add current stats to historical stats table
         if LOG_STATS:
-            tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
             hs = HistoricalStats(
                 tile_id=tile_id,
                 timestamp=timestamp,
