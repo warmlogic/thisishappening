@@ -4,7 +4,7 @@ import logging
 import os
 from pathlib import Path
 from time import sleep
-from typing import Dict
+from typing import Dict, List
 
 from dotenv import load_dotenv
 import numpy as np
@@ -210,6 +210,7 @@ class MyStreamer(TwythonStreamer):
 
     def log_tweet(self, tweet_info: TweetInfo, tile_id: int):
         if LOG_TWEETS:
+            tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
             tweet = RecentTweets(
                 status_id_str=tweet_info.status_id_str,
                 user_screen_name=tweet_info.user_screen_name,
@@ -226,12 +227,12 @@ class MyStreamer(TwythonStreamer):
             session.add(tweet)
             try:
                 session.commit()
-                logger.info(f'Logged tweet {tweet_info.status_id_str} in {tweet_info.place_name} ({tweet_info.place_type}), tile {tile_id}')
+                logger.info(f'Logged tweet: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
             except Exception:
-                logger.exception(f'Exception when adding recent tweet {tweet_info.status_id_str}')
+                logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
                 session.rollback()
         else:
-            logger.info('Not logging tweet due to environment variable settings')
+            logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
 
     def get_stats(self, timestamp: datetime):
         # Get tweets from the most recent period
@@ -267,6 +268,7 @@ class MyStreamer(TwythonStreamer):
 
         # Add current stats to historical stats table
         if LOG_STATS:
+            tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
             hs = HistoricalStats(
                 tile_id=tile_id,
                 timestamp=timestamp,
@@ -279,12 +281,12 @@ class MyStreamer(TwythonStreamer):
 
             try:
                 session.commit()
-                logger.debug(f'Added historical stats: tile {tile_id} {timestamp}')
+                logger.debug(f'Logged historical stats: Tile {tile_id} ({tile_name}) {timestamp}')
             except Exception:
-                logger.exception(f'Exception when adding historical stats: tile {tile_id} {timestamp}')
+                logger.exception(f'Exception when logging historical stats: Tile {tile_id} ({tile_name}) {timestamp}')
                 session.rollback()
         else:
-            logger.info('Not logging stats due to environment variable settings')
+            logger.info(f'Not logging stats due to environment variable settings: Tile {tile_id} ({tile_name}) {timestamp}')
 
         return tweet_count
 
@@ -314,32 +316,39 @@ class MyStreamer(TwythonStreamer):
         return found_event
 
     def log_event_and_get_str(self, tile_id: int, timestamp: datetime, token_count_min: int = None):
+        # Prepare the tweets
         event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
-
         tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min)
         tokens_str = ' '.join(tokens_to_tweet)
 
+        # Compute the average tweet location
         lons = [et.longitude for et in event_tweets]
         longitude = sum(lons) / len(lons)
         lats = [et.latitude for et in event_tweets]
         latitude = sum(lats) / len(lats)
         lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
+        # Get a label for this location
+        tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
         place_names = [
             et.place_name for et in event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
         ]
         place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
+        if not place_name:
+            place_name = tile_name
 
+        # Construct the message to tweet
         event_str = "Something's happening"
         event_str = f'{event_str} in {place_name}' if place_name else event_str
         event_str = f'{event_str} ({lat_long_str}):'
-        # find the longest set of tokens that satisfy the tweet length
+        # Find the largest set of tokens allowed for the length of a tweet
         for tokens in [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]:
             event_str_tokens = f'{event_str} {tokens}'
             if len(event_str_tokens) <= TWEET_MAX_LENGTH:
                 event_str = event_str_tokens
                 break
-        logger.info(f'{timestamp} Tile {tile_id} {timestamp}: Found event with {len(event_tweets)} tweets')
+
+        logger.info(f'{timestamp} Tile {tile_id} ({tile_name}) {timestamp}: Found event with {len(event_tweets)} tweets')
         logger.info(event_str)
 
         # Add to events table
@@ -357,12 +366,12 @@ class MyStreamer(TwythonStreamer):
 
             try:
                 session.commit()
-                logger.info(f'Added event for tile {tile_id} {timestamp} {tokens_str}')
+                logger.info(f'Logged event: Tile {tile_id} ({tile_name}) {timestamp}: {tokens_str}')
             except Exception:
-                logger.exception(f'Exception when adding event for tile {tile_id} {timestamp} {tokens_str}')
+                logger.exception(f'Exception when logging event: Tile {tile_id} ({tile_name}) {timestamp}: {tokens_str}')
                 session.rollback()
         else:
-            logger.info('Not logging event due to environment variable settings')
+            logger.info(f'Not logging event due to environment variable settings: Tile {tile_id} ({tile_name}) {timestamp}: {tokens_str}')
 
         return event_str
 
@@ -405,30 +414,97 @@ if my_most_recent_tweet:
 # Establish connection to database
 session = session_factory(DATABASE_URL, echo=ECHO)
 
-# Add tile rows if none exist
-if session.query(Tiles).count() == 0:
-    logger.info('Populating tiles table')
-    tile_longitudes = np.arange(BOUNDING_BOX[0], BOUNDING_BOX[2], TILE_SIZE).tolist()
+
+def get_geo_info(bounding_box: List[float], tile_size: float):
+    tile_longitudes = np.arange(bounding_box[0], bounding_box[2], tile_size).tolist()
     # np.arange does not include the end point; add the edge of bounding box
-    tile_longitudes.append(BOUNDING_BOX[2])
-    tile_latitudes = np.arange(BOUNDING_BOX[1], BOUNDING_BOX[3], TILE_SIZE).tolist()
+    tile_longitudes.append(bounding_box[2])
+    tile_latitudes = np.arange(bounding_box[1], bounding_box[3], tile_size).tolist()
     # np.arange does not include the end point; add the edge of bounding box
-    tile_latitudes.append(BOUNDING_BOX[3])
+    tile_latitudes.append(bounding_box[3])
 
     num_tiles = len(list(n_wise(tile_latitudes, 2))) * len(list(n_wise(tile_longitudes, 2)))
+    # Assumes one stat per hour
     assert (num_tiles * HISTORICAL_STATS_DAYS_TO_KEEP * 24) <= MAX_ROWS_HISTORICAL_STATS
 
+    geo_granularity = ['neighborhood', 'city', 'admin', 'country']
+
+    # Initialize
+    geo_info = {
+        i: {
+            'west_lon': None,
+            'east_lon': None,
+            'south_lat': None,
+            'north_lat': None,
+            'neighborhood': None,
+            'city': None,
+            'admin': None,
+            'country': None,
+        }
+        for i in range(1, num_tiles + 1)
+    }
+
+    logger.info('Reverse geocoding tiles to assign names')
+    i = 1
     for tile_lats in n_wise(tile_latitudes, 2):
         south_lat, north_lat = tile_lats[0], tile_lats[1]
         for tile_lons in n_wise(tile_longitudes, 2):
             west_lon, east_lon = tile_lons[0], tile_lons[1]
-            tile = Tiles(
-                west_lon=west_lon,
-                east_lon=east_lon,
-                south_lat=south_lat,
-                north_lat=north_lat,
-            )
-            session.add(tile)
+            if geo_info[i]['country'] is None:
+                geo_info[i]['west_lon'] = west_lon
+                geo_info[i]['east_lon'] = east_lon
+                geo_info[i]['south_lat'] = south_lat
+                geo_info[i]['north_lat'] = north_lat
+
+                latitude = (south_lat + north_lat) / 2
+                longitude = (west_lon + east_lon) / 2
+
+                # Reverse geocode the tile's center latitude and longitude value to store tile names
+                unsuccessful_tries = 0
+                try_threshold = 10
+                while unsuccessful_tries < try_threshold:
+                    rev_geo = twitter.reverse_geocode(lat=latitude, long=longitude, granularity='neighborhood')
+                    if 'result' in rev_geo:
+                        unsuccessful_tries = try_threshold
+                    else:
+                        unsuccessful_tries += 1
+                        logger.info('Sleeping for 10 seconds due to failed reverse geocode')
+                        sleep(10)
+                for gg in geo_granularity:
+                    if 'result' in rev_geo:
+                        tile_name = [x['name'] for x in rev_geo['result']['places'] if x['place_type'] == gg]
+                    else:
+                        tile_name = []
+                    geo_info[i][gg] = tile_name[0] if tile_name else None
+
+                logger.info(f"Got geo info for Tile {i} ({latitude:.4f}, {longitude:.4f}): {geo_info[i]['neighborhood']}, {geo_info[i]['city']}, {geo_info[i]['admin']}, {geo_info[i]['country']}")
+                logger.info('Sleeping for 60 seconds due to reverse geocode rate limit')
+                sleep(60)
+            i += 1
+
+    return geo_info
+
+
+# Add tile rows if none exist
+if session.query(Tiles).count() == 0:
+    geo_info = get_geo_info(bounding_box=BOUNDING_BOX, tile_size=TILE_SIZE)
+    num_tiles = len(geo_info)
+
+    logger.info('Populating tiles table')
+    for i in range(1, num_tiles + 1):
+        tile = Tiles(
+            west_lon=geo_info[i]['west_lon'],
+            east_lon=geo_info[i]['east_lon'],
+            south_lat=geo_info[i]['south_lat'],
+            north_lat=geo_info[i]['north_lat'],
+            neighborhood=geo_info[i]['neighborhood'],
+            city=geo_info[i]['city'],
+            admin=geo_info[i]['admin'],
+            country=geo_info[i]['country'],
+        )
+        session.add(tile)
+
+        logger.info(f"Logged Tile {i}: {geo_info[i]['neighborhood']}, {geo_info[i]['city']}, {geo_info[i]['admin']}, {geo_info[i]['country']}")
     try:
         session.commit()
     except Exception:
