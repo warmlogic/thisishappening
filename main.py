@@ -327,10 +327,10 @@ class MyStreamer(TwythonStreamer):
         latitude = sum(lats) / len(lats)
         lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
-        # Get a label for this location
+        # Get a label for this location if it is a neighborhood or point-of-interest, otherwise get tile name
         tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
         place_names = [
-            et.place_name for et in event_tweets if et.place_type in ['city', 'neighborhood', 'poi']
+            et.place_name for et in event_tweets if et.place_type in ['neighborhood', 'poi']
         ]
         place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
         if not place_name:
