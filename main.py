@@ -78,7 +78,7 @@ IGNORE_USER_ID_STR = os.getenv("IGNORE_USER_ID_STR", default=None)
 IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNORE_USER_ID_STR else []
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
-
+IGNORE_MISSING_DAY_STATS = os.getenv("IGNORE_MISSING_DAY_STATS", default="False") == "True"
 
 TweetInfo = namedtuple(
     'TweetInfo',
@@ -188,8 +188,8 @@ class MyStreamer(TwythonStreamer):
             longitude = sum(lons) / len(lons)
             lats = [x[1] for x in status['place']['bounding_box']['coordinates'][0]]
             latitude = sum(lats) / len(lats)
-        place_name = status['place']['full_name']
-        # Possible values: country, admin, city, neighborhood, poi; more?
+        place_name = status['place']['name']
+        # Possible place_type values: country, admin, city, neighborhood, poi
         place_type = status['place']['place_type']
 
         tweet_info = TweetInfo(
@@ -306,6 +306,10 @@ class MyStreamer(TwythonStreamer):
                 # logger.info(f'Now vs day: {event_day}')
                 # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
                 logger.info(f'    day threshold: {threshold_day:.3f} = {hs_day[tile_id].mean:.3f} + ({hs_day[tile_id].stddev:.3f} * 2)')
+            else:
+                # If no stats for the previous day, only base event decision on previous hour
+                if IGNORE_MISSING_DAY_STATS:
+                    event_day = True
 
         found_event = False
         # Note that this tile had an event
@@ -328,17 +332,26 @@ class MyStreamer(TwythonStreamer):
         lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
         # Get a label for this location if it is a neighborhood or point-of-interest, otherwise get tile name
-        tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
+        tile_identity = Tiles.get_tile_name(session, tile_id=tile_id)[0]
+        tile_name, tile_name_type = tile_identity[1], tile_identity[2]
+        # Get the most common place name from these tweets; only consider neighborhood or poi
         place_names = [
             et.place_name for et in event_tweets if et.place_type in ['neighborhood', 'poi']
         ]
         place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
+        # Get a larger granular name to include after a neighborhood or poi
+        city_name = Tiles.get_tile_name(session, tile_id=tile_id, geo_granularity=['city', 'admin', 'country'])[0][1]
+        # If the tweets didn't have a valid place name, fall back to the tile name
         if not place_name:
             place_name = tile_name
+            # Don't include the city name if granularity is larger than neighborhood
+            if tile_name_type != 'neighborhood':
+                city_name = None
 
         # Construct the message to tweet
         event_str = "Something's happening"
         event_str = f'{event_str} in {place_name}' if place_name else event_str
+        event_str = f'{event_str}, {city_name}' if city_name else event_str
         event_str = f'{event_str} ({lat_long_str}):'
         # Find the largest set of tokens allowed for the length of a tweet
         for tokens in [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]:
