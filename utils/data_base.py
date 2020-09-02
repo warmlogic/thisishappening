@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import logging
+from typing import List
 
 import pytz
 from sqlalchemy import create_engine, and_, desc, func, case
@@ -64,18 +65,29 @@ class Tiles(Base):
         return q.group_by(cls.id).order_by(cls.id).all()
 
     @classmethod
-    def get_tile_name(cls, session, tile_id: int = None):
+    def get_tile_name(cls, session, tile_id: int = None, geo_granularity: List[str] = None):
+        if geo_granularity is None:
+            geo_granularity = ['neighborhood', 'city', 'admin', 'country']
+
+        case_options_name = []
+        case_options_type = []
+        if 'neighborhood' in geo_granularity:
+            case_options_name.append((cls.neighborhood.isnot(None), cls.neighborhood))
+            case_options_type.append((cls.neighborhood.isnot(None), 'neighborhood'))
+        if 'city' in geo_granularity:
+            case_options_name.append((cls.city.isnot(None), cls.city))
+            case_options_type.append((cls.city.isnot(None), 'city'))
+        if 'admin' in geo_granularity:
+            case_options_name.append((cls.admin.isnot(None), cls.admin))
+            case_options_type.append((cls.admin.isnot(None), 'admin'))
+        if 'country' in geo_granularity:
+            case_options_name.append((cls.country.isnot(None), cls.country))
+            case_options_type.append((cls.country.isnot(None), 'country'))
+
         q = session.query(
             cls.id,
-            case(
-                [
-                    (cls.neighborhood.isnot(None), cls.neighborhood),
-                    (cls.city.isnot(None), cls.city),
-                    (cls.admin.isnot(None), cls.admin),
-                    (cls.country.isnot(None), cls.country),
-                ],
-                else_=None,
-            )
+            case(case_options_name, else_=None),
+            case(case_options_type, else_=None),
         )
 
         if tile_id:
