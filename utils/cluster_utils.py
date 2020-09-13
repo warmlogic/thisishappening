@@ -23,7 +23,7 @@ def cluster_activity(session, activity, min_samples: int, eps: float = 0.075, me
         n_tries += 1
 
         if n_tries > max_tries:
-            logger.info('Tried maximum number of times, not continuing')
+            logger.info(f'Tried maximum number of times ({max_tries}), not continuing')
             break
 
         logger.info(f'Running clustering attempt {n_tries}')
@@ -32,9 +32,11 @@ def cluster_activity(session, activity, min_samples: int, eps: float = 0.075, me
         labels = db.labels_
         unique_labels = [x for x in set(labels) if x != -1]
         n_clusters = len(unique_labels)
+        logger.info(f'Found {n_clusters} clusters')
 
-        logger.info(f'Increasing epsilon from {eps} to {eps + eps_step}')
-        eps += eps_step
+        if n_clusters < min_n_clusters:
+            logger.info(f'Increasing epsilon from {eps} to {eps + eps_step}')
+            eps += eps_step
 
     if n_clusters:
         for k in n_clusters:
@@ -47,6 +49,7 @@ def cluster_activity(session, activity, min_samples: int, eps: float = 0.075, me
             lats = [x.latitude for x in cluster_tweets]
             latitude = sum(lats) / len(lats)
 
+            # Find the tile that contains this location, for naming
             tile_id = Tiles.find_id_by_coords(session, longitude, latitude)
 
             clusters[k] = {
