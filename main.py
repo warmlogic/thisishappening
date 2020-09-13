@@ -148,7 +148,10 @@ class MyStreamer(TwythonStreamer):
                     if any(events.values()):
                         tiles_with_events = [tile_id for tile_id, event in events.items() if event]
                         for tile_id in tiles_with_events:
-                            event_str = self.log_event_and_get_str(tile_id=tile_id, timestamp=tweet_info.created_at, token_count_min=TOKEN_COUNT_MIN)
+                            event_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
+
+                            event_str = self.log_event_and_get_str(event_tweets=event_tweets, tile_id=tile_id, timestamp=tweet_info.created_at, token_count_min=TOKEN_COUNT_MIN)
+
                             if POST_EVENT:
                                 try:
                                     status = twitter.update_status(status=event_str)
@@ -323,9 +326,8 @@ class MyStreamer(TwythonStreamer):
 
         return found_event
 
-    def log_event_and_get_str(self, tile_id: int, timestamp: datetime, token_count_min: int = None):
-        # Prepare the tweets
-        event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
+    def log_event_and_get_str(self, event_tweets, tile_id: int, timestamp: datetime, token_count_min: int = None):
+        # Prepare the tweet text
         tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min)
         tokens_str = ' '.join(tokens_to_tweet)
 
