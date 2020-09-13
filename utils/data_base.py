@@ -126,6 +126,37 @@ class Events(Base):
     def __repr__(self):
         return f'Event {self.id}'
 
+    @classmethod
+    def delete_events_older_than(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = None,
+        days: float = None,
+        weeks: float = None,
+    ):
+        '''Delete all records older than the specified time window, optionally relative to a timestamp
+        '''
+        hours = hours if hours else 0
+        days = days if days else 0
+        weeks = weeks if weeks else 0
+
+        if any([hours, days, weeks]):
+            if timestamp is None:
+                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+
+            filter_td = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
+            try:
+                logger.info(f'Deleting events older than {filter_td}: {hours} hours {days} days {weeks} weeks')
+                delete_q = cls.__table__.delete().where(
+                    cls.created_at < filter_td)
+
+                session.execute(delete_q)
+                session.commit()
+            except Exception:
+                logger.exception(f'Exception when deleting events older than {filter_td}: {hours} hours {days} days {weeks} weeks')
+                session.rollback()
+
 
 class RecentTweets(Base):
     '''To drop this table, run RecentTweets.metadata.drop_all(engine)

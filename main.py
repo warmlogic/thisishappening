@@ -66,6 +66,7 @@ EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="6"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 HISTORICAL_STATS_DAYS_TO_KEEP = float(os.getenv("HISTORICAL_STATS_DAYS_TO_KEEP", default="1.0"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="4.0"))
+EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
 MAX_ROWS_HISTORICAL_STATS = int(os.getenv("MAX_ROWS_HISTORICAL_STATS", default="6000"))
 
 VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
@@ -170,6 +171,10 @@ class MyStreamer(TwythonStreamer):
                     # Delete old recent tweets rows
                     logger.info('Deleting old recent tweets')
                     RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
+
+                    # Delete old events rows
+                    logger.info('Deleting old events')
+                    Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
