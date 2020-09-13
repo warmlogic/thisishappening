@@ -428,7 +428,7 @@ def get_geo_info(bounding_box: List[float], tile_size: float):
 
     geo_granularity = ['neighborhood', 'city', 'admin', 'country']
 
-    # Initialize
+    # Initialize - index starts with 1
     geo_info = {
         i: {
             'west_lon': None,
@@ -444,6 +444,7 @@ def get_geo_info(bounding_box: List[float], tile_size: float):
     }
 
     logger.info('Reverse geocoding tiles to assign names')
+    # Initialize tile index counter, start with 1
     i = 1
     for tile_lats in n_wise(tile_latitudes, 2):
         south_lat, north_lat = tile_lats[0], tile_lats[1]
