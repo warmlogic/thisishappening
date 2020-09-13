@@ -22,7 +22,7 @@ This app detects geotagged Twitter activity that stands out above typical backgr
 
 ### Analytics
 
-- [ ] Plot the pulse of a neighborhood over time
+- [ ] Plot the pulse of a neighborhood over time: count of tweets by hour
 
 ### Maps
 
