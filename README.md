@@ -17,6 +17,8 @@ This app detects geotagged Twitter activity that stands out above typical backgr
 ### Data
 
 - [ ] Detect and ignore spam tweets, e.g., job postings, apartment listings
+- [ ] Create a link to a Twitter search for a the event location using latitude and longitude. Is this possible?
+- [ ] Check actual database row count (across all tables) and drop rows from recent_tweets as needed
 
 ### Analytics
 
