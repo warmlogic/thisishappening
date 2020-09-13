@@ -30,9 +30,10 @@ def check_tweet(
 ) -> bool:
     '''Return True if tweet satisfies specific criteria
     '''
+    ignore_words_cf = [y.casefold() for y in ignore_words]
     return all([
         ('text' in status),
-        (all([x not in ignore_words for x in status['text'].split()])),
+        (all([x.casefold() not in ignore_words_cf for x in clean_text(status['text']).split()])),
         (status['coordinates'] or (status['place'] and status['place']['place_type'] in valid_place_types)),
         (status['user']['screen_name'] not in ignore_user_screen_names),
         (status['user']['id_str'] not in ignore_user_id_str),
@@ -73,6 +74,7 @@ def clean_token(token: str) -> str:
     token = re.sub(punct_to_remove, ' ', token).strip()
 
     # Remove all periods
+    # TODO: why not replace with space?
     token = re.sub(re.escape('.'), '', token)
 
     # Remove possessive "apostrophe s" from usernames and hashtags so they are tweetable
@@ -89,10 +91,12 @@ def clean_token(token: str) -> str:
     return token
 
 
-def clean_text(text: str) -> str:
+def remove_urls(text: str) -> str:
     # Remove URLs
-    text = re.sub(url_all_re, '', text)
+    return re.sub(url_all_re, '', text)
 
+
+def clean_text(text: str) -> str:
     # Remove tokens with ellipses; assume they are truncated words
     text = ' '.join([token for token in text.split() if not (ellipsis_unicode in token)])
 
@@ -128,7 +132,7 @@ def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None):
     if token_count_min is None:
         token_count_min = 2
 
-    tweets = [et.tweet_body for et in event_tweets]
+    tweets = [remove_urls(et.tweet_body) for et in event_tweets]
 
     tweets = [clean_text(tweet) for tweet in tweets]
 
