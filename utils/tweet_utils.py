@@ -67,7 +67,7 @@ def clean_token(token: str) -> str:
         idx = next((i for i, j in enumerate(reversed(text)) if j.isalnum()), 0)
         return text[:-idx] if idx else text
 
-    # Replace some punctuation with space
+    # Replace some punctuation with space; everything in string.punctuation except: # ' . @
     punct_to_remove = '!"$%&()*+,-/:;<=>?[\\]^_`{|}~'
     punct_to_remove = f'[{re.escape(punct_to_remove)}]'
     token = re.sub(punct_to_remove, ' ', token).strip()
@@ -75,15 +75,15 @@ def clean_token(token: str) -> str:
     # Remove all periods
     token = re.sub(re.escape('.'), '', token)
 
-    # Remove possessive "apostrophe s" from usernames and hashtags
+    # Remove possessive "apostrophe s" from usernames and hashtags so they are tweetable
     if is_user_or_hashtag(token):
         token = re.sub(r"(.+)'s$", r'\1', token)
 
     # Remove any trailing punctuation
     token = remove_punct_from_end(token)
 
-    # Remove orphaned punctuation
-    if (len(token) == 1) and token in string.punctuation:
+    # The only remaining characters in this token are punctuation; don't keep any
+    if all([c in string.punctuation for c in token]):
         token = ''
 
     return token
