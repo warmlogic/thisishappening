@@ -259,6 +259,8 @@ class RecentTweets(Base):
     @classmethod
     def keep_tweets_n_rows(cls, session, n: int = None):
         '''Keep the most recent n rows
+
+        TODO: untested
         '''
         if n:
             ids = session.query(cls.id).order_by(desc(cls.created_at)).all()
