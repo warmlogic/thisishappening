@@ -259,18 +259,15 @@ class RecentTweets(Base):
     @classmethod
     def keep_tweets_n_rows(cls, session, n: int = None):
         '''Keep the most recent n rows
-
-        TODO: untested
         '''
         if n:
             ids = session.query(cls.id).order_by(desc(cls.created_at)).all()
-            ids_to_delete = ids[n:]
+            ids_to_delete = [x[0] for x in ids[n:]]
 
             if ids_to_delete:
                 try:
                     logger.info(f'Keeping most recent {n} rows of tweets')
-                    delete_q = cls.__table__.delete().where(
-                        cls.id in ids_to_delete)
+                    delete_q = cls.__table__.delete().where(cls.id.in_(ids_to_delete))
 
                     session.execute(delete_q)
                     session.commit()
