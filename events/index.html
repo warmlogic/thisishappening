@@ -1,0 +1,17 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body style="background: linear-gradient(to bottom right, #33ccff 0%, #ff66cc 100%)">
+    <div id="t" style="max-width: 500px; margin: 0 auto;"></div>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</body>
+<script>
+    var t = window.location.href.split("?")[1].split("&").map(p => p.split("=")[1]);
+    var l = document.getElementById("t")
+    t.forEach((i) => {
+        var q = document.createElement("blockquote");
+        q.classList.add("twitter-tweet");
+        q.innerHTML = '<p lang="en" dir="ltr"><a href="https://twitter.com/_/status/' + i + '"></a>'
+        l.appendChild(q);
+    })
+</script>
+</html>
