@@ -365,10 +365,10 @@ class MyStreamer(TwythonStreamer):
         event_url = BASE_EVENT_URL + '&'.join([f'{i+1}={et.status_id_str}' for i, et in enumerate(event_tweets)])
         remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
         # Find the largest set of tokens allowed for the length of a tweet
-        for tokens in [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]:
-            if len(tokens) <= remaining_chars:
-                event_str = f'{event_str} {tokens} {event_url}'
-                break
+        possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
+        mask = [len(x) <= remaining_chars for x in possible_token_sets]
+        tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
+        event_str = f'{event_str} {tokens} {event_url}'
 
         logger.info(f'{timestamp} Tile {tile_id} ({tile_name}) {timestamp}: Found event with {len(event_tweets)} tweets')
         logger.info(event_str)
