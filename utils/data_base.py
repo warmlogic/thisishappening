@@ -157,6 +157,25 @@ class Events(Base):
                 logger.exception(f'Exception when deleting events older than {filter_td}: {hours} hours {days} days {weeks} weeks')
                 session.rollback()
 
+    @classmethod
+    def keep_events_n_rows(cls, session, n: int = None):
+        '''Keep the most recent n rows
+        '''
+        if n:
+            ids = session.query(cls.id).order_by(desc(cls.timestamp)).all()
+            ids_to_delete = [x[0] for x in ids[n:]]
+
+            if ids_to_delete:
+                try:
+                    logger.info(f'Keeping most recent {n} rows of tweets')
+                    delete_q = cls.__table__.delete().where(cls.id.in_(ids_to_delete))
+
+                    session.execute(delete_q)
+                    session.commit()
+                except Exception:
+                    logger.exception(f'Exception when keeping most recent {n} rows of events')
+                    session.rollback()
+
 
 class RecentTweets(Base):
     '''To drop this table, run RecentTweets.metadata.drop_all(engine)
