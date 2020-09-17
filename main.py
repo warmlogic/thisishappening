@@ -64,10 +64,12 @@ assert len(BOUNDING_BOX) == 4
 TILE_SIZE = float(os.getenv("TILE_SIZE", default="0.01"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="6"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
+TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 HISTORICAL_STATS_DAYS_TO_KEEP = float(os.getenv("HISTORICAL_STATS_DAYS_TO_KEEP", default="1.0"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="4.0"))
 EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
 MAX_ROWS_HISTORICAL_STATS = int(os.getenv("MAX_ROWS_HISTORICAL_STATS", default="6000"))
+BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://mattmollison.com/thisishappening/?")
 
 VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
 VALID_PLACE_TYPES = [x.strip() for x in VALID_PLACE_TYPES.split(',')] if VALID_PLACE_TYPES else []
@@ -360,11 +362,12 @@ class MyStreamer(TwythonStreamer):
         event_str = f'{event_str} in {place_name}' if place_name else event_str
         event_str = f'{event_str}, {city_name}' if city_name else event_str
         event_str = f'{event_str} ({lat_long_str}):'
+        event_url = BASE_EVENT_URL + '&'.join([f'{i+1}={et.status_id_str}' for i, et in enumerate(event_tweets)])
+        remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
         # Find the largest set of tokens allowed for the length of a tweet
         for tokens in [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]:
-            event_str_tokens = f'{event_str} {tokens}'
-            if len(event_str_tokens) <= TWEET_MAX_LENGTH:
-                event_str = event_str_tokens
+            if len(tokens) <= remaining_chars:
+                event_str = f'{event_str} {tokens} {event_url}'
                 break
 
         logger.info(f'{timestamp} Tile {tile_id} ({tile_name}) {timestamp}: Found event with {len(event_tweets)} tweets')
