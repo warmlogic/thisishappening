@@ -1,39 +1,172 @@
 <html>
+<head>
+<title></title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css' rel='stylesheet' />
 <style>
-    .words{
+    body {
+        background: linear-gradient(to bottom right, #33ccff 0%, #ff66cc 100%);
+    }
+    .container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    .thing {
+        max-width: 500px;
+        margin: 10px auto;
         border-color: rgb(204, 214, 221);
         border-width: 1px;
         border-style: solid;
         border-radius: 15px;
+        overflow: hidden;
+        -webkit-clip-path: inset(0 0 0 0 round 15px);
+        clip-path: inset(0 0 0 0 round 15px);
+    }
+    .text{
         background: #fff;
         padding: 15px;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         font-size:19px;
         line-height: 24px;
     }
-</style>
-<body style="background: linear-gradient(to bottom right, #33ccff 0%, #ff66cc 100%)">
-<div id="content" style="max-width: 500px; margin: 0 auto;"></div>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-<script>
-    var content = document.getElementById("content")
-    let params = new URLSearchParams(window.location.search);
-    let description = params.get("description");
-    let tweets = params.get("tweets");
-    if (description != null) {
-        var str = description.split(",").join(" ")
-        var d = document.createElement("div");
-            d.classList.add("words");
-            d.innerHTML = str
-            content.appendChild(d);
+    #map {
+        height: 300px;
+        margin: 0 auto;
     }
-    if (tweets != null) {
-        tweets.split(",").forEach((i)=>{
+</style>
+</head>
+<body>
+<div id="words" class="thing"></div>
+<div id="map" class="thing"></div>
+<div id="tweets" class="container"></div>
+<script>
+    let params = new URLSearchParams(window.location.search);
+
+    let words_q = params.get("words");
+    let coords_q = params.get("coords");
+    let tweets_q = params.get("tweets");
+
+    if (words_q != null) {
+        var words_div = document.getElementById("words")
+        var d = document.createElement("div");
+            d.classList.add("text");
+            d.innerHTML = words_q.split(",").join(" ")
+            words_div.appendChild(d);
+    }
+
+    if (coords_q != null) {
+        mapboxgl.accessToken = 'pk.eyJ1IjoibW9sbGlzb24iLCJhIjoiY2tmN2t6MjgyMDNkazJ4b2JlYTBwaDAwbyJ9.DqcmuOoyZU2Ta-UYoHCgxg';
+        const makeGeoJSON = (data) => {
+            return {
+                type: 'FeatureCollection',
+                features: data.map(feature => {
+                return {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [feature.longitude, feature.latitude]
+                    }
+                }
+                })
+            }
+        };
+
+        function average(nums) {
+            return nums.reduce((a, b) => (a + b)) / nums.length;
+        }
+
+        const lonlats = coords_q.split(',');
+        const coords_arr = [];
+            for (var i in lonlats) {
+                var lonlat = lonlats[i].split("+");
+                coords_arr.push({"longitude": parseFloat(lonlat[0]), "latitude": parseFloat(lonlat[1])})
+            }
+        const avg_lon = average(coords_arr.map(coord => coord.longitude))
+        const avg_lat = average(coords_arr.map(coord => coord.latitude))
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [avg_lon, avg_lat],
+            zoom: 14
+        });
+
+        map.on('load', function() {
+            const myGeoJSONData = makeGeoJSON(coords_arr);
+            map.addSource('tweetdata', {
+                'type': 'geojson',
+                'data': myGeoJSONData
+            });
+
+            map.addLayer({
+                id: 'tweet-heat',
+                type: 'heatmap',
+                source: 'tweetdata',
+                maxzoom: 16,
+                paint: {
+                    'heatmap-intensity': {
+                        stops: [
+                            [11, 1],
+                            [16, 3]
+                        ]
+                    },
+                    // assign color values be applied to points depending on their density
+                    'heatmap-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['heatmap-density'],
+                        0, 'rgba(236,222,239,0)',
+                        0.2, 'rgb(208,209,230)',
+                        0.4, 'rgb(166,189,219)',
+                        0.6, 'rgb(103,169,207)',
+                        0.8, 'rgb(28,144,153)'
+                    ],
+                    // increase radius as zoom increases
+                    'heatmap-radius': {
+                        stops: [
+                            [11, 15],
+                            [16, 20]
+                        ]
+                    },
+                    // decrease opacity to transition into the circle layer
+                    'heatmap-opacity': {
+                        default: 1,
+                        stops: [
+                            [15, 1],
+                            [16, 0]
+                        ]
+                    },
+                }
+            });
+
+            map.addLayer({
+                id: 'tweet-point',
+                type: 'circle',
+                source: 'tweetdata',
+                minzoom: 15,
+                paint: {
+                    'circle-stroke-color': 'white',
+                    'circle-stroke-width': 1,
+                    'circle-opacity': {
+                        stops: [
+                            [15, 0],
+                            [16, 1]
+                        ]
+                    }
+                }
+            });
+        });
+    }
+
+    if (tweets_q != null) {
+        var tweets_div = document.getElementById("tweets")
+        tweets_q.split(",").forEach((i) => {
         var t = document.createElement("blockquote");
             t.classList.add("twitter-tweet");
             t.innerHTML = '<p lang="en" dir="ltr"><a href="https://twitter.com/_/status/'+i+'"></a>'
-            content.appendChild(t);
+                tweets_div.appendChild(t);
         })
     }
 </script>
