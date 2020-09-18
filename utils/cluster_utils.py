@@ -8,9 +8,11 @@ from utils.data_base import Tiles
 logger = logging.getLogger("happeninglogger")
 
 
-def cluster_activity(session, activity, min_samples: int, eps: float = 0.075, metric: str = 'euclidean'):
+def cluster_activity(session, activity, min_samples: int, kms: float = 0.2):
+    kms_per_radian = 6371.0088
+    eps = kms / kms_per_radian
 
-    X = np.array([[x.longitude, x.latitude] for x in activity])
+    X = np.radians([[x.longitude, x.latitude] for x in activity])
     clusters = {}
 
     n_clusters = 0
@@ -27,7 +29,7 @@ def cluster_activity(session, activity, min_samples: int, eps: float = 0.075, me
             break
 
         logger.info(f'Running clustering attempt {n_tries}')
-        db = DBSCAN(eps=eps, min_samples=min_samples, metric=metric).fit(X)
+        db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine').fit(X)
 
         labels = db.labels_
         unique_labels = [x for x in set(labels) if x != -1]
@@ -39,9 +41,9 @@ def cluster_activity(session, activity, min_samples: int, eps: float = 0.075, me
             eps += eps_step
 
     if n_clusters:
-        for k in n_clusters:
+        for k in range(n_clusters):
             cluster_mask = (labels == k)
-            cluster_tweets = activity[cluster_mask]
+            cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
 
             # Compute the average tweet location
             lons = [x.longitude for x in cluster_tweets]
