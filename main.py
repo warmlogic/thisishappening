@@ -16,6 +16,7 @@ from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
 from utils.tweet_utils import check_tweet, date_string_to_datetime, get_tokens_to_tweet
 from utils.data_utils import n_wise
+from utils.cluster_utils import cluster_activity
 
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
 logger = logging.getLogger("happeninglogger")
@@ -148,11 +149,17 @@ class MyStreamer(TwythonStreamer):
                         events[tile_id] = self.compare_activity(tweet_count, tile_id, hs_hour, hs_day)
 
                     if any(events.values()):
-                        tiles_with_events = [tile_id for tile_id, event in events.items() if event]
-                        for tile_id in tiles_with_events:
-                            event_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
+                        last_hour_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS)
 
-                            event_str = self.log_event_and_get_str(event_tweets=event_tweets, tile_id=tile_id, timestamp=tweet_info.created_at, token_count_min=TOKEN_COUNT_MIN)
+                        clusters = cluster_activity(session, activity=last_hour_tweets, min_samples=EVENT_MIN_TWEETS)
+
+                        for cid, cluster_dict in clusters.items():
+                            event_str = self.log_event_and_get_str(
+                                event_tweets=cluster_dict['event_tweets'],
+                                tile_id=cluster_dict['tile_id'],
+                                timestamp=tweet_info.created_at,
+                                token_count_min=TOKEN_COUNT_MIN,
+                            )
 
                             if POST_EVENT:
                                 try:
@@ -165,6 +172,29 @@ class MyStreamer(TwythonStreamer):
                                     logger.exception('Encountered some other error')
                             else:
                                 logger.info('Not posting event due to environment variable settings')
+
+                        # tiles_with_events = [tile_id for tile_id, event in events.items() if event]
+                        # for tile_id in tiles_with_events:
+                        #     event_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
+
+                        #     event_str = self.log_event_and_get_str(
+                        #         event_tweets=event_tweets,
+                        #         tile_id=tile_id,
+                        #         timestamp=tweet_info.created_at,
+                        #         token_count_min=TOKEN_COUNT_MIN,
+                        #     )
+
+                        #     if POST_EVENT:
+                        #         try:
+                        #             status = twitter.update_status(status=event_str)
+                        #         except TwythonAuthError:
+                        #             logger.exception('Authorization error, did you create read+write credentials?')
+                        #         except TwythonRateLimitError:
+                        #             logger.exception('Rate limit error')
+                        #         except TwythonError:
+                        #             logger.exception('Encountered some other error')
+                        #     else:
+                        #         logger.info('Not posting event due to environment variable settings')
 
                     # Update the comparison tweet time
                     self.comparison_timestamp = tweet_info.created_at
