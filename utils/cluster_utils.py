@@ -15,13 +15,13 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.2):
     X = np.radians([[x.longitude, x.latitude] for x in activity])
     clusters = {}
 
-    n_clusters = 0
+    unique_labels = []
     min_n_clusters = 1
     eps_step = eps / 2
     n_tries = 0
     max_tries = 8
 
-    while n_clusters < min_n_clusters:
+    while len(unique_labels) < min_n_clusters:
         n_tries += 1
 
         if n_tries > max_tries:
@@ -33,15 +33,14 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.2):
 
         labels = db.labels_
         unique_labels = [x for x in set(labels) if x != -1]
-        n_clusters = len(unique_labels)
-        logger.info(f'Found {n_clusters} clusters')
+        logger.info(f'Found {len(unique_labels)} clusters')
 
-        if n_clusters < min_n_clusters:
+        if len(unique_labels) < min_n_clusters:
             logger.info(f'Increasing epsilon from {eps} to {eps + eps_step}')
             eps += eps_step
 
-    if n_clusters:
-        for k in range(n_clusters):
+    if unique_labels:
+        for k in unique_labels:
             cluster_mask = (labels == k)
             cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
 
