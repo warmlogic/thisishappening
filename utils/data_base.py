@@ -112,7 +112,7 @@ class Events(Base):
     latitude = Column(Float(precision=8), nullable=False)
     place_name = Column(String, nullable=True)
     description = Column(String, nullable=False)
-    status_ids = Column(ARRAY, nullable=True)
+    status_ids = Column(ARRAY(String), nullable=True)
     tile = relationship('Tiles')
 
     @classmethod
