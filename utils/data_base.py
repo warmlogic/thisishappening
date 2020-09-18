@@ -149,7 +149,7 @@ class Events(Base):
             filter_td = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
                 logger.info(f'Deleting events older than {filter_td}: {hours} hours {days} days {weeks} weeks')
-                delete_q = cls.__table__.delete().where(cls.created_at < filter_td)
+                delete_q = cls.__table__.delete().where(cls.timestamp < filter_td)
                 session.execute(delete_q)
                 session.commit()
             except Exception:
