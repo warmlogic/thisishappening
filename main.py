@@ -399,9 +399,13 @@ class MyStreamer(TwythonStreamer):
         mask = [len(x) <= remaining_chars for x in possible_token_sets]
         tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
 
+        # tweets are ordered newest to oldest
+        coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
+        tweet_ids = ','.join(sorted([et.status_id_str for et in event_tweets])[::-1])
         urlparams = {
-            'tweets': ','.join([et.status_id_str for et in event_tweets]),
-            'description': ','.join(tokens),
+            'words': tokens,
+            'coords': coords,
+            'tweets': tweet_ids,
         }
         event_url = BASE_EVENT_URL + urllib.parse.urlencode(urlparams)
         event_str = f'{event_str} {tokens} {event_url}'
