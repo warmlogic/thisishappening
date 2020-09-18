@@ -49,7 +49,8 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
             latitude = sum(lats) / len(lats)
 
             # Find the tile that contains this location, for naming
-            tile_id = Tiles.find_id_by_coords(session, longitude, latitude)
+            tiles = Tiles.find_id_by_coords(session, longitude, latitude)
+            tile_id = tiles[0].id
 
             clusters[k] = {
                 'event_tweets': cluster_tweets,
