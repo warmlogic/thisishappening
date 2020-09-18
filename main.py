@@ -149,9 +149,9 @@ class MyStreamer(TwythonStreamer):
                         events[tile_id] = self.compare_activity(tweet_count, tile_id, hs_hour, hs_day)
 
                     if any(events.values()):
-                        last_hour_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS)
+                        recent_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS)
 
-                        clusters = cluster_activity(session, activity=last_hour_tweets, min_samples=EVENT_MIN_TWEETS)
+                        clusters = cluster_activity(session, activity=recent_tweets, min_samples=EVENT_MIN_TWEETS)
 
                         for cid, cluster in clusters.items():
                             event_str = self.log_event_and_get_str(
