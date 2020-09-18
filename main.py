@@ -392,9 +392,9 @@ class MyStreamer(TwythonStreamer):
         event_str = f'{event_str} in {place_name}' if place_name else event_str
         event_str = f'{event_str}, {city_name}' if city_name else event_str
         event_str = f'{event_str} ({lat_long_str}):'
-        event_url = BASE_EVENT_URL + '&'.join([f'{i+1}={et.status_id_str}' for i, et in enumerate(event_tweets)])
+        event_url = BASE_EVENT_URL + '&tweets=' + ','.join([et.status_id_str for et in event_tweets])
         remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
-        # Find the largest set of tokens allowed for the length of a tweet
+        # Find the largest set of tokens to fill out the remaining charaters
         possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
         mask = [len(x) <= remaining_chars for x in possible_token_sets]
         tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
