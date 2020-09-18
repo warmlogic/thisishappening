@@ -4,7 +4,7 @@ from typing import List
 
 import pytz
 from sqlalchemy import create_engine, and_, desc, func, case
-from sqlalchemy import Column, ForeignKey, String, Integer, DateTime, Float
+from sqlalchemy import Column, ForeignKey, String, Integer, DateTime, Float, ARRAY
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -112,6 +112,7 @@ class Events(Base):
     latitude = Column(Float(precision=8), nullable=False)
     place_name = Column(String, nullable=True)
     description = Column(String, nullable=False)
+    status_ids = Column(ARRAY, nullable=True)
     tile = relationship('Tiles')
 
     @classmethod

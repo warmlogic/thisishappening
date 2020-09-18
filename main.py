@@ -413,6 +413,7 @@ class MyStreamer(TwythonStreamer):
                 latitude=latitude,
                 place_name=place_name,
                 description=tokens_str,
+                status_ids=[et.status_id_str for et in event_tweets],
             )
             session.add(ev)
 
