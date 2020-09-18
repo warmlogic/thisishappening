@@ -13,6 +13,7 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
     eps = kms / kms_per_radian
     eps_step = eps / 2.0
 
+    # haversine metric requires radians
     X = np.radians([[x.longitude, x.latitude] for x in activity])
 
     clusters = {}
@@ -28,8 +29,8 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
         logger.info(f'Running clustering attempt {n_tries}')
         db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine').fit(X)
 
-        labels = db.labels_
-        unique_labels = [x for x in set(labels) if x != -1]
+        # label -1 means not assigned to a cluster
+        unique_labels = [x for x in set(db.labels_) if x != -1]
         logger.info(f'Found {len(unique_labels)} clusters')
 
         if len(unique_labels) < min_n_clusters:
@@ -38,7 +39,7 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
 
     if unique_labels:
         for k in unique_labels:
-            cluster_mask = (labels == k)
+            cluster_mask = (db.labels_ == k)
             cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
 
             # Compute the average tweet location
