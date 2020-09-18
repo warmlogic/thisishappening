@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from time import sleep
 from typing import Dict, List
+import urllib
 
 from dotenv import load_dotenv
 import numpy as np
@@ -392,12 +393,17 @@ class MyStreamer(TwythonStreamer):
         event_str = f'{event_str} in {place_name}' if place_name else event_str
         event_str = f'{event_str}, {city_name}' if city_name else event_str
         event_str = f'{event_str} ({lat_long_str}):'
-        event_url = BASE_EVENT_URL + '&tweets=' + ','.join([et.status_id_str for et in event_tweets])
         remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
         # Find the largest set of tokens to fill out the remaining charaters
         possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
         mask = [len(x) <= remaining_chars for x in possible_token_sets]
         tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
+
+        urlparams = {
+            'tweets': ','.join([et.status_id_str for et in event_tweets]),
+            'description': ','.join(tokens),
+        }
+        event_url = BASE_EVENT_URL + urllib.parse.urlencode(urlparams)
         event_str = f'{event_str} {tokens} {event_url}'
 
         logger.info(f'{timestamp} Tile {tile_id} ({tile_name}) {timestamp}: Found event with {len(event_tweets)} tweets')

@@ -1,19 +1,40 @@
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    .words{
+        border-color: rgb(204, 214, 221);
+        border-width: 1px;
+        border-style: solid;
+        border-radius: 15px;
+        background: #fff;
+        padding: 15px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
+        font-size:19px;
+        line-height: 24px;
+    }
+</style>
 <body style="background: linear-gradient(to bottom right, #33ccff 0%, #ff66cc 100%)">
 <div id="content" style="max-width: 500px; margin: 0 auto;"></div>
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 <script>
-var content = document.getElementById("content")
-let params = new URLSearchParams(window.location.search);
-let tweets = params.get("tweets");
-if (tweets != null) {
-    tweets.split(",").forEach((i)=>{
-    var t = document.createElement("blockquote");
-        t.classList.add("twitter-tweet");
-        t.innerHTML = '<p lang="en" dir="ltr"><a href="https://twitter.com/_/status/'+i+'"></a>'
-        content.appendChild(t);
-    })
-}
+    var content = document.getElementById("content")
+    let params = new URLSearchParams(window.location.search);
+    let description = params.get("description");
+    let tweets = params.get("tweets");
+    if (description != null) {
+        var str = description.split(",").join(" ")
+        var d = document.createElement("div");
+            d.classList.add("words");
+            d.innerHTML = str
+            content.appendChild(d);
+    }
+    if (tweets != null) {
+        tweets.split(",").forEach((i)=>{
+        var t = document.createElement("blockquote");
+            t.classList.add("twitter-tweet");
+            t.innerHTML = '<p lang="en" dir="ltr"><a href="https://twitter.com/_/status/'+i+'"></a>'
+            content.appendChild(t);
+        })
+    }
 </script>
 </html>
