@@ -8,19 +8,16 @@ from utils.data_base import Tiles
 logger = logging.getLogger("happeninglogger")
 
 
-def cluster_activity(session, activity, min_samples: int, kms: float = 0.2):
+def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 8):
     kms_per_radian = 6371.0088
     eps = kms / kms_per_radian
+    eps_step = eps / 2.0
 
     X = np.radians([[x.longitude, x.latitude] for x in activity])
+
     clusters = {}
-
     unique_labels = []
-    min_n_clusters = 1
-    eps_step = eps / 2
     n_tries = 0
-    max_tries = 8
-
     while len(unique_labels) < min_n_clusters:
         n_tries += 1
 
