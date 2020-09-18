@@ -153,10 +153,10 @@ class MyStreamer(TwythonStreamer):
 
                         clusters = cluster_activity(session, activity=last_hour_tweets, min_samples=EVENT_MIN_TWEETS)
 
-                        for cid, cluster_dict in clusters.items():
+                        for cid, cluster in clusters.items():
                             event_str = self.log_event_and_get_str(
-                                event_tweets=cluster_dict['event_tweets'],
-                                tile_id=cluster_dict['tile_id'],
+                                event_tweets=cluster['event_tweets'],
+                                tile_id=cluster['tile_id'],
                                 timestamp=tweet_info.created_at,
                                 token_count_min=TOKEN_COUNT_MIN,
                             )
