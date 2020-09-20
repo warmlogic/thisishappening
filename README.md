@@ -25,6 +25,7 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 - [ ] Maintain maximum recent_tweets table row count
   - [x] Write query to keep N rows for
   - [ ] Run query in main loop
+- [ ] Separate "canonical city location" tweets from actually geotagged activity using a specific longitude+latitude.
 
 ### Analytics
 
