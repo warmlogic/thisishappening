@@ -1,8 +1,10 @@
 # This Is Happening
 
-Locate pockets of social activity in meatspace and tweet about it.
+Locate, summarize, and visualize pockets of social activity in meatspace.
 
-This app detects geotagged Twitter activity that stands out above typical background levels.
+This app detects geotagged Twitter activity that stands out above typical background levels and tweets about it.
+
+Example account: [https://twitter.com/happening_sf](https://twitter.com/happening_sf)
 
 ## TODO
 
@@ -12,13 +14,17 @@ This app detects geotagged Twitter activity that stands out above typical backgr
 
 ### ML for event finding
 
-- [ ] When an event is found, run DBSCAN on all recent tweets across all tiles to determine the full set of event tweets, some of which may fall outside of the current tile. Need to ensure the resulting cluster includes tweets from the original event detection.
+- [ ] Cluster tweets when event threshold exceeded
+  - [x] When an event is found, run DBSCAN on all recent tweets across all tiles to determine the full set of event tweets, since some tweets may fall outside of the current tile
+  - [ ] Ensure one of the resulting clusters includes tweets from the original event detection (by tile id)
 
 ### Data
 
 - [ ] Detect and ignore spam tweets, e.g., job postings, apartment listings
-- [ ] Create a link to a Twitter search for a the event location using latitude and longitude. Is this possible?
-- [ ] Check actual database row count (across all tables) and drop rows from recent_tweets as needed
+- [x] Provide access to the tweets associated with each event
+- [ ] Maintain maximum recent_tweets table row count
+  - [x] Write query to keep N rows for
+  - [ ] Run query in main loop
 
 ### Analytics
 
@@ -26,6 +32,6 @@ This app detects geotagged Twitter activity that stands out above typical backgr
 
 ### Maps
 
-- [ ] Setup: Plot preview of proposed map tiles
+- [ ] Setup: Plot preview of proposed map tiles (use folium)
   - [ ] Estimate tile area
-- [ ] When an event is found, tweet an image of a map with the location/heat map
+- [x] When an event is found, tweet an image of a map with the location/heat map
