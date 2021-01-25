@@ -83,6 +83,7 @@ IGNORE_USER_ID_STR = os.getenv("IGNORE_USER_ID_STR", default=None)
 IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNORE_USER_ID_STR else []
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
+REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True") == "True"
 IGNORE_MISSING_DAY_STATS = os.getenv("IGNORE_MISSING_DAY_STATS", default="False") == "True"
 
 TweetInfo = namedtuple(
@@ -361,7 +362,7 @@ class MyStreamer(TwythonStreamer):
 
     def log_event_and_get_str(self, event_tweets, tile_id: int, timestamp: datetime, token_count_min: int = None):
         # Prepare the tweet text
-        tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min)
+        tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=REMOVE_USERNAME_AT)
         tokens_str = ' '.join(tokens_to_tweet)
 
         # Compute the average tweet location
