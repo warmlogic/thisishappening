@@ -59,8 +59,16 @@ def split_text(text: str) -> List[str]:
     return tokens
 
 
-def is_user_or_hashtag(text):
-    return any([text.startswith('@'), text.startswith('#')])
+def is_username(text):
+    return text.startswith('@')
+
+
+def is_hashtag(text):
+    return text.startswith('#')
+
+
+def is_username_or_hashtag(text):
+    return any([is_username(text), is_hashtag(text)])
 
 
 def clean_token(token: str) -> str:
@@ -78,7 +86,7 @@ def clean_token(token: str) -> str:
     token = re.sub(re.escape('.'), '', token)
 
     # Remove possessive "apostrophe s" from usernames and hashtags so they are tweetable
-    if is_user_or_hashtag(token):
+    if is_username_or_hashtag(token):
         token = re.sub(r"(.+)'s$", r'\1', token)
 
     # Remove any trailing punctuation
@@ -128,7 +136,7 @@ def filter_tokens(text: str) -> str:
     return ' '.join(tokens)
 
 
-def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None):
+def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None, remove_username_at: bool = True):
     if token_count_min is None:
         token_count_min = 2
 
@@ -137,10 +145,10 @@ def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None):
     tweets = [clean_text(tweet) for tweet in tweets]
 
     # Pull out user names, hashtags, and emojis
-    users_hashtags_emojis = [[token for token in split_text(tweet) if is_user_or_hashtag(token) or emoji.emoji_count(token)] for tweet in tweets]
+    users_hashtags_emojis = [[token for token in split_text(tweet) if is_username_or_hashtag(token) or emoji.emoji_count(token)] for tweet in tweets]
 
     # Get the remaining text
-    tweets = [' '.join([token for token in tweet.split() if (not is_user_or_hashtag(token)) and (not emoji.emoji_count(token))]) for tweet in tweets]
+    tweets = [' '.join([token for token in tweet.split() if (not is_username_or_hashtag(token)) and (not emoji.emoji_count(token))]) for tweet in tweets]
 
     # Remove stopwords
     tweets = [filter_tokens(tweet) for tweet in tweets]
@@ -148,6 +156,13 @@ def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None):
     # Flatten list of lists
     tokens = [token.lower() for tweet in tweets for token in tweet.split()]
     users_hashtags_emojis = [token for tweet in users_hashtags_emojis for token in tweet]
+
+    # Optionally remove @ from username so user won't be tagged when event is posted
+    if remove_username_at:
+        users_hashtags_emojis = [
+            token.replace('@', '') if is_username(token) else token
+            for token in users_hashtags_emojis
+        ]
 
     # Keep alphanumeric tokens
     tokens = [token for token in tokens if token.isalnum()]
