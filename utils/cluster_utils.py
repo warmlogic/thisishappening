@@ -8,7 +8,7 @@ from utils.data_base import Tiles
 logger = logging.getLogger("happeninglogger")
 
 
-def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 8):
+def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 5, sample_weight=None):
     kms_per_radian = 6371.0088
     eps = kms / kms_per_radian
     eps_step = eps / 2.0
@@ -27,7 +27,8 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
             break
 
         logger.info(f'Running clustering attempt {n_tries}')
-        db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine').fit(X)
+        db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine')
+        db.fit(X, sample_weight=sample_weight)
 
         # label -1 means not assigned to a cluster
         unique_labels = [x for x in set(db.labels_) if x != -1]
