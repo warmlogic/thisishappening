@@ -52,6 +52,9 @@ def get_tweet_info(self, status: Dict) -> Dict:
         longitude = sum(lons) / len(lons)
         lats = [x[1] for x in status['place']['bounding_box']['coordinates'][0]]
         latitude = sum(lats) / len(lats)
+    else:
+        longitude = None
+        latitude = None
     place_name = status['place']['name']
     # Possible place_type values: country, admin, city, neighborhood, poi
     place_type = status['place']['place_type']
