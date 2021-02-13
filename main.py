@@ -583,29 +583,29 @@ else:
 
 num_tiles = Tiles.get_num_tiles(session)
 
-# Initialize running stats object for each tile
-stats_all = session.query(HistoricalStats.tile_id, HistoricalStats).order_by(HistoricalStats.tile_id, HistoricalStats.timestamp).all()
-if stats_all:
-    logger.info('Retrieved existing running stats counts per tile')
-    # Populate running stats objects for each tile from table using the counts
-    stats_counts = {i: [] for i in range(1, num_tiles + 1)}
-    for i, stats in stats_all:
-        stats_counts[i].append(stats.count)
-    running_stats = {i: Statistics(stats_counts[i]) for i in range(1, num_tiles + 1)}
-else:
-    logger.info('Initializing new running stats objects')
-    # Initialize new running stats objects
-    running_stats = {i: Statistics() for i in range(1, num_tiles + 1)}
+# # Initialize running stats object for each tile
+# stats_all = session.query(HistoricalStats.tile_id, HistoricalStats).order_by(HistoricalStats.tile_id, HistoricalStats.timestamp).all()
+# if stats_all:
+#     logger.info('Retrieved existing running stats counts per tile')
+#     # Populate running stats objects for each tile from table using the counts
+#     stats_counts = {i: [] for i in range(1, num_tiles + 1)}
+#     for i, stats in stats_all:
+#         stats_counts[i].append(stats.count)
+#     running_stats = {i: Statistics(stats_counts[i]) for i in range(1, num_tiles + 1)}
+# else:
+#     logger.info('Initializing new running stats objects')
+#     # Initialize new running stats objects
+#     running_stats = {i: Statistics() for i in range(1, num_tiles + 1)}
 
 # Decide how long to collect new tweets for before assessing event
-comparison = HistoricalStats.get_recent_stats(session)
-if comparison:
-    comparison_timestamp = comparison[0][1].timestamp.replace(tzinfo=pytz.UTC)
-    # If there are no stats in the recent past, wait the full time
-    if comparison_timestamp + timedelta(minutes=30) < datetime.utcnow().replace(tzinfo=pytz.UTC):
-        comparison_timestamp = None
+recent_tweets = RecentTweets.get_recent_tweets(session, hours=0.1)
+if recent_tweets:
+    comparison_timestamp = recent_tweets[0][1].created_at.replace(tzinfo=pytz.UTC)
 else:
     comparison_timestamp = None
+
+running_stats = None
+comparison_timestamp = None
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
