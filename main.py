@@ -16,7 +16,7 @@ from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
 from utils.tweet_utils import check_tweet, date_string_to_datetime, get_tokens_to_tweet
-from utils.data_utils import n_wise
+from utils.data_utils import n_wise, get_grid_coords, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
@@ -102,6 +102,13 @@ TweetInfo = namedtuple(
     ],
 )
 
+grid_coords, x_flat, y_flat = get_grid_coords(BOUNDING_BOX)
+bw_method = 0.3
+weighted = True
+weight_factor = 1.0
+activity_threshold_day = 500
+activity_threshold_hour = 3000
+
 
 class MyStreamer(TwythonStreamer):
     def __init__(self, running_stats=None, comparison_timestamp=None, *args, **kwargs):
@@ -137,23 +144,70 @@ class MyStreamer(TwythonStreamer):
                     logger.info(f'current time: {tweet_info.created_at}')
                     logger.info(f'Been more than {TEMPORAL_GRANULARITY_HOURS} hours between oldest and current tweet')
 
-                    # Get recent stats
-                    tweet_counts, hs_hour, hs_day = self.get_stats(tweet_info.created_at)
+                    activity_curr_day = RecentTweets.get_recent_tweets(
+                        session,
+                        timestamp=tweet_info.created_at,
+                        hours=24,
+                    )
+                    activity_prev_day = RecentTweets.get_recent_tweets(
+                        session,
+                        timestamp=tweet_info.created_at - timedelta(days=1),
+                        hours=24,
+                    )
 
-                    # Initialize to state whether an event occurred
-                    events = {i: False for i in range(1, num_tiles + 1)}
+                    activity_curr_hour = RecentTweets.get_recent_tweets(
+                        session,
+                        timestamp=tweet_info.created_at,
+                        hours=TEMPORAL_GRANULARITY_HOURS,
+                    )
+                    activity_prev_hour = RecentTweets.get_recent_tweets(
+                        session,
+                        timestamp=tweet_info.created_at - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
+                        hours=TEMPORAL_GRANULARITY_HOURS,
+                    )
 
-                    for tile_id, stats in self.running_stats.items():
-                        # Update each tile's running stats with the current count
-                        tweet_count = self.log_stats(tweet_counts, tile_id, stats, tweet_info.created_at)
+                    z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
+                        grid_coords,
+                        activity_prev_day, activity_curr_day,
+                        bw_method=bw_method, weighted=weighted, weight_factor=weight_factor,
+                    )
+                    z_diff_hour, activity_prev_hour, activity_curr_hour = compare_activity_kde(
+                        grid_coords,
+                        activity_prev_hour, activity_curr_hour,
+                        bw_method=bw_method, weighted=weighted, weight_factor=weight_factor,
+                    )
 
-                        # Decide whether an event occurred
-                        events[tile_id] = self.compare_activity(tweet_count, tile_id, hs_hour, hs_day)
+                    lat_activity_day, lon_activity_day = np.where(z_diff_day > activity_threshold_day)
+                    lat_activity_hour, lon_activity_hour = np.where(z_diff_hour > activity_threshold_hour)
 
-                    if any(events.values()):
-                        recent_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS)
+                    event_day = False
+                    event_hour = False
+                    found_event = False
+                    if lat_activity_day and lon_activity_day:
+                        event_day = True
+                    if lat_activity_hour and lon_activity_hour:
+                        event_hour = True
+                    # if there were tweets from the previous day
+                    if event_day and event_hour:
+                        found_event = True
 
-                        clusters = cluster_activity(session, activity=recent_tweets, min_samples=EVENT_MIN_TWEETS)
+                    # # Get recent stats
+                    # tweet_counts, hs_hour, hs_day = self.get_stats(tweet_info.created_at)
+
+                    # # Initialize to state whether an event occurred
+                    # events = {i: False for i in range(1, num_tiles + 1)}
+
+                    # for tile_id, stats in self.running_stats.items():
+                    #     # Update each tile's running stats with the current count
+                    #     tweet_count = self.log_stats(tweet_counts, tile_id, stats, tweet_info.created_at)
+
+                    #     # Decide whether an event occurred
+                    #     events[tile_id] = self.compare_activity(tweet_count, tile_id, hs_hour, hs_day)
+
+                    if found_event:
+                        # recent_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS)
+
+                        clusters = cluster_activity(session, activity=activity_curr_hour, min_samples=EVENT_MIN_TWEETS)
 
                         for cid, cluster in clusters.items():
                             event_str = self.log_event_and_get_str(
