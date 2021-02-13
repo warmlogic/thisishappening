@@ -16,7 +16,7 @@ from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
 from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, date_string_to_datetime, get_tokens_to_tweet
-from utils.data_utils import n_wise, get_grid_coords, compare_activity_kde
+from utils.data_utils import n_wise, get_grid_coords, inbounds, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
@@ -118,7 +118,7 @@ class MyStreamer(TwythonStreamer):
             tweet_info = get_tweet_info(status)
             tiles = Tiles.find_id_by_coords(session, tweet_info.longitude, tweet_info.latitude)
 
-            if tiles:
+            if inbounds(tweet_info.longitude, tweet_info.latitude, BOUNDING_BOX):
                 # Assume the first tile is correct (there should only be one)
                 tile = tiles[0]
 
