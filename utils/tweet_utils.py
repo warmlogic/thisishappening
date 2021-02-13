@@ -1,10 +1,10 @@
-from collections import Counter
+from collections import Counter, namedtuple
 from datetime import datetime
 import functools
 import operator
 import re
 import string
-from typing import List
+from typing import Dict, List
 
 import emoji
 import en_core_web_sm
@@ -19,6 +19,57 @@ url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 ellipsis_unicode = '\u2026'
 
 nlp = en_core_web_sm.load(disable=["tagger", "parser", "ner"])
+
+TweetInfo = namedtuple(
+    'TweetInfo',
+    [
+        'status_id_str',
+        'user_screen_name',
+        'user_id_str',
+        'created_at',
+        'tweet_body',
+        'tweet_language',
+        'longitude',
+        'latitude',
+        'place_name',
+        'place_type',
+    ],
+)
+
+
+def get_tweet_info(self, status: Dict) -> Dict:
+    status_id_str = status['id_str']
+    user_screen_name = status['user']['screen_name']
+    user_id_str = status['user']['id_str']
+    created_at = date_string_to_datetime(status['created_at'])
+    tweet_body = status['text']
+    tweet_language = status['lang']
+    if status['coordinates']:
+        longitude = status['coordinates']['coordinates'][0]
+        latitude = status['coordinates']['coordinates'][1]
+    elif status['place']:
+        lons = [x[0] for x in status['place']['bounding_box']['coordinates'][0]]
+        longitude = sum(lons) / len(lons)
+        lats = [x[1] for x in status['place']['bounding_box']['coordinates'][0]]
+        latitude = sum(lats) / len(lats)
+    place_name = status['place']['name']
+    # Possible place_type values: country, admin, city, neighborhood, poi
+    place_type = status['place']['place_type']
+
+    tweet_info = TweetInfo(
+        status_id_str=status_id_str,
+        user_screen_name=user_screen_name,
+        user_id_str=user_id_str,
+        created_at=created_at,
+        tweet_body=tweet_body,
+        tweet_language=tweet_language,
+        longitude=longitude,
+        latitude=latitude,
+        place_name=place_name,
+        place_type=place_type,
+    )
+
+    return tweet_info
 
 
 def check_tweet(

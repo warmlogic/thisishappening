@@ -1,4 +1,4 @@
-from collections import Counter, namedtuple
+from collections import Counter
 from datetime import datetime, timedelta
 import logging
 import os
@@ -15,7 +15,7 @@ from twython import Twython, TwythonStreamer
 from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
-from utils.tweet_utils import check_tweet, date_string_to_datetime, get_tokens_to_tweet
+from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, date_string_to_datetime, get_tokens_to_tweet
 from utils.data_utils import n_wise, get_grid_coords, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
@@ -86,22 +86,6 @@ TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True") == "True"
 IGNORE_MISSING_DAY_STATS = os.getenv("IGNORE_MISSING_DAY_STATS", default="False") == "True"
 
-TweetInfo = namedtuple(
-    'TweetInfo',
-    [
-        'status_id_str',
-        'user_screen_name',
-        'user_id_str',
-        'created_at',
-        'tweet_body',
-        'tweet_language',
-        'longitude',
-        'latitude',
-        'place_name',
-        'place_type',
-    ],
-)
-
 grid_coords, x_flat, y_flat = get_grid_coords(BOUNDING_BOX)
 bw_method = 0.3
 weighted = True
@@ -131,7 +115,7 @@ class MyStreamer(TwythonStreamer):
             ignore_user_screen_names=IGNORE_USER_SCREEN_NAMES,
             ignore_user_id_str=IGNORE_USER_ID_STR,
         ):
-            tweet_info = self.get_tweet_info(status)
+            tweet_info = get_tweet_info(status)
             tiles = Tiles.find_id_by_coords(session, tweet_info.longitude, tweet_info.latitude)
 
             if tiles:
@@ -268,40 +252,6 @@ class MyStreamer(TwythonStreamer):
                     Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
-
-    def get_tweet_info(self, status: Dict) -> Dict:
-        status_id_str = status['id_str']
-        user_screen_name = status['user']['screen_name']
-        user_id_str = status['user']['id_str']
-        created_at = date_string_to_datetime(status['created_at'])
-        tweet_body = status['text']
-        tweet_language = status['lang']
-        if status['coordinates']:
-            longitude = status['coordinates']['coordinates'][0]
-            latitude = status['coordinates']['coordinates'][1]
-        elif status['place']:
-            lons = [x[0] for x in status['place']['bounding_box']['coordinates'][0]]
-            longitude = sum(lons) / len(lons)
-            lats = [x[1] for x in status['place']['bounding_box']['coordinates'][0]]
-            latitude = sum(lats) / len(lats)
-        place_name = status['place']['name']
-        # Possible place_type values: country, admin, city, neighborhood, poi
-        place_type = status['place']['place_type']
-
-        tweet_info = TweetInfo(
-            status_id_str=status_id_str,
-            user_screen_name=user_screen_name,
-            user_id_str=user_id_str,
-            created_at=created_at,
-            tweet_body=tweet_body,
-            tweet_language=tweet_language,
-            longitude=longitude,
-            latitude=latitude,
-            place_name=place_name,
-            place_type=place_type,
-        )
-
-        return tweet_info
 
     def log_tweet(self, tweet_info: TweetInfo, tile_id: int):
         tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
