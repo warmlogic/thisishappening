@@ -279,90 +279,90 @@ class MyStreamer(TwythonStreamer):
         else:
             logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
 
-    def get_stats(self, timestamp: datetime):
-        # Get tweets from the most recent period
-        tweet_counts = RecentTweets.count_tweets_per_tile(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS)
-        tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
+    # def get_stats(self, timestamp: datetime):
+    #     # Get tweets from the most recent period
+    #     tweet_counts = RecentTweets.count_tweets_per_tile(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS)
+    #     tweet_counts = {tile_id: count for tile_id, count in tweet_counts}
 
-        # Get historical stats for the previous period
-        hs_hour = HistoricalStats.get_recent_stats(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS)
-        hs_hour = {tile_id: row for tile_id, row in hs_hour}
+    #     # Get historical stats for the previous period
+    #     hs_hour = HistoricalStats.get_recent_stats(session, timestamp=timestamp, hours=TEMPORAL_GRANULARITY_HOURS)
+    #     hs_hour = {tile_id: row for tile_id, row in hs_hour}
 
-        # Get historical stats for the same period on the previous day
-        hs_day = HistoricalStats.get_recent_stats(session, timestamp=timestamp, days=1)
-        hs_day = {tile_id: row for tile_id, row in hs_day}
+    #     # Get historical stats for the same period on the previous day
+    #     hs_day = HistoricalStats.get_recent_stats(session, timestamp=timestamp, days=1)
+    #     hs_day = {tile_id: row for tile_id, row in hs_day}
 
-        return tweet_counts, hs_hour, hs_day
+    #     return tweet_counts, hs_hour, hs_day
 
-    def log_stats(self, tweet_counts: Dict[int, int], tile_id: int, stats: Statistics, timestamp: datetime):
-        tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
-        if tile_id in tweet_counts:
-            tweet_count = tweet_counts[tile_id]
-        else:
-            tweet_count = 0
+    # def log_stats(self, tweet_counts: Dict[int, int], tile_id: int, stats: Statistics, timestamp: datetime):
+    #     tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
+    #     if tile_id in tweet_counts:
+    #         tweet_count = tweet_counts[tile_id]
+    #     else:
+    #         tweet_count = 0
 
-        stats.push(tweet_count)
-        mean = stats.mean()
-        try:
-            variance = stats.variance()
-        except ZeroDivisionError:
-            variance = 0
-        try:
-            stddev = stats.stddev()
-        except ZeroDivisionError:
-            stddev = 0
+    #     stats.push(tweet_count)
+    #     mean = stats.mean()
+    #     try:
+    #         variance = stats.variance()
+    #     except ZeroDivisionError:
+    #         variance = 0
+    #     try:
+    #         stddev = stats.stddev()
+    #     except ZeroDivisionError:
+    #         stddev = 0
 
-        # Add current stats to historical stats table
-        if LOG_STATS:
-            hs = HistoricalStats(
-                tile_id=tile_id,
-                timestamp=timestamp,
-                count=tweet_count,
-                mean=mean,
-                variance=variance,
-                stddev=stddev,
-            )
-            session.add(hs)
+    #     # Add current stats to historical stats table
+    #     if LOG_STATS:
+    #         hs = HistoricalStats(
+    #             tile_id=tile_id,
+    #             timestamp=timestamp,
+    #             count=tweet_count,
+    #             mean=mean,
+    #             variance=variance,
+    #             stddev=stddev,
+    #         )
+    #         session.add(hs)
 
-            try:
-                session.commit()
-                logger.debug(f'Logged historical stats: Tile {tile_id} ({tile_name}) {timestamp}')
-            except Exception:
-                logger.exception(f'Exception when logging historical stats: Tile {tile_id} ({tile_name}) {timestamp}')
-                session.rollback()
-        else:
-            logger.info(f'Not logging stats due to environment variable settings: Tile {tile_id} ({tile_name}) {timestamp}')
+    #         try:
+    #             session.commit()
+    #             logger.debug(f'Logged historical stats: Tile {tile_id} ({tile_name}) {timestamp}')
+    #         except Exception:
+    #             logger.exception(f'Exception when logging historical stats: Tile {tile_id} ({tile_name}) {timestamp}')
+    #             session.rollback()
+    #     else:
+    #         logger.info(f'Not logging stats due to environment variable settings: Tile {tile_id} ({tile_name}) {timestamp}')
 
-        return tweet_count
+    #     return tweet_count
 
-    def compare_activity(self, tweet_count: int, tile_id: int, hs_hour: Dict, hs_day: Dict):
-        event_hour = False
-        event_day = False
-        if tweet_count > 0:
-            logger.info(f'tile_id: {tile_id}, tweet_count: {tweet_count}')
-            if hs_hour:
-                threshold_hour = hs_hour[tile_id].mean + (hs_hour[tile_id].stddev * 2)
-                event_hour = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_hour)
-                # logger.info(f'Now vs hour: {event_hour}')
-                # logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
-                logger.info(f'    hour threshold: {threshold_hour:.3f} = {hs_hour[tile_id].mean:.3f} + ({hs_hour[tile_id].stddev:.3f} * 2)')
-            if hs_day:
-                threshold_day = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
-                event_day = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_day)
-                # logger.info(f'Now vs day: {event_day}')
-                # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
-                logger.info(f'    day threshold: {threshold_day:.3f} = {hs_day[tile_id].mean:.3f} + ({hs_day[tile_id].stddev:.3f} * 2)')
-            else:
-                # If no stats for the previous day, only base event decision on previous hour
-                if IGNORE_MISSING_DAY_STATS:
-                    event_day = True
+    # def compare_activity(self, tweet_count: int, tile_id: int, hs_hour: Dict, hs_day: Dict):
+    #     event_hour = False
+    #     event_day = False
+    #     if tweet_count > 0:
+    #         logger.info(f'tile_id: {tile_id}, tweet_count: {tweet_count}')
+    #         if hs_hour:
+    #             threshold_hour = hs_hour[tile_id].mean + (hs_hour[tile_id].stddev * 2)
+    #             event_hour = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_hour)
+    #             # logger.info(f'Now vs hour: {event_hour}')
+    #             # logger.info(f'    hour time: {hs_hour[tile_id].timestamp}, count: {hs_hour[tile_id].count}')
+    #             logger.info(f'    hour threshold: {threshold_hour:.3f} = {hs_hour[tile_id].mean:.3f} + ({hs_hour[tile_id].stddev:.3f} * 2)')
+    #         if hs_day:
+    #             threshold_day = hs_day[tile_id].mean + (hs_day[tile_id].stddev * 2)
+    #             event_day = (tweet_count >= EVENT_MIN_TWEETS) and (tweet_count > threshold_day)
+    #             # logger.info(f'Now vs day: {event_day}')
+    #             # logger.info(f'    day time: {hs_day[tile_id].timestamp}, count: {hs_day[tile_id].count}')
+    #             logger.info(f'    day threshold: {threshold_day:.3f} = {hs_day[tile_id].mean:.3f} + ({hs_day[tile_id].stddev:.3f} * 2)')
+    #         else:
+    #             # If no stats for the previous day, only base event decision on previous hour
+    #             if IGNORE_MISSING_DAY_STATS:
+    #                 event_day = True
 
-        found_event = False
-        # Note that this tile had an event
-        if event_hour and event_day:
-            found_event = True
+    #     found_event = False
+    #     # Note that this tile had an event
+    #     if event_hour and event_day:
+    #         found_event = True
 
-        return found_event
+    #     return found_event
 
     def log_event_and_get_str(self, event_tweets, tile_id: int, timestamp: datetime, token_count_min: int = None):
         # Prepare the tweet text
