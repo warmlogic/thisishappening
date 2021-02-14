@@ -116,8 +116,21 @@ class Events(Base):
     tile = relationship('Tiles')
 
     @classmethod
-    def get_event_tweets(cls, session, event_id: int, hours: float = 1):
+    def get_recent_events(cls, session, timestamp: datetime = None, hours: float = 1, tile_id: int = None):
+        if timestamp is None:
+            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
+        filter_td = timestamp - timedelta(hours=hours)
+
+        q = session.query(cls).filter(cls.timestamp >= filter_td).filter(cls.timestamp <= timestamp)
+
+        if tile_id:
+            q = q.filter(cls.tile_id == tile_id)
+
+        return q.order_by(desc(cls.timestamp)).all()
+
+    @classmethod
+    def get_event_tweets(cls, session, event_id: int, hours: float = 1):
         event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
         timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
         tile_id = event.tile_id
