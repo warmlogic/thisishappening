@@ -16,7 +16,7 @@ from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
 from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, date_string_to_datetime, get_tokens_to_tweet
-from utils.data_utils import n_wise, get_grid_coords, inbounds, compare_activity_kde
+from utils.data_utils import n_wise, get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
@@ -507,20 +507,11 @@ def get_geo_info(bounding_box: List[float], tile_size: float):
                 geo_info[i]['south_lat'] = south_lat
                 geo_info[i]['north_lat'] = north_lat
 
-                latitude = (south_lat + north_lat) / 2
                 longitude = (west_lon + east_lon) / 2
+                latitude = (south_lat + north_lat) / 2
 
-                # Reverse geocode the tile's center latitude and longitude value to store tile names
-                unsuccessful_tries = 0
-                try_threshold = 10
-                while unsuccessful_tries < try_threshold:
-                    rev_geo = twitter.reverse_geocode(lat=latitude, long=longitude, granularity='neighborhood')
-                    if 'result' in rev_geo:
-                        unsuccessful_tries = try_threshold
-                    else:
-                        unsuccessful_tries += 1
-                        logger.info('Sleeping for 10 seconds due to failed reverse geocode')
-                        sleep(10)
+                rev_geo = reverse_geocode(twitter, longitude, latitude)
+
                 for gg in geo_granularity:
                     if 'result' in rev_geo:
                         tile_name = [x['name'] for x in rev_geo['result']['places'] if x['place_type'] == gg]
@@ -581,7 +572,7 @@ if session.query(Tiles).count() == 0:
 else:
     logger.info('tiles table is already populated')
 
-num_tiles = Tiles.get_num_tiles(session)
+# num_tiles = Tiles.get_num_tiles(session)
 
 # # Initialize running stats object for each tile
 # stats_all = session.query(HistoricalStats.tile_id, HistoricalStats).order_by(HistoricalStats.tile_id, HistoricalStats.timestamp).all()
