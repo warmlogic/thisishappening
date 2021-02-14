@@ -10,11 +10,10 @@ import urllib
 from dotenv import load_dotenv
 import numpy as np
 import pytz
-from runstats import Statistics
 from twython import Twython, TwythonStreamer
 from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
-from utils.data_base import session_factory, Tiles, RecentTweets, HistoricalStats, Events
+from utils.data_base import session_factory, Tiles, RecentTweets, Events
 from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, date_string_to_datetime, get_tokens_to_tweet
 from utils.data_utils import n_wise, get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
 from utils.cluster_utils import cluster_activity
@@ -122,10 +121,13 @@ class MyStreamer(TwythonStreamer):
                 # Assume the first tile is correct (there should only be one)
                 tile = tiles[0]
 
-                self.log_tweet(tweet_info=tweet_info, tile_id=tile.id)
+                if LOG_TWEETS:
+                    log_tweet(tweet_info=tweet_info, tile_id=tile.id)
+                else:
+                    logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
 
                 if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
-                    logger.info(f'current time: {tweet_info.created_at}')
+                    logger.info(f'Current tweet time: {tweet_info.created_at}')
                     logger.info(f'Been more than {TEMPORAL_GRANULARITY_HOURS} hours between oldest and current tweet')
 
                     activity_curr_day = RecentTweets.get_recent_tweets(
@@ -194,12 +196,16 @@ class MyStreamer(TwythonStreamer):
                         clusters = cluster_activity(session, activity=activity_curr_hour, min_samples=EVENT_MIN_TWEETS)
 
                         for cid, cluster in clusters.items():
-                            event_str = self.log_event_and_get_str(
+                            event_str, longitude, latitude, place_name, tokens_str = get_event_info(
                                 event_tweets=cluster['event_tweets'],
                                 tile_id=cluster['tile_id'],
-                                timestamp=tweet_info.created_at,
                                 token_count_min=TOKEN_COUNT_MIN,
                             )
+
+                            if LOG_EVENTS:
+                                log_event(cluster['event_tweets'], tweet_info.created_at, longitude, latitude, place_name, tokens_str, cluster['tile_id'])
+                            else:
+                                logger.info(f'Not logging event due to environment variable settings: {tweet_info.created_at} {place_name}: {tokens_str}')
 
                             if POST_EVENT:
                                 try:
@@ -217,10 +223,9 @@ class MyStreamer(TwythonStreamer):
                         # for tile_id in tiles_with_events:
                         #     event_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS, tile_id=tile_id)
 
-                        #     event_str = self.log_event_and_get_str(
+                        #     event_str = get_event_info(
                         #         event_tweets=event_tweets,
                         #         tile_id=tile_id,
-                        #         timestamp=tweet_info.created_at,
                         #         token_count_min=TOKEN_COUNT_MIN,
                         #     )
 
@@ -239,9 +244,9 @@ class MyStreamer(TwythonStreamer):
                     # Update the comparison tweet time
                     self.comparison_timestamp = tweet_info.created_at
 
-                    # Delete old historical stats rows
-                    logger.info('Deleting old historical stats')
-                    HistoricalStats.delete_stats_older_than(session, timestamp=tweet_info.created_at, days=HISTORICAL_STATS_DAYS_TO_KEEP)
+                    # # Delete old historical stats rows
+                    # logger.info('Deleting old historical stats')
+                    # HistoricalStats.delete_stats_older_than(session, timestamp=tweet_info.created_at, days=HISTORICAL_STATS_DAYS_TO_KEEP)
 
                     # Delete old recent tweets rows
                     logger.info('Deleting old recent tweets')
@@ -253,31 +258,26 @@ class MyStreamer(TwythonStreamer):
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
 
-    def log_tweet(self, tweet_info: TweetInfo, tile_id: int):
-        tile_name = Tiles.get_tile_name(session, tile_id=tile_id)[0][1]
-        if LOG_TWEETS:
-            tweet = RecentTweets(
-                status_id_str=tweet_info.status_id_str,
-                user_screen_name=tweet_info.user_screen_name,
-                user_id_str=tweet_info.user_id_str,
-                created_at=tweet_info.created_at,
-                tweet_body=tweet_info.tweet_body,
-                tweet_language=tweet_info.tweet_language,
-                longitude=tweet_info.longitude,
-                latitude=tweet_info.latitude,
-                place_name=tweet_info.place_name,
-                place_type=tweet_info.place_type,
-                tile_id=tile_id,
-            )
-            session.add(tweet)
-            try:
-                session.commit()
-                logger.info(f'Logged tweet: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
-            except Exception:
-                logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
-                session.rollback()
+    def on_error(self, status_code, content, headers=None):
+        logger.info('Error while streaming.')
+        logger.info(f'status_code: {status_code}')
+        logger.info(f'content: {content}')
+        logger.info(f'headers: {headers}')
+        content = content.decode().strip() if isinstance(content, bytes) else content.strip()
+        if 'Server overloaded, try again in a few seconds'.lower() in content.lower():
+            seconds = self.sleep_seconds ** self.sleep_exponent
+            logger.warning(f'Server overloaded. Sleeping for {seconds} seconds.')
+            sleep(seconds)
+            self.sleep_exponent += 1
+        elif 'Exceeded connection limit for user'.lower() in content.lower():
+            seconds = self.sleep_seconds ** self.sleep_exponent
+            logger.warning(f'Exceeded connection limit. Sleeping for {seconds} seconds.')
+            sleep(seconds)
+            self.sleep_exponent += 1
         else:
-            logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str} in Tile {tile_id} ({tile_name}), {tweet_info.place_name} ({tweet_info.place_type})')
+            seconds = self.sleep_seconds ** self.sleep_exponent
+            logger.warning(f'Some other error occurred. Sleeping for {seconds} seconds.')
+            sleep(seconds)
 
     # def get_stats(self, timestamp: datetime):
     #     # Get tweets from the most recent period
@@ -364,105 +364,107 @@ class MyStreamer(TwythonStreamer):
 
     #     return found_event
 
-    def log_event_and_get_str(self, event_tweets, tile_id: int, timestamp: datetime, token_count_min: int = None):
-        # Prepare the tweet text
-        tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=REMOVE_USERNAME_AT)
-        tokens_str = ' '.join(tokens_to_tweet)
 
-        # Compute the average tweet location
-        lons = [et.longitude for et in event_tweets]
-        longitude = sum(lons) / len(lons)
-        lats = [et.latitude for et in event_tweets]
-        latitude = sum(lats) / len(lats)
-        lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+def log_tweet(tweet_info: TweetInfo, tile_id: int):
+    tweet = RecentTweets(
+        status_id_str=tweet_info.status_id_str,
+        user_screen_name=tweet_info.user_screen_name,
+        user_id_str=tweet_info.user_id_str,
+        created_at=tweet_info.created_at,
+        tweet_body=tweet_info.tweet_body,
+        tweet_language=tweet_info.tweet_language,
+        longitude=tweet_info.longitude,
+        latitude=tweet_info.latitude,
+        place_name=tweet_info.place_name,
+        place_type=tweet_info.place_type,
+        tile_id=tile_id,
+    )
+    session.add(tweet)
+    try:
+        session.commit()
+        logger.info(f'Logged tweet: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
+    except Exception:
+        logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
+        session.rollback()
 
+
+def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
+    # Compute the average tweet location
+    lons = [et.longitude for et in event_tweets]
+    longitude = sum(lons) / len(lons)
+    lats = [et.latitude for et in event_tweets]
+    latitude = sum(lats) / len(lats)
+    lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+
+    # Prepare the tweet text
+    tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=REMOVE_USERNAME_AT)
+    tokens_str = ' '.join(tokens_to_tweet)
+
+    # Get the most common place name from these tweets; only consider neighborhood or poi
+    place_names = [
+        et.place_name for et in event_tweets if et.place_type in ['neighborhood', 'poi']
+    ]
+    place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
+    # Get a larger granular name to include after a neighborhood or poi
+    city_name = Tiles.get_tile_name(session, tile_id=tile_id, geo_granularity=['city', 'admin', 'country'])[0][1]
+    # If the tweets didn't have a valid place name, fall back to the tile name
+    if not place_name:
         # Get a label for this location if it is a neighborhood or point-of-interest, otherwise get tile name
         tile_identity = Tiles.get_tile_name(session, tile_id=tile_id)[0]
         tile_name, tile_name_type = tile_identity[1], tile_identity[2]
-        # Get the most common place name from these tweets; only consider neighborhood or poi
-        place_names = [
-            et.place_name for et in event_tweets if et.place_type in ['neighborhood', 'poi']
-        ]
-        place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
-        # Get a larger granular name to include after a neighborhood or poi
-        city_name = Tiles.get_tile_name(session, tile_id=tile_id, geo_granularity=['city', 'admin', 'country'])[0][1]
-        # If the tweets didn't have a valid place name, fall back to the tile name
-        if not place_name:
-            place_name = tile_name
-            # Don't include the city name if granularity is larger than neighborhood
-            if tile_name_type != 'neighborhood':
-                city_name = None
+        place_name = tile_name
+        # Don't include the city name if granularity is larger than neighborhood
+        if tile_name_type != 'neighborhood':
+            city_name = None
 
-        # Construct the message to tweet
-        event_str = "Something's happening"
-        event_str = f'{event_str} in {place_name}' if place_name else event_str
-        event_str = f'{event_str}, {city_name}' if city_name else event_str
-        event_str = f'{event_str} ({lat_long_str}):'
-        remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
-        # Find the largest set of tokens to fill out the remaining charaters
-        possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
-        mask = [len(x) <= remaining_chars for x in possible_token_sets]
-        tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
+    # Construct the message to tweet
+    event_str = "Something's happening"
+    event_str = f'{event_str} in {place_name}' if place_name else event_str
+    event_str = f'{event_str}, {city_name}' if city_name else event_str
+    event_str = f'{event_str} ({lat_long_str}):'
+    remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
+    # Find the largest set of tokens to fill out the remaining charaters
+    possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
+    mask = [len(x) <= remaining_chars for x in possible_token_sets]
+    tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
 
-        # tweets are ordered newest to oldest
-        coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
-        tweet_ids = ','.join(sorted([et.status_id_str for et in event_tweets])[::-1])
-        urlparams = {
-            'words': tokens,
-            'coords': coords,
-            'tweets': tweet_ids,
-        }
-        event_url = BASE_EVENT_URL + urllib.parse.urlencode(urlparams)
-        event_str = f'{event_str} {tokens} {event_url}'
+    # tweets are ordered newest to oldest
+    coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
+    tweet_ids = ','.join(sorted([et.status_id_str for et in event_tweets])[::-1])
+    urlparams = {
+        'words': tokens,
+        'coords': coords,
+        'tweets': tweet_ids,
+    }
+    event_url = BASE_EVENT_URL + urllib.parse.urlencode(urlparams)
+    event_str = f'{event_str} {tokens} {event_url}'
 
-        logger.info(f'{timestamp} Tile {tile_id} ({tile_name}) {timestamp}: Found event with {len(event_tweets)} tweets')
-        logger.info(event_str)
+    logger.info(f'{place_name}: Found event with {len(event_tweets)} tweets: {tokens_str}')
+    logger.info(event_str)
 
-        # Add to events table
-        if LOG_EVENTS:
-            ev = Events(
-                tile_id=tile_id,
-                timestamp=timestamp,
-                count=len(event_tweets),
-                longitude=longitude,
-                latitude=latitude,
-                place_name=place_name,
-                description=tokens_str,
-                status_ids=[et.status_id_str for et in event_tweets],
-            )
-            session.add(ev)
+    return event_str, longitude, latitude, place_name, tokens_str
 
-            try:
-                session.commit()
-                logger.info(f'Logged event: Tile {tile_id} ({tile_name}) {timestamp}: {tokens_str}')
-            except Exception:
-                logger.exception(f'Exception when logging event: Tile {tile_id} ({tile_name}) {timestamp}: {tokens_str}')
-                session.rollback()
-        else:
-            logger.info(f'Not logging event due to environment variable settings: Tile {tile_id} ({tile_name}) {timestamp}: {tokens_str}')
 
-        return event_str
+def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_str, tile_id: int):
+    # Add to events table
+    ev = Events(
+        tile_id=tile_id,
+        timestamp=timestamp,
+        count=len(event_tweets),
+        longitude=longitude,
+        latitude=latitude,
+        place_name=place_name,
+        description=tokens_str,
+        status_ids=[et.status_id_str for et in event_tweets],
+    )
+    session.add(ev)
 
-    def on_error(self, status_code, content, headers=None):
-        logger.info('Error while streaming.')
-        logger.info(f'status_code: {status_code}')
-        logger.info(f'content: {content}')
-        logger.info(f'headers: {headers}')
-        content = content.decode().strip() if isinstance(content, bytes) else content.strip()
-        if 'Server overloaded, try again in a few seconds'.lower() in content.lower():
-            seconds = self.sleep_seconds ** self.sleep_exponent
-            logger.warning(f'Server overloaded. Sleeping for {seconds} seconds.')
-            sleep(seconds)
-            self.sleep_exponent += 1
-        elif 'Exceeded connection limit for user'.lower() in content.lower():
-            seconds = self.sleep_seconds ** self.sleep_exponent
-            logger.warning(f'Exceeded connection limit. Sleeping for {seconds} seconds.')
-            sleep(seconds)
-            self.sleep_exponent += 1
-        else:
-            seconds = self.sleep_seconds ** self.sleep_exponent
-            logger.warning(f'Some other error occurred. Sleeping for {seconds} seconds.')
-            sleep(seconds)
+    try:
+        session.commit()
+        logger.info(f'Logged event: {timestamp} {place_name}: {tokens_str}')
+    except Exception:
+        logger.exception(f'Exception when logging event: {timestamp} {place_name}: {tokens_str}')
+        session.rollback()
 
 
 def get_geo_info(bounding_box: List[float], tile_size: float):
@@ -589,19 +591,16 @@ else:
 #     running_stats = {i: Statistics() for i in range(1, num_tiles + 1)}
 
 # Decide how long to collect new tweets for before assessing event
-recent_tweets = RecentTweets.get_recent_tweets(session, hours=0.1)
-if recent_tweets:
-    comparison_timestamp = recent_tweets[0][1].created_at.replace(tzinfo=pytz.UTC)
+recent_events = Events.get_recent_events(session, hours=1)
+if recent_events:
+    comparison_timestamp = recent_events[0].timestamp.replace(tzinfo=pytz.UTC)
 else:
     comparison_timestamp = None
-
-running_stats = None
-comparison_timestamp = None
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
     stream = MyStreamer(
-        running_stats=running_stats,
+        running_stats=None,
         comparison_timestamp=comparison_timestamp,
         app_key=APP_KEY,
         app_secret=APP_SECRET,
