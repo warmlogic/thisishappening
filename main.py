@@ -538,11 +538,6 @@ twitter = Twython(
     oauth_token_secret=OAUTH_TOKEN_SECRET,
 )
 
-# If this screen_name has a recent tweet, use that timestamp as the time of the last post
-my_most_recent_tweet = twitter.get_user_timeline(screen_name=MY_SCREEN_NAME, count=1, trim_user=True)
-if my_most_recent_tweet:
-    twitter.last_post_time = date_string_to_datetime(my_most_recent_tweet[0]['created_at'])
-
 # Establish connection to database
 session = session_factory(DATABASE_URL, echo=ECHO)
 
@@ -590,10 +585,15 @@ else:
 #     # Initialize new running stats objects
 #     running_stats = {i: Statistics() for i in range(1, num_tiles + 1)}
 
-# Decide how long to collect new tweets for before assessing event
-recent_events = Events.get_recent_events(session, hours=1)
-if recent_events:
-    comparison_timestamp = recent_events[0].timestamp.replace(tzinfo=pytz.UTC)
+# # If this screen_name has a recent tweet, use that timestamp as the time of the last post
+# my_most_recent_tweet = twitter.get_user_timeline(screen_name=MY_SCREEN_NAME, count=1, trim_user=True)
+# if my_most_recent_tweet:
+#     twitter.last_post_time = date_string_to_datetime(my_most_recent_tweet[0]['created_at'])
+
+# Find out when the last event happened
+most_recent_event = Events.get_most_recent_event(session)
+if most_recent_event is not None:
+    comparison_timestamp = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
 else:
     comparison_timestamp = None
 
