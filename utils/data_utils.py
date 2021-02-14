@@ -30,7 +30,7 @@ def n_wise(iterable: List, n: int) -> zip(Tuple):
     return zip(*(itertools.islice(iterable, i, None) for i in range(n)))
 
 
-def inbounds(longitude, latitude, bounding_box: List[float]):
+def inbounds(longitude: float, latitude: float, bounding_box: List[float]) -> bool:
     lon = (longitude >= bounding_box[0]) and (longitude <= bounding_box[2])
     lat = (latitude >= bounding_box[1]) and (latitude <= bounding_box[3])
     return (lon and lat)

@@ -4,7 +4,7 @@ import logging
 import os
 from pathlib import Path
 from time import sleep
-from typing import Dict, List
+from typing import List
 import urllib
 
 from dotenv import load_dotenv
@@ -118,7 +118,7 @@ class MyStreamer(TwythonStreamer):
             tweet_info = get_tweet_info(status)
             tiles = Tiles.find_id_by_coords(session, tweet_info.longitude, tweet_info.latitude)
 
-            if inbounds(tweet_info.longitude, tweet_info.latitude, BOUNDING_BOX):
+            if inbounds(longitude=tweet_info.longitude, latitude=tweet_info.latitude, bounding_box=BOUNDING_BOX):
                 # Assume the first tile is correct (there should only be one)
                 tile = tiles[0]
 
@@ -510,7 +510,7 @@ def get_geo_info(bounding_box: List[float], tile_size: float):
                 longitude = (west_lon + east_lon) / 2
                 latitude = (south_lat + north_lat) / 2
 
-                rev_geo = reverse_geocode(twitter, longitude, latitude)
+                rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
 
                 for gg in geo_granularity:
                     if 'result' in rev_geo:
