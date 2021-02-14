@@ -130,6 +130,15 @@ class Events(Base):
         return q.order_by(desc(cls.timestamp)).all()
 
     @classmethod
+    def get_most_recent_event(cls, session, tile_id: int = None):
+        q = session.query(cls)
+
+        if tile_id:
+            q = q.filter(cls.tile_id == tile_id)
+
+        return q.order_by(desc(cls.timestamp)).first()
+
+    @classmethod
     def get_event_tweets(cls, session, event_id: int, hours: float = 1):
         event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
         timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
