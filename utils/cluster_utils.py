@@ -3,18 +3,27 @@ import logging
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from utils.data_base import Tiles
+from utils.data_base import Tiles, RecentTweets
 
 logger = logging.getLogger("happeninglogger")
 
+KMS_PER_RADIAN = 6371.0088
+
 
 def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 5, sample_weight=None):
-    kms_per_radian = 6371.0088
-    eps = kms / kms_per_radian
+    if not activity:
+        return {}
+
+    eps = kms / KMS_PER_RADIAN
     eps_step = eps / 2.0
 
     # haversine metric requires radians
-    X = np.radians([[x.longitude, x.latitude] for x in activity])
+    if isinstance(activity[0], dict):
+        X = np.radians([[x['longitude'], x['latitude']] for x in activity])
+    elif isinstance(activity[0], RecentTweets):
+        X = np.radians([[x.longitude, x.latitude] for x in activity])
+    else:
+        raise TypeError(f"Unsupported activity array type: {type(activity)}")
 
     clusters = {}
     unique_labels = []
