@@ -37,7 +37,7 @@ TweetInfo = namedtuple(
 )
 
 
-def get_tweet_info(self, status: Dict) -> Dict:
+def get_tweet_info(status: Dict) -> Dict:
     status_id_str = status['id_str']
     user_screen_name = status['user']['screen_name']
     user_id_str = status['user']['id_str']
