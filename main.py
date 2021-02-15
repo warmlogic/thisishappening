@@ -14,7 +14,7 @@ from twython import Twython, TwythonStreamer
 from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, Events
-from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, date_string_to_datetime, get_tokens_to_tweet
+from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, get_tokens_to_tweet
 from utils.data_utils import n_wise, get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
@@ -169,9 +169,9 @@ class MyStreamer(TwythonStreamer):
                     event_day = False
                     event_hour = False
                     found_event = False
-                    if lat_activity_day and lon_activity_day:
+                    if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
                         event_day = True
-                    if lat_activity_hour and lon_activity_hour:
+                    if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
                         event_hour = True
                     # if there were tweets from the previous day
                     if event_day and event_hour:
@@ -241,8 +241,8 @@ class MyStreamer(TwythonStreamer):
                         #     else:
                         #         logger.info('Not posting event due to environment variable settings')
 
-                    # Update the comparison tweet time
-                    self.comparison_timestamp = tweet_info.created_at
+                        # Update the comparison tweet time
+                        self.comparison_timestamp = tweet_info.created_at
 
                     # # Delete old historical stats rows
                     # logger.info('Deleting old historical stats')
@@ -256,7 +256,7 @@ class MyStreamer(TwythonStreamer):
                     logger.info('Deleting old events')
                     Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
             else:
-                logger.info(f'Tweet {tweet_info.status_id_str} coordinates ({tweet_info.latitude}, {tweet_info.longitude}, {tweet_info.place_name}, {tweet_info.place_type}) matched incorrect number of tiles: {len(tiles)}')
+                logger.info(f'Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name}, {tweet_info.place_type})')
 
     def on_error(self, status_code, content, headers=None):
         logger.info('Error while streaming.')
