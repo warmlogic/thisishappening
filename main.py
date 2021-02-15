@@ -390,9 +390,16 @@ def log_tweet(tweet_info: TweetInfo, tile_id: int):
 
 def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
     # Compute the average tweet location
-    lons = [et.longitude for et in event_tweets]
+    try:
+        lons = [x.longitude for x in event_tweets]
+        lats = [x.latitude for x in event_tweets]
+    except AttributeError:
+        lons = [x['longitude'] for x in event_tweets]
+        lats = [x['latitude'] for x in event_tweets]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
+
     longitude = sum(lons) / len(lons)
-    lats = [et.latitude for et in event_tweets]
     latitude = sum(lats) / len(lats)
     lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
@@ -401,9 +408,13 @@ def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
     tokens_str = ' '.join(tokens_to_tweet)
 
     # Get the most common place name from these tweets; only consider neighborhood or poi
-    place_names = [
-        et.place_name for et in event_tweets if et.place_type in ['neighborhood', 'poi']
-    ]
+    try:
+        place_names = [x.place_name for x in event_tweets if x.place_type in ['neighborhood', 'poi']]
+    except AttributeError:
+        place_names = [x['place_name'] for x in event_tweets if x['place_type'] in ['neighborhood', 'poi']]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
+
     place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
     # Get a larger granular name to include after a neighborhood or poi
     city_name = Tiles.get_tile_name(session, tile_id=tile_id, geo_granularity=['city', 'admin', 'country'])[0][1]
@@ -430,7 +441,13 @@ def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
 
     # tweets are ordered newest to oldest
     coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
-    tweet_ids = ','.join(sorted([et.status_id_str for et in event_tweets])[::-1])
+    try:
+        tweet_ids = ','.join(sorted([x.status_id_str for x in event_tweets])[::-1])
+    except AttributeError:
+        tweet_ids = ','.join(sorted([x['status_id_str'] for x in event_tweets])[::-1])
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
+
     urlparams = {
         'words': tokens,
         'coords': coords,
@@ -446,6 +463,13 @@ def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
 
 
 def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_str, tile_id: int):
+    try:
+        status_ids = [x.status_id_str for x in event_tweets]
+    except AttributeError:
+        status_ids = [x['status_id_str'] for x in event_tweets]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
+
     # Add to events table
     ev = Events(
         tile_id=tile_id,
@@ -455,7 +479,7 @@ def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_s
         latitude=latitude,
         place_name=place_name,
         description=tokens_str,
-        status_ids=[et.status_id_str for et in event_tweets],
+        status_ids=status_ids,
     )
     session.add(ev)
 
