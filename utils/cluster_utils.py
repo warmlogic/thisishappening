@@ -18,12 +18,12 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
     eps_step = eps / 2.0
 
     # haversine metric requires radians
-    if isinstance(activity[0], dict):
-        X = np.radians([[x['longitude'], x['latitude']] for x in activity])
-    elif isinstance(activity[0], RecentTweets):
+    try:
         X = np.radians([[x.longitude, x.latitude] for x in activity])
-    else:
-        raise TypeError(f"Unsupported activity array type: {type(activity)}")
+    except AttributeError:
+        X = np.radians([[x['longitude'], x['latitude']] for x in activity])
+    except TypeError:
+        logger.exception(f"Unsupported activity dtype: {type(activity[0])}")
 
     clusters = {}
     unique_labels = []
@@ -47,15 +47,22 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
             logger.info(f'Increasing epsilon from {eps} to {eps + eps_step}')
             eps += eps_step
 
-    if unique_labels:
+    if len(unique_labels) > 0:
         for k in unique_labels:
             cluster_mask = (db.labels_ == k)
             cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
 
             # Compute the average tweet location
-            lons = [x.longitude for x in cluster_tweets]
+            try:
+                lons = [x.longitude for x in cluster_tweets]
+                lats = [x.latitude for x in cluster_tweets]
+            except AttributeError:
+                lons = [x['longitude'] for x in cluster_tweets]
+                lats = [x['latitude'] for x in cluster_tweets]
+            except TypeError:
+                logger.exception(f"Unsupported cluster tweet dtype: {type(cluster_tweets[0])}")
+
             longitude = sum(lons) / len(lons)
-            lats = [x.latitude for x in cluster_tweets]
             latitude = sum(lats) / len(lats)
 
             # Find the tile that contains this location, for naming
