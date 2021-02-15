@@ -1,6 +1,7 @@
 from collections import Counter, namedtuple
 from datetime import datetime
 import functools
+import logging
 import operator
 import re
 import string
@@ -10,6 +11,8 @@ import emoji
 import en_core_web_sm
 from ftfy import fix_text
 import pytz
+
+logger = logging.getLogger("happeninglogger")
 
 # Regex to look for all URLs (mailto:, x-whatever://, etc.) https://gist.github.com/gruber/249502
 # Removed case insensitive flag from the start: (?i)
@@ -194,7 +197,12 @@ def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None, remove_
     if token_count_min is None:
         token_count_min = 2
 
-    tweets = [remove_urls(et.tweet_body) for et in event_tweets]
+    try:
+        tweets = [remove_urls(x.tweet_body) for x in event_tweets]
+    except AttributeError:
+        tweets = [remove_urls(x['tweet_body']) for x in event_tweets]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
 
     tweets = [clean_text(tweet) for tweet in tweets]
 
