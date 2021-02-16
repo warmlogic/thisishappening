@@ -80,7 +80,6 @@ IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNOR
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True") == "True"
 
-TEMP_TILE_ID = 0
 
 grid_coords, x_flat, y_flat = get_grid_coords(BOUNDING_BOX)
 bw_method = 0.3
@@ -115,7 +114,7 @@ class MyStreamer(TwythonStreamer):
 
             if inbounds(longitude=tweet_info.longitude, latitude=tweet_info.latitude, bounding_box=BOUNDING_BOX):
                 if LOG_TWEETS:
-                    log_tweet(tweet_info=tweet_info, tile_id=TEMP_TILE_ID)
+                    log_tweet(tweet_info=tweet_info)
                 else:
                     logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
 
@@ -188,7 +187,6 @@ class MyStreamer(TwythonStreamer):
                                     event_info['latitude'],
                                     event_info['place_name'],
                                     event_info['tokens_str'],
-                                    TEMP_TILE_ID,
                                 )
                             else:
                                 logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info['place_name']}: {event_info['tokens_str']}")
@@ -240,7 +238,7 @@ class MyStreamer(TwythonStreamer):
             sleep(seconds)
 
 
-def log_tweet(tweet_info: TweetInfo, tile_id: int):
+def log_tweet(tweet_info: TweetInfo):
     tweet = RecentTweets(
         status_id_str=tweet_info.status_id_str,
         user_screen_name=tweet_info.user_screen_name,
@@ -252,7 +250,6 @@ def log_tweet(tweet_info: TweetInfo, tile_id: int):
         latitude=tweet_info.latitude,
         place_name=tweet_info.place_name,
         place_type=tweet_info.place_type,
-        tile_id=tile_id,
     )
     session.add(tweet)
     try:
@@ -325,12 +322,11 @@ def get_event_info(event_tweets, token_count_min: int = None):
     return event_info
 
 
-def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_str, tile_id: int):
+def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_str):
     status_ids = get_status_ids(event_tweets)
 
     # Add to events table
     ev = Events(
-        tile_id=tile_id,
         timestamp=timestamp,
         count=len(event_tweets),
         longitude=longitude,
