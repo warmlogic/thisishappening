@@ -142,28 +142,35 @@ class MyStreamer(TwythonStreamer):
                         hours=TEMPORAL_GRANULARITY_HOURS,
                     )
 
-                    z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
-                        self.grid_coords,
-                        activity_prev_day, activity_curr_day,
-                        bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
-                    )
-                    z_diff_hour, activity_prev_hour, activity_curr_hour = compare_activity_kde(
-                        self.grid_coords,
-                        activity_prev_hour, activity_curr_hour,
-                        bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
-                    )
-
-                    lat_activity_day, lon_activity_day = np.where(z_diff_day > ACTIVITY_THRESHOLD_DAY)
-                    lat_activity_hour, lon_activity_hour = np.where(z_diff_hour > ACTIVITY_THRESHOLD_HOUR)
-
                     # Decide whether an event occurred
                     event_day = False
                     event_hour = False
                     found_event = False
-                    if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
-                        event_day = True
-                    if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
-                        event_hour = True
+
+                    if (len(activity_prev_day) > 1) and (len(activity_curr_day) > 1):
+                        z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
+                            self.grid_coords,
+                            activity_prev_day, activity_curr_day,
+                            bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
+                        )
+
+                        lat_activity_day, lon_activity_day = np.where(z_diff_day > ACTIVITY_THRESHOLD_DAY)
+
+                        if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
+                            event_day = True
+
+                    if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
+                        z_diff_hour, activity_prev_hour, activity_curr_hour = compare_activity_kde(
+                            self.grid_coords,
+                            activity_prev_hour, activity_curr_hour,
+                            bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
+                        )
+
+                        lat_activity_hour, lon_activity_hour = np.where(z_diff_hour > ACTIVITY_THRESHOLD_HOUR)
+
+                        if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
+                            event_hour = True
+
                     if event_day and event_hour:
                         found_event = True
 
