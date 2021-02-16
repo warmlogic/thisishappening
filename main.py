@@ -28,10 +28,10 @@ if IS_PROD is None:
     else:
         raise OSError(f"{env_path} not found. Did you set it up?")
 
-DEBUG_RUN = os.getenv("DEBUG_RUN", default="False")
-if DEBUG_RUN not in ["True", "False"]:
+DEBUG_RUN = os.getenv("DEBUG_RUN", default="False").casefold()
+if DEBUG_RUN not in ["true".casefold(), "false".casefold()]:
     raise ValueError(f"DEBUG_RUN must be True or False, current value: {DEBUG_RUN}")
-DEBUG_RUN = DEBUG_RUN == "True"
+DEBUG_RUN = DEBUG_RUN == "true".casefold()
 
 if DEBUG_RUN:
     logger.setLevel(logging.DEBUG)
@@ -44,7 +44,7 @@ if DEBUG_RUN:
 else:
     logger.setLevel(logging.INFO)
     TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
-    POST_EVENT = os.getenv("POST_EVENT", default="False") == "True"
+    POST_EVENT = os.getenv("POST_EVENT", default="False").casefold() == "true".casefold()
     LOG_TWEETS = True
     LOG_STATS = True
     LOG_EVENTS = True
@@ -65,7 +65,6 @@ TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="4.0"))
 EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
-MAX_ROWS_HISTORICAL_STATS = int(os.getenv("MAX_ROWS_HISTORICAL_STATS", default="6000"))
 BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://mattmollison.com/thisishappening/?")
 
 VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
@@ -78,15 +77,15 @@ IGNORE_USER_ID_STR = os.getenv("IGNORE_USER_ID_STR", default=None)
 IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNORE_USER_ID_STR else []
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
-REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True") == "True"
+REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
 
+BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
+WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
+WEIGHT_FACTOR = float(os.getenv("WEIGHT_FACTOR", default="1.0"))
+ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="500.0"))
+ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="3000.0"))
 
 grid_coords, x_flat, y_flat = get_grid_coords(BOUNDING_BOX)
-bw_method = 0.3
-weighted = True
-weight_factor = 1.0
-activity_threshold_day = 500
-activity_threshold_hour = 3000
 
 
 class MyStreamer(TwythonStreamer):
@@ -147,16 +146,16 @@ class MyStreamer(TwythonStreamer):
                     z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
                         grid_coords,
                         activity_prev_day, activity_curr_day,
-                        bw_method=bw_method, weighted=weighted, weight_factor=weight_factor,
+                        bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                     )
                     z_diff_hour, activity_prev_hour, activity_curr_hour = compare_activity_kde(
                         grid_coords,
                         activity_prev_hour, activity_curr_hour,
-                        bw_method=bw_method, weighted=weighted, weight_factor=weight_factor,
+                        bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                     )
 
-                    lat_activity_day, lon_activity_day = np.where(z_diff_day > activity_threshold_day)
-                    lat_activity_hour, lon_activity_hour = np.where(z_diff_hour > activity_threshold_hour)
+                    lat_activity_day, lon_activity_day = np.where(z_diff_day > ACTIVITY_THRESHOLD_DAY)
+                    lat_activity_hour, lon_activity_hour = np.where(z_diff_hour > ACTIVITY_THRESHOLD_HOUR)
 
                     # Decide whether an event occurred
                     event_day = False
@@ -214,7 +213,7 @@ class MyStreamer(TwythonStreamer):
                     logger.info('Deleting old events')
                     Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
             else:
-                logger.info(f'Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name}, {tweet_info.place_type})')
+                logger.info(f'Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
 
     def on_error(self, status_code, content, headers=None):
         logger.info('Error while streaming.')
