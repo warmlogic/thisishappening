@@ -3,7 +3,6 @@ import logging
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from utils.data_base import Tiles
 from utils.tweet_utils import get_coords
 
 logger = logging.getLogger("happeninglogger")
@@ -11,7 +10,7 @@ logger = logging.getLogger("happeninglogger")
 KMS_PER_RADIAN = 6371.0088
 
 
-def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 5, sample_weight=None):
+def cluster_activity(activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 5, sample_weight=None):
     if not activity:
         return {}
 
@@ -47,20 +46,8 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
     for k in unique_labels:
         cluster_mask = (db.labels_ == k)
         cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
-
-        # Compute the average tweet location
-        lons, lats = get_coords(cluster_tweets)
-
-        longitude = sum(lons) / len(lons)
-        latitude = sum(lats) / len(lats)
-
-        # Find the tile that contains this location, for naming
-        tiles = Tiles.find_id_by_coords(session, longitude, latitude)
-        tile_id = tiles[0].id
-
         clusters[k] = {
             'event_tweets': cluster_tweets,
-            'tile_id': tile_id,
         }
 
     return clusters
