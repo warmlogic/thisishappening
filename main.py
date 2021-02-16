@@ -1,10 +1,8 @@
-from collections import Counter
 from datetime import datetime, timedelta
 import logging
 import os
 from pathlib import Path
 from time import sleep
-from typing import List
 import urllib
 
 from dotenv import load_dotenv
@@ -14,8 +12,8 @@ from twython import Twython, TwythonStreamer
 from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
 
 from utils.data_base import session_factory, Tiles, RecentTweets, Events
-from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, get_tokens_to_tweet
-from utils.data_utils import n_wise, get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
+from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, get_tokens_to_tweet, get_coords, get_place_name, get_status_ids
+from utils.data_utils import get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
@@ -83,7 +81,7 @@ IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNOR
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True") == "True"
-IGNORE_MISSING_DAY_STATS = os.getenv("IGNORE_MISSING_DAY_STATS", default="False") == "True"
+# IGNORE_MISSING_DAY_STATS = os.getenv("IGNORE_MISSING_DAY_STATS", default="False") == "True"
 
 grid_coords, x_flat, y_flat = get_grid_coords(BOUNDING_BOX)
 bw_method = 0.3
@@ -193,23 +191,31 @@ class MyStreamer(TwythonStreamer):
                     if found_event:
                         # recent_tweets = RecentTweets.get_recent_tweets(session, timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS)
 
-                        clusters = cluster_activity(session, activity=activity_curr_hour, min_samples=EVENT_MIN_TWEETS)
+                        sample_weight = [x["weight"] for x in activity_curr_hour]
+                        clusters = cluster_activity(session, activity=activity_curr_hour, min_samples=EVENT_MIN_TWEETS, sample_weight=sample_weight)
 
-                        for cid, cluster in clusters.items():
-                            event_str, longitude, latitude, place_name, tokens_str = get_event_info(
+                        for cluster in clusters.values():
+                            event_info = get_event_info(
                                 event_tweets=cluster['event_tweets'],
-                                tile_id=cluster['tile_id'],
                                 token_count_min=TOKEN_COUNT_MIN,
                             )
 
                             if LOG_EVENTS:
-                                log_event(cluster['event_tweets'], tweet_info.created_at, longitude, latitude, place_name, tokens_str, cluster['tile_id'])
+                                log_event(
+                                    cluster['event_tweets'],
+                                    tweet_info.created_at,
+                                    event_info['longitude'],
+                                    event_info['latitude'],
+                                    event_info['place_name'],
+                                    event_info['tokens_str'],
+                                    cluster['tile_id'],
+                                )
                             else:
-                                logger.info(f'Not logging event due to environment variable settings: {tweet_info.created_at} {place_name}: {tokens_str}')
+                                logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info['place_name']}: {event_info['tokens_str']}")
 
                             if POST_EVENT:
                                 try:
-                                    status = twitter.update_status(status=event_str)
+                                    status = twitter.update_status(status=event_info['event_str'])
                                 except TwythonAuthError:
                                     logger.exception('Authorization error, did you create read+write credentials?')
                                 except TwythonRateLimitError:
@@ -388,45 +394,29 @@ def log_tweet(tweet_info: TweetInfo, tile_id: int):
         session.rollback()
 
 
-def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
+def get_event_info(event_tweets, token_count_min: int = None):
     # Compute the average tweet location
-    try:
-        lons = [x.longitude for x in event_tweets]
-        lats = [x.latitude for x in event_tweets]
-    except AttributeError:
-        lons = [x['longitude'] for x in event_tweets]
-        lats = [x['latitude'] for x in event_tweets]
-    except TypeError:
-        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
-
+    lons, lats = get_coords(event_tweets)
     longitude = sum(lons) / len(lons)
     latitude = sum(lats) / len(lats)
     lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
+    place_name = get_place_name(event_tweets, valid_place_types=['neighborhood', 'poi'])
+
+    # Get a larger granular name to include after a neighborhood or poi
+    city_name = get_place_name(event_tweets, valid_place_types=['city'])
+
+    # If the tweets didn't have a valid place name, reverse geocode to get the neighborhood name
+    if place_name is None:
+        rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
+        try:
+            place_name = rev_geo['neighborhood']
+        except KeyError:
+            logger.info("No place name found for event")
+
     # Prepare the tweet text
     tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=REMOVE_USERNAME_AT)
     tokens_str = ' '.join(tokens_to_tweet)
-
-    # Get the most common place name from these tweets; only consider neighborhood or poi
-    try:
-        place_names = [x.place_name for x in event_tweets if x.place_type in ['neighborhood', 'poi']]
-    except AttributeError:
-        place_names = [x['place_name'] for x in event_tweets if x['place_type'] in ['neighborhood', 'poi']]
-    except TypeError:
-        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
-
-    place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
-    # Get a larger granular name to include after a neighborhood or poi
-    city_name = Tiles.get_tile_name(session, tile_id=tile_id, geo_granularity=['city', 'admin', 'country'])[0][1]
-    # If the tweets didn't have a valid place name, fall back to the tile name
-    if not place_name:
-        # Get a label for this location if it is a neighborhood or point-of-interest, otherwise get tile name
-        tile_identity = Tiles.get_tile_name(session, tile_id=tile_id)[0]
-        tile_name, tile_name_type = tile_identity[1], tile_identity[2]
-        place_name = tile_name
-        # Don't include the city name if granularity is larger than neighborhood
-        if tile_name_type != 'neighborhood':
-            city_name = None
 
     # Construct the message to tweet
     event_str = "Something's happening"
@@ -441,12 +431,8 @@ def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
 
     # tweets are ordered newest to oldest
     coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
-    try:
-        tweet_ids = ','.join(sorted([x.status_id_str for x in event_tweets])[::-1])
-    except AttributeError:
-        tweet_ids = ','.join(sorted([x['status_id_str'] for x in event_tweets])[::-1])
-    except TypeError:
-        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
+    status_ids = get_status_ids(event_tweets)
+    tweet_ids = ','.join(sorted(status_ids)[::-1])
 
     urlparams = {
         'words': tokens,
@@ -459,16 +445,19 @@ def get_event_info(event_tweets, tile_id: int, token_count_min: int = None):
     logger.info(f'{place_name}: Found event with {len(event_tweets)} tweets: {tokens_str}')
     logger.info(event_str)
 
-    return event_str, longitude, latitude, place_name, tokens_str
+    event_info = {
+        'event_str': event_str,
+        'longitude': longitude,
+        'latitude': latitude,
+        'place_name': place_name,
+        'tokens_str': tokens_str,
+    }
+
+    return event_info
 
 
 def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_str, tile_id: int):
-    try:
-        status_ids = [x.status_id_str for x in event_tweets]
-    except AttributeError:
-        status_ids = [x['status_id_str'] for x in event_tweets]
-    except TypeError:
-        logger.exception(f"Unsupported tweet dtype: {type(event_tweets[0])}")
+    status_ids = get_status_ids(event_tweets)
 
     # Add to events table
     ev = Events(
@@ -491,66 +480,66 @@ def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_s
         session.rollback()
 
 
-def get_geo_info(bounding_box: List[float], tile_size: float):
-    tile_longitudes = np.arange(bounding_box[0], bounding_box[2], tile_size).tolist()
-    # np.arange does not include the end point; add the edge of bounding box
-    tile_longitudes.append(bounding_box[2])
-    tile_latitudes = np.arange(bounding_box[1], bounding_box[3], tile_size).tolist()
-    # np.arange does not include the end point; add the edge of bounding box
-    tile_latitudes.append(bounding_box[3])
+# def get_geo_info(bounding_box: List[float], tile_size: float):
+#     tile_longitudes = np.arange(bounding_box[0], bounding_box[2], tile_size).tolist()
+#     # np.arange does not include the end point; add the edge of bounding box
+#     tile_longitudes.append(bounding_box[2])
+#     tile_latitudes = np.arange(bounding_box[1], bounding_box[3], tile_size).tolist()
+#     # np.arange does not include the end point; add the edge of bounding box
+#     tile_latitudes.append(bounding_box[3])
 
-    num_tiles = len(list(n_wise(tile_latitudes, 2))) * len(list(n_wise(tile_longitudes, 2)))
-    # Assumes one stat per hour
-    assert (num_tiles * HISTORICAL_STATS_DAYS_TO_KEEP * 24) <= MAX_ROWS_HISTORICAL_STATS
+#     num_tiles = len(list(n_wise(tile_latitudes, 2))) * len(list(n_wise(tile_longitudes, 2)))
+#     # Assumes one stat per hour
+#     assert (num_tiles * HISTORICAL_STATS_DAYS_TO_KEEP * 24) <= MAX_ROWS_HISTORICAL_STATS
 
-    geo_granularity = ['neighborhood', 'city', 'admin', 'country']
+#     geo_granularity = ['neighborhood', 'city', 'admin', 'country']
 
-    # Initialize - index starts with 1
-    geo_info = {
-        i: {
-            'west_lon': None,
-            'east_lon': None,
-            'south_lat': None,
-            'north_lat': None,
-            'neighborhood': None,
-            'city': None,
-            'admin': None,
-            'country': None,
-        }
-        for i in range(1, num_tiles + 1)
-    }
+#     # Initialize - index starts with 1
+#     geo_info = {
+#         i: {
+#             'west_lon': None,
+#             'east_lon': None,
+#             'south_lat': None,
+#             'north_lat': None,
+#             'neighborhood': None,
+#             'city': None,
+#             'admin': None,
+#             'country': None,
+#         }
+#         for i in range(1, num_tiles + 1)
+#     }
 
-    logger.info('Reverse geocoding tiles to assign names')
-    # Initialize tile index counter, start with 1
-    i = 1
-    for tile_lats in n_wise(tile_latitudes, 2):
-        south_lat, north_lat = tile_lats[0], tile_lats[1]
-        for tile_lons in n_wise(tile_longitudes, 2):
-            west_lon, east_lon = tile_lons[0], tile_lons[1]
-            if geo_info[i]['country'] is None:
-                geo_info[i]['west_lon'] = west_lon
-                geo_info[i]['east_lon'] = east_lon
-                geo_info[i]['south_lat'] = south_lat
-                geo_info[i]['north_lat'] = north_lat
+#     logger.info('Reverse geocoding tiles to assign names')
+#     # Initialize tile index counter, start with 1
+#     i = 1
+#     for tile_lats in n_wise(tile_latitudes, 2):
+#         south_lat, north_lat = tile_lats[0], tile_lats[1]
+#         for tile_lons in n_wise(tile_longitudes, 2):
+#             west_lon, east_lon = tile_lons[0], tile_lons[1]
+#             if geo_info[i]['country'] is None:
+#                 geo_info[i]['west_lon'] = west_lon
+#                 geo_info[i]['east_lon'] = east_lon
+#                 geo_info[i]['south_lat'] = south_lat
+#                 geo_info[i]['north_lat'] = north_lat
 
-                longitude = (west_lon + east_lon) / 2
-                latitude = (south_lat + north_lat) / 2
+#                 longitude = (west_lon + east_lon) / 2
+#                 latitude = (south_lat + north_lat) / 2
 
-                rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
+#                 rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
 
-                for gg in geo_granularity:
-                    if 'result' in rev_geo:
-                        tile_name = [x['name'] for x in rev_geo['result']['places'] if x['place_type'] == gg]
-                    else:
-                        tile_name = []
-                    geo_info[i][gg] = tile_name[0] if tile_name else None
+#                 for gg in geo_granularity:
+#                     if 'result' in rev_geo:
+#                         tile_name = [x['name'] for x in rev_geo['result']['places'] if x['place_type'] == gg]
+#                     else:
+#                         tile_name = []
+#                     geo_info[i][gg] = tile_name[0] if tile_name else None
 
-                logger.info(f"Got geo info for Tile {i} ({latitude:.4f}, {longitude:.4f}): {geo_info[i]['neighborhood']}, {geo_info[i]['city']}, {geo_info[i]['admin']}, {geo_info[i]['country']}")
-                logger.info('Sleeping for 60 seconds due to reverse geocode rate limit')
-                sleep(60)
-            i += 1
+#                 logger.info(f"Got geo info for Tile {i} ({latitude:.4f}, {longitude:.4f}): {geo_info[i]['neighborhood']}, {geo_info[i]['city']}, {geo_info[i]['admin']}, {geo_info[i]['country']}")
+#                 logger.info('Sleeping for 60 seconds due to reverse geocode rate limit')
+#                 sleep(60)
+#             i += 1
 
-    return geo_info
+#     return geo_info
 
 
 # Establish connection to Twitter
@@ -565,33 +554,33 @@ twitter = Twython(
 # Establish connection to database
 session = session_factory(DATABASE_URL, echo=ECHO)
 
-# Add tile rows if none exist
-if session.query(Tiles).count() == 0:
-    geo_info = get_geo_info(bounding_box=BOUNDING_BOX, tile_size=TILE_SIZE)
-    num_tiles = len(geo_info)
+# # Add tile rows if none exist
+# if session.query(Tiles).count() == 0:
+#     geo_info = get_geo_info(bounding_box=BOUNDING_BOX, tile_size=TILE_SIZE)
+#     num_tiles = len(geo_info)
 
-    logger.info('Populating tiles table')
-    for i in range(1, num_tiles + 1):
-        tile = Tiles(
-            west_lon=geo_info[i]['west_lon'],
-            east_lon=geo_info[i]['east_lon'],
-            south_lat=geo_info[i]['south_lat'],
-            north_lat=geo_info[i]['north_lat'],
-            neighborhood=geo_info[i]['neighborhood'],
-            city=geo_info[i]['city'],
-            admin=geo_info[i]['admin'],
-            country=geo_info[i]['country'],
-        )
-        session.add(tile)
+#     logger.info('Populating tiles table')
+#     for i in range(1, num_tiles + 1):
+#         tile = Tiles(
+#             west_lon=geo_info[i]['west_lon'],
+#             east_lon=geo_info[i]['east_lon'],
+#             south_lat=geo_info[i]['south_lat'],
+#             north_lat=geo_info[i]['north_lat'],
+#             neighborhood=geo_info[i]['neighborhood'],
+#             city=geo_info[i]['city'],
+#             admin=geo_info[i]['admin'],
+#             country=geo_info[i]['country'],
+#         )
+#         session.add(tile)
 
-        logger.info(f"Logged Tile {i}: {geo_info[i]['neighborhood']}, {geo_info[i]['city']}, {geo_info[i]['admin']}, {geo_info[i]['country']}")
-    try:
-        session.commit()
-    except Exception:
-        logger.exception('Exception when populating tiles table')
-        session.rollback()
-else:
-    logger.info('tiles table is already populated')
+#         logger.info(f"Logged Tile {i}: {geo_info[i]['neighborhood']}, {geo_info[i]['city']}, {geo_info[i]['admin']}, {geo_info[i]['country']}")
+#     try:
+#         session.commit()
+#     except Exception:
+#         logger.exception('Exception when populating tiles table')
+#         session.rollback()
+# else:
+#     logger.info('tiles table is already populated')
 
 # num_tiles = Tiles.get_num_tiles(session)
 
