@@ -85,13 +85,11 @@ WEIGHT_FACTOR = float(os.getenv("WEIGHT_FACTOR", default="1.0"))
 ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="500.0"))
 ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="3000.0"))
 
-grid_coords, x_flat, y_flat = get_grid_coords(BOUNDING_BOX)
-
 
 class MyStreamer(TwythonStreamer):
-    def __init__(self, running_stats=None, comparison_timestamp=None, *args, **kwargs):
+    def __init__(self, grid_coords, comparison_timestamp=None, *args, **kwargs):
         super(MyStreamer, self).__init__(*args, **kwargs)
-        self.running_stats = running_stats if running_stats else {}
+        self.grid_coords = grid_coords
         if comparison_timestamp is None:
             comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.comparison_timestamp = comparison_timestamp
@@ -144,12 +142,12 @@ class MyStreamer(TwythonStreamer):
                     )
 
                     z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
-                        grid_coords,
+                        self.grid_coords,
                         activity_prev_day, activity_curr_day,
                         bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                     )
                     z_diff_hour, activity_prev_hour, activity_curr_hour = compare_activity_kde(
-                        grid_coords,
+                        self.grid_coords,
                         activity_prev_hour, activity_curr_hour,
                         bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                     )
@@ -365,7 +363,9 @@ else:
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
+    grid_coords, _, _ = get_grid_coords(BOUNDING_BOX)
     stream = MyStreamer(
+        grid_coords=grid_coords,
         comparison_timestamp=comparison_timestamp,
         app_key=APP_KEY,
         app_secret=APP_SECRET,
