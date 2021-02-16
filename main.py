@@ -79,6 +79,7 @@ IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNOR
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
 
+GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
 WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
 WEIGHT_FACTOR = float(os.getenv("WEIGHT_FACTOR", default="1.0"))
@@ -363,7 +364,7 @@ else:
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
-    grid_coords, _, _ = get_grid_coords(BOUNDING_BOX)
+    grid_coords, _, _ = get_grid_coords(bounding_box=BOUNDING_BOX, grid_resolution=GRID_RESOLUTION)
     stream = MyStreamer(
         grid_coords=grid_coords,
         comparison_timestamp=comparison_timestamp,
