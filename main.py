@@ -60,7 +60,7 @@ LANGUAGE = os.getenv("LANGUAGE", default="en")
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = [float(coord) for coord in BOUNDING_BOX.split(',')] if BOUNDING_BOX else []
 assert len(BOUNDING_BOX) == 4
-EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="9"))
+EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="6"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="4.0"))
@@ -118,7 +118,7 @@ class MyStreamer(TwythonStreamer):
 
                 if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
                     logger.info(f'Current tweet time: {tweet_info.created_at}')
-                    logger.info(f'Been more than {TEMPORAL_GRANULARITY_HOURS} hours between oldest and current tweet')
+                    logger.info(f'Been more than {TEMPORAL_GRANULARITY_HOURS} hour since oldest event')
 
                     activity_curr_day = RecentTweets.get_recent_tweets(
                         session,
@@ -145,7 +145,6 @@ class MyStreamer(TwythonStreamer):
                     # Decide whether an event occurred
                     event_day = False
                     event_hour = False
-                    found_event = False
 
                     if (len(activity_prev_day) > 1) and (len(activity_curr_day) > 1):
                         z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
@@ -172,9 +171,6 @@ class MyStreamer(TwythonStreamer):
                             event_hour = True
 
                     if event_day and event_hour:
-                        found_event = True
-
-                    if found_event:
                         sample_weight = [x["weight"] for x in activity_curr_hour]
                         clusters = cluster_activity(activity=activity_curr_hour, min_samples=EVENT_MIN_TWEETS, sample_weight=sample_weight)
 
@@ -186,12 +182,9 @@ class MyStreamer(TwythonStreamer):
 
                             if LOG_EVENTS:
                                 log_event(
-                                    cluster['event_tweets'],
-                                    tweet_info.created_at,
-                                    event_info['longitude'],
-                                    event_info['latitude'],
-                                    event_info['place_name'],
-                                    event_info['tokens_str'],
+                                    event_tweets=cluster['event_tweets'],
+                                    timestamp=tweet_info.created_at,
+                                    event_info=event_info,
                                 )
                             else:
                                 logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info['place_name']}: {event_info['tokens_str']}")
@@ -212,11 +205,9 @@ class MyStreamer(TwythonStreamer):
                         self.comparison_timestamp = tweet_info.created_at
 
                     # Delete old recent tweets rows
-                    logger.info('Deleting old recent tweets')
                     RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
 
                     # Delete old events rows
-                    logger.info('Deleting old events')
                     Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
@@ -259,9 +250,9 @@ def log_tweet(tweet_info: TweetInfo):
     session.add(tweet)
     try:
         session.commit()
-        logger.info(f'Logged tweet: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
+        logger.info(f'Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
     except Exception:
-        logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
+        logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
         session.rollback()
 
 
@@ -327,26 +318,26 @@ def get_event_info(event_tweets, token_count_min: int = None):
     return event_info
 
 
-def log_event(event_tweets, timestamp, longitude, latitude, place_name, tokens_str):
+def log_event(event_tweets, timestamp, event_info):
     status_ids = get_status_ids(event_tweets)
 
     # Add to events table
     ev = Events(
         timestamp=timestamp,
         count=len(event_tweets),
-        longitude=longitude,
-        latitude=latitude,
-        place_name=place_name,
-        description=tokens_str,
+        longitude=event_info['longitude'],
+        latitude=event_info['latitude'],
+        place_name=event_info['place_name'],
+        description=event_info['tokens_str'],
         status_ids=status_ids,
     )
     session.add(ev)
 
     try:
         session.commit()
-        logger.info(f'Logged event: {timestamp} {place_name}: {tokens_str}')
+        logger.info(f"Logged event: {timestamp} {event_info['place_name']}: {event_info['tokens_str']}")
     except Exception:
-        logger.exception(f'Exception when logging event: {timestamp} {place_name}: {tokens_str}')
+        logger.exception(f"Exception when logging event: {timestamp} {event_info['place_name']}: {event_info['tokens_str']}")
         session.rollback()
 
 
