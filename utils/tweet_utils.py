@@ -1,15 +1,18 @@
-from collections import Counter
+from collections import Counter, namedtuple
 from datetime import datetime
 import functools
+import logging
 import operator
 import re
 import string
-from typing import List
+from typing import Dict, List
 
 import emoji
 import en_core_web_sm
 from ftfy import fix_text
 import pytz
+
+logger = logging.getLogger("happeninglogger")
 
 # Regex to look for all URLs (mailto:, x-whatever://, etc.) https://gist.github.com/gruber/249502
 # Removed case insensitive flag from the start: (?i)
@@ -19,6 +22,60 @@ url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 ellipsis_unicode = '\u2026'
 
 nlp = en_core_web_sm.load(disable=["tagger", "parser", "ner"])
+
+TweetInfo = namedtuple(
+    'TweetInfo',
+    [
+        'status_id_str',
+        'user_screen_name',
+        'user_id_str',
+        'created_at',
+        'tweet_body',
+        'tweet_language',
+        'longitude',
+        'latitude',
+        'place_name',
+        'place_type',
+    ],
+)
+
+
+def get_tweet_info(status: Dict) -> Dict:
+    status_id_str = status['id_str']
+    user_screen_name = status['user']['screen_name']
+    user_id_str = status['user']['id_str']
+    created_at = date_string_to_datetime(status['created_at'])
+    tweet_body = status['text']
+    tweet_language = status['lang']
+    if status['coordinates']:
+        longitude = status['coordinates']['coordinates'][0]
+        latitude = status['coordinates']['coordinates'][1]
+    elif status['place']:
+        lons = [x[0] for x in status['place']['bounding_box']['coordinates'][0]]
+        longitude = sum(lons) / len(lons)
+        lats = [x[1] for x in status['place']['bounding_box']['coordinates'][0]]
+        latitude = sum(lats) / len(lats)
+    else:
+        longitude = None
+        latitude = None
+    place_name = status['place']['name']
+    # Possible place_type values: country, admin, city, neighborhood, poi
+    place_type = status['place']['place_type']
+
+    tweet_info = TweetInfo(
+        status_id_str=status_id_str,
+        user_screen_name=user_screen_name,
+        user_id_str=user_id_str,
+        created_at=created_at,
+        tweet_body=tweet_body,
+        tweet_language=tweet_language,
+        longitude=longitude,
+        latitude=latitude,
+        place_name=place_name,
+        place_type=place_type,
+    )
+
+    return tweet_info
 
 
 def check_tweet(
@@ -136,11 +193,16 @@ def filter_tokens(text: str) -> str:
     return ' '.join(tokens)
 
 
-def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None, remove_username_at: bool = True):
+def get_tokens_to_tweet(tweets: List, token_count_min: int = None, remove_username_at: bool = True):
     if token_count_min is None:
         token_count_min = 2
 
-    tweets = [remove_urls(et.tweet_body) for et in event_tweets]
+    try:
+        tweets = [remove_urls(x.tweet_body) for x in tweets]
+    except AttributeError:
+        tweets = [remove_urls(x['tweet_body']) for x in tweets]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
 
     tweets = [clean_text(tweet) for tweet in tweets]
 
@@ -179,3 +241,41 @@ def get_tokens_to_tweet(event_tweets: List, token_count_min: int = None, remove_
         tokens_to_tweet = ['No tweet text found']
 
     return tokens_to_tweet
+
+
+def get_coords(tweets):
+    try:
+        lons = [x.longitude for x in tweets]
+        lats = [x.latitude for x in tweets]
+    except AttributeError:
+        lons = [x['longitude'] for x in tweets]
+        lats = [x['latitude'] for x in tweets]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
+
+    return lons, lats
+
+
+def get_place_name(tweets, valid_place_types: List[str] = ['neighborhood', 'poi']):
+    # Get the most common place name from these tweets; only consider neighborhood or poi
+    try:
+        place_names = [x.place_name for x in tweets if x.place_type in valid_place_types]
+    except AttributeError:
+        place_names = [x['place_name'] for x in tweets if x['place_type'] in valid_place_types]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
+
+    place_name = Counter(place_names).most_common(1)[0][0] if place_names else None
+
+    return place_name
+
+
+def get_status_ids(tweets):
+    try:
+        status_ids = [x.status_id_str for x in tweets]
+    except AttributeError:
+        status_ids = [x['status_id_str'] for x in tweets]
+    except TypeError:
+        logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
+
+    return status_ids

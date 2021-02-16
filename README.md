@@ -36,3 +36,11 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 - [ ] Setup: Plot preview of proposed map tiles (use folium)
   - [ ] Estimate tile area
 - [x] When an event is found, tweet an image of a map with the location/heat map
+
+## Realizations
+
+- Many tweets show up at the canonical city location, especially due to Swarm's "posted a photo" feature
+- Using tiles / artificial region boundaries has lead to more difficulties and workarounds than originally expected
+  - Potentially splits events across regions
+  - Keeping the running statistics requires storing many rows in database table; wouldn't be an issue if I wasn't trying to operate on a shoestring budget because I could run my own database
+- Not uncommon to get a false alarm due to one user posting many tweets in a short time period
