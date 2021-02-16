@@ -3,7 +3,8 @@ import logging
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from utils.data_base import Tiles, RecentTweets
+from utils.data_base import Tiles
+from utils.tweet_utils import get_coords
 
 logger = logging.getLogger("happeninglogger")
 
@@ -18,12 +19,8 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
     eps_step = eps / 2.0
 
     # haversine metric requires radians
-    try:
-        X = np.radians([[x.longitude, x.latitude] for x in activity])
-    except AttributeError:
-        X = np.radians([[x['longitude'], x['latitude']] for x in activity])
-    except TypeError:
-        logger.exception(f"Unsupported activity dtype: {type(activity[0])}")
+    lons, lats = get_coords(activity)
+    X = np.radians([[lon, lat] for lon, lat in zip(lons, lats)])
 
     clusters = {}
     unique_labels = []
@@ -47,31 +44,23 @@ def cluster_activity(session, activity, min_samples: int, kms: float = 0.1, min_
             logger.info(f'Increasing epsilon from {eps} to {eps + eps_step}')
             eps += eps_step
 
-    if len(unique_labels) > 0:
-        for k in unique_labels:
-            cluster_mask = (db.labels_ == k)
-            cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
+    for k in unique_labels:
+        cluster_mask = (db.labels_ == k)
+        cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
 
-            # Compute the average tweet location
-            try:
-                lons = [x.longitude for x in cluster_tweets]
-                lats = [x.latitude for x in cluster_tweets]
-            except AttributeError:
-                lons = [x['longitude'] for x in cluster_tweets]
-                lats = [x['latitude'] for x in cluster_tweets]
-            except TypeError:
-                logger.exception(f"Unsupported cluster tweet dtype: {type(cluster_tweets[0])}")
+        # Compute the average tweet location
+        lons, lats = get_coords(cluster_tweets)
 
-            longitude = sum(lons) / len(lons)
-            latitude = sum(lats) / len(lats)
+        longitude = sum(lons) / len(lons)
+        latitude = sum(lats) / len(lats)
 
-            # Find the tile that contains this location, for naming
-            tiles = Tiles.find_id_by_coords(session, longitude, latitude)
-            tile_id = tiles[0].id
+        # Find the tile that contains this location, for naming
+        tiles = Tiles.find_id_by_coords(session, longitude, latitude)
+        tile_id = tiles[0].id
 
-            clusters[k] = {
-                'event_tweets': cluster_tweets,
-                'tile_id': tile_id,
-            }
+        clusters[k] = {
+            'event_tweets': cluster_tweets,
+            'tile_id': tile_id,
+        }
 
     return clusters
