@@ -37,19 +37,32 @@ def inbounds(longitude: float, latitude: float, bounding_box: List[float]) -> bo
 
 
 def reverse_geocode(twitter, longitude: float, latitude: float) -> Dict:
-    # Reverse geocode the tile's center latitude and longitude value to store tile names
+    # Reverse geocode latitude and longitude value
+    geo_granularity = ['neighborhood', 'city', 'admin', 'country']
+
     unsuccessful_tries = 0
     try_threshold = 10
 
-    rev_geo = {}
+    rev_geo = {
+        'longitude': longitude,
+        'latitude': latitude,
+    }
+
     while unsuccessful_tries < try_threshold:
-        rev_geo = twitter.reverse_geocode(lat=latitude, long=longitude, granularity='neighborhood')
-        if 'result' in rev_geo:
+        response = twitter.reverse_geocode(lat=latitude, long=longitude, granularity='neighborhood')
+        if 'result' in response:
             unsuccessful_tries = try_threshold
         else:
             unsuccessful_tries += 1
             logger.info('Sleeping for 10 seconds due to failed reverse geocode')
             sleep(10)
+
+    for gg in geo_granularity:
+        if 'result' in response:
+            name = [x['name'] for x in response['result']['places'] if x['place_type'] == gg]
+        else:
+            name = []
+        rev_geo[gg] = name[0] if name else None
 
     return rev_geo
 
