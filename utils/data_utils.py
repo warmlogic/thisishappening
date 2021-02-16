@@ -75,10 +75,11 @@ def get_coords_min_max(bounding_box: List[float]):
     return xmin, xmax, ymin, ymax
 
 
-def get_grid_coords(bounding_box: List[float]):
+def get_grid_coords(bounding_box: List[float], grid_resolution: int):
     xmin, xmax, ymin, ymax = get_coords_min_max(bounding_box)
-    x_flat = np.r_[xmin:xmax:128j]
-    y_flat = np.r_[ymin:ymax:128j][::-1]
+    x_flat = np.linspace(xmin, xmax, grid_resolution)
+    # y is reversed
+    y_flat = np.linspace(ymax, ymin, grid_resolution)
     x, y = np.meshgrid(x_flat, y_flat)
     grid_coords = np.append(x.reshape(-1, 1), y.reshape(-1, 1), axis=1)
 
@@ -118,7 +119,8 @@ def get_kde(grid_coords, activity, bw_method: float = None, weighted: bool = Non
     kernel = stats.gaussian_kde(lon_lat.T, bw_method=bw_method, weights=sample_weight)
 
     z = kernel(grid_coords.T)
-    z = z.reshape(128, 128)
+    gc_shape = int(np.sqrt(grid_coords.shape[0]))
+    z = z.reshape(gc_shape, gc_shape)
 
     return z, kernel, activity_weighted
 
