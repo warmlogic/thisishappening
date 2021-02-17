@@ -38,16 +38,16 @@ if DEBUG_RUN:
     TEMPORAL_GRANULARITY_HOURS = 1
     POST_EVENT = False
     LOG_TWEETS = False
-    LOG_STATS = False
     LOG_EVENTS = False
+    PURGE_OLD_DATA = False
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
     TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
     POST_EVENT = os.getenv("POST_EVENT", default="False").casefold() == "true".casefold()
     LOG_TWEETS = True
-    LOG_STATS = True
     LOG_EVENTS = True
+    PURGE_OLD_DATA = True
     ECHO = False
 
 APP_KEY = os.getenv("API_KEY", default=None)
@@ -63,7 +63,7 @@ assert len(BOUNDING_BOX) == 4
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="6"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
-RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="4.0"))
+RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="8.0"))
 EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
 BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://mattmollison.com/thisishappening/?")
 
@@ -204,11 +204,12 @@ class MyStreamer(TwythonStreamer):
                         # Update the comparison tweet time
                         self.comparison_timestamp = tweet_info.created_at
 
-                    # Delete old recent tweets rows
-                    RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
+                    if PURGE_OLD_DATA:
+                        # Delete old recent tweets rows
+                        RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
 
-                    # Delete old events rows
-                    Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
+                        # Delete old events rows
+                        Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
 
