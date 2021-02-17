@@ -93,8 +93,11 @@ def compute_weight(x: int, weight_factor: float = None) -> float:
 
 def set_activity_weight(activity, weighted: bool = None, weight_factor: float = None) -> list:
     weighted = True if weighted is None else weighted
+    # Create a list of dictionaries and remove the sqlalchemy instance state key
+    activity_dict = [{k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"} for x in activity]
+
     # Compute tweet weight within a user
-    activity_sorted = sorted([x.__dict__ for x in activity], key=itemgetter("user_id_str"))
+    activity_sorted = sorted(activity_dict, key=itemgetter("user_id_str"))
     activity_grouped = {}
     for user_id, tweets in itertools.groupby(activity_sorted, key=lambda x: x["user_id_str"]):
         # Sort user tweets so first tweet has highest weight
