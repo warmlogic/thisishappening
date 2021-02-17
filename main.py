@@ -147,7 +147,7 @@ class MyStreamer(TwythonStreamer):
                     event_hour = False
 
                     if (len(activity_prev_day) > 1) and (len(activity_curr_day) > 1):
-                        z_diff_day, activity_prev_day, activity_curr_day = compare_activity_kde(
+                        z_diff_day, activity_prev_day_w, activity_curr_day_w = compare_activity_kde(
                             self.grid_coords,
                             activity_prev_day, activity_curr_day,
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
@@ -159,7 +159,7 @@ class MyStreamer(TwythonStreamer):
                             event_day = True
 
                     if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
-                        z_diff_hour, activity_prev_hour, activity_curr_hour = compare_activity_kde(
+                        z_diff_hour, activity_prev_hour_w, activity_curr_hour_w = compare_activity_kde(
                             self.grid_coords,
                             activity_prev_hour, activity_curr_hour,
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
@@ -171,8 +171,8 @@ class MyStreamer(TwythonStreamer):
                             event_hour = True
 
                     if event_day and event_hour:
-                        sample_weight = [x["weight"] for x in activity_curr_hour]
-                        clusters = cluster_activity(activity=activity_curr_hour, min_samples=EVENT_MIN_TWEETS, sample_weight=sample_weight)
+                        sample_weight = [x["weight"] for x in activity_curr_hour_w]
+                        clusters = cluster_activity(activity=activity_curr_hour_w, min_samples=EVENT_MIN_TWEETS, sample_weight=sample_weight)
 
                         for cluster in clusters.values():
                             event_info = get_event_info(
