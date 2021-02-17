@@ -91,8 +91,9 @@ def compute_weight(x: int, weight_factor: float = None) -> float:
     return 1 / np.exp(x * weight_factor)
 
 
-def set_activity_weight(activity, weighted: bool = None, weight_factor: float = None) -> list:
+def set_activity_weight(activity, weighted: bool = None, weight_factor: float = None) -> List[Dict]:
     weighted = True if weighted is None else weighted
+
     # Create a list of dictionaries and remove the sqlalchemy instance state key
     activity_dict = [{k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"} for x in activity]
 
