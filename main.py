@@ -233,6 +233,7 @@ class MyStreamer(TwythonStreamer):
             seconds = self.sleep_seconds ** self.sleep_exponent
             logger.warning(f'Some other error occurred. Sleeping for {seconds} seconds.')
             sleep(seconds)
+            self.sleep_exponent += 1
 
 
 def log_tweet(tweet_info: TweetInfo):
