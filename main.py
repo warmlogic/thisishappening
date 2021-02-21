@@ -93,12 +93,13 @@ ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="30
 
 
 class MyStreamer(TwythonStreamer):
-    def __init__(self, grid_coords, comparison_timestamp=None, *args, **kwargs):
+    def __init__(self, grid_coords, event_comparison_ts=None, *args, **kwargs):
         super(MyStreamer, self).__init__(*args, **kwargs)
         self.grid_coords = grid_coords
-        if comparison_timestamp is None:
-            comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=TEMPORAL_GRANULARITY_HOURS)
-        self.comparison_timestamp = comparison_timestamp
+        if event_comparison_ts is None:
+            event_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=TEMPORAL_GRANULARITY_HOURS)
+        self.event_comparison_ts = event_comparison_ts
+        self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.sleep_seconds = 2
         self.sleep_exponent = 0
 
@@ -121,7 +122,7 @@ class MyStreamer(TwythonStreamer):
                 else:
                     logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
 
-                if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
+                if tweet_info.created_at - self.event_comparison_ts >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
                     logger.info(f'{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour(s) since an event occurred')
 
                     activity_curr_day = RecentTweets.get_recent_tweets(
@@ -214,14 +215,18 @@ class MyStreamer(TwythonStreamer):
                                 logger.info('Not posting event due to environment variable settings')
 
                         # Update the comparison tweet time
-                        self.comparison_timestamp = tweet_info.created_at
+                        self.event_comparison_ts = tweet_info.created_at
 
-                    if PURGE_OLD_DATA:
+                    # Purge old data every hour
+                    if PURGE_OLD_DATA and (datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts >= timedelta(hours=1)):
                         # Delete old recent tweets rows
                         RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
 
                         # Delete old events rows
                         Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
+
+                        # Update
+                        self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
             else:
                 logger.info(f'Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
 
@@ -370,16 +375,16 @@ session = session_factory(DATABASE_URL, echo=ECHO)
 # Find out when the last event happened
 most_recent_event = Events.get_most_recent_event(session)
 if most_recent_event is not None:
-    comparison_timestamp = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
+    event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
 else:
-    comparison_timestamp = None
+    event_comparison_ts = None
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
     grid_coords, _, _ = get_grid_coords(bounding_box=BOUNDING_BOX, grid_resolution=GRID_RESOLUTION)
     stream = MyStreamer(
         grid_coords=grid_coords,
-        comparison_timestamp=comparison_timestamp,
+        event_comparison_ts=event_comparison_ts,
         app_key=APP_KEY,
         app_secret=APP_SECRET,
         oauth_token=OAUTH_TOKEN,
