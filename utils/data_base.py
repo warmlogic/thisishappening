@@ -18,6 +18,7 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from utils.data_utils import get_coords_min_max
 from utils.tweet_utils import TweetInfo, EventInfo
 
 logger = logging.getLogger("happeninglogger")
@@ -211,7 +212,7 @@ class RecentTweets(Base):
                 cls.created_at >= ts_start).filter(cls.created_at <= timestamp)
 
         if bounding_box is not None:
-            west_lon, south_lat, east_lon, north_lat = bounding_box
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
             q = q.filter(
                 cls.longitude >= west_lon).filter(
                 cls.longitude < east_lon).filter(
@@ -230,7 +231,7 @@ class RecentTweets(Base):
         q = session.query(cls).filter(cls.created_at >= ts_start).filter(cls.created_at <= timestamp)
 
         if bounding_box is not None:
-            west_lon, south_lat, east_lon, north_lat = bounding_box
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
             q = q.filter(
                 cls.longitude >= west_lon).filter(
                 cls.longitude < east_lon).filter(
@@ -244,7 +245,7 @@ class RecentTweets(Base):
         q = session.query(cls)
 
         if bounding_box is not None:
-            west_lon, south_lat, east_lon, north_lat = bounding_box
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
             q = q.filter(
                 cls.longitude >= west_lon).filter(
                 cls.longitude < east_lon).filter(
@@ -258,7 +259,7 @@ class RecentTweets(Base):
         q = session.query(cls)
 
         if bounding_box is not None:
-            west_lon, south_lat, east_lon, north_lat = bounding_box
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
             q = q.filter(
                 cls.longitude >= west_lon).filter(
                 cls.longitude < east_lon).filter(

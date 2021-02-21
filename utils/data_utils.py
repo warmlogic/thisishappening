@@ -36,9 +36,9 @@ def inbounds(longitude: float, latitude: float, bounding_box: List[float]) -> bo
 
 
 def get_coords_min_max(bounding_box: List[float]):
-    # longitude
+    # longitude: xmin=west_lon, xmax=east_lon
     xmin, xmax = bounding_box[0], bounding_box[2]
-    # latitude
+    # latitude: ymin=south_lat, ymax=north_lat
     ymin, ymax = bounding_box[1], bounding_box[3]
     return xmin, xmax, ymin, ymax
 
