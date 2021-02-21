@@ -105,13 +105,13 @@ class Events(Base):
     def keep_events_n_rows(cls, session, n: int = None):
         '''Keep the most recent n rows
         '''
-        if n:
+        if n is not None:
             ids = session.query(cls.id).order_by(desc(cls.timestamp)).all()
             ids_to_delete = [x[0] for x in ids[n:]]
 
             if ids_to_delete:
                 try:
-                    logger.info(f'Keeping most recent {n} rows of tweets')
+                    logger.info(f'Keeping most recent {n} rows of events')
                     delete_q = cls.__table__.delete().where(cls.id.in_(ids_to_delete))
 
                     session.execute(delete_q)
@@ -239,7 +239,7 @@ class RecentTweets(Base):
     def keep_tweets_n_rows(cls, session, n: int = None):
         '''Keep the most recent n rows
         '''
-        if n:
+        if n is not None:
             ids = session.query(cls.id).order_by(desc(cls.created_at)).all()
             ids_to_delete = [x[0] for x in ids[n:]]
 
