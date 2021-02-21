@@ -55,8 +55,8 @@ if DEBUG_RUN:
     PURGE_OLD_DATA = False
     RECENT_TWEETS_ROWS_TO_KEEP = None
     EVENTS_ROWS_TO_KEEP = None
-    # RECENT_TWEETS_DAYS_TO_KEEP = None
-    # EVENTS_DAYS_TO_KEEP = None
+    RECENT_TWEETS_DAYS_TO_KEEP = None
+    EVENTS_DAYS_TO_KEEP = None
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
@@ -65,10 +65,14 @@ else:
     LOG_TWEETS = True
     LOG_EVENTS = True
     PURGE_OLD_DATA = True
-    RECENT_TWEETS_ROWS_TO_KEEP = int(os.getenv("RECENT_TWEETS_ROWS_TO_KEEP", default="9000"))
-    EVENTS_ROWS_TO_KEEP = int(os.getenv("EVENTS_ROWS_TO_KEEP", default="500"))
-    # RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="8.0"))
-    # EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
+    RECENT_TWEETS_ROWS_TO_KEEP = os.getenv("RECENT_TWEETS_ROWS_TO_KEEP", default=None)
+    RECENT_TWEETS_ROWS_TO_KEEP = int(RECENT_TWEETS_ROWS_TO_KEEP) if RECENT_TWEETS_ROWS_TO_KEEP else None
+    EVENTS_ROWS_TO_KEEP = os.getenv("EVENTS_ROWS_TO_KEEP", default=None)
+    EVENTS_ROWS_TO_KEEP = int(EVENTS_ROWS_TO_KEEP) if EVENTS_ROWS_TO_KEEP else None
+    RECENT_TWEETS_DAYS_TO_KEEP = os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default=None)
+    RECENT_TWEETS_DAYS_TO_KEEP = float(RECENT_TWEETS_DAYS_TO_KEEP) if RECENT_TWEETS_DAYS_TO_KEEP else None
+    EVENTS_DAYS_TO_KEEP = os.getenv("EVENTS_DAYS_TO_KEEP", default=None)
+    EVENTS_DAYS_TO_KEEP = float(EVENTS_DAYS_TO_KEEP) if EVENTS_DAYS_TO_KEEP else None
     ECHO = False
 
 APP_KEY = os.getenv("API_KEY", default=None)
@@ -241,9 +245,9 @@ class MyStreamer(TwythonStreamer):
                         RecentTweets.keep_tweets_n_rows(session, n=RECENT_TWEETS_ROWS_TO_KEEP)
                         Events.keep_events_n_rows(session, n=EVENTS_ROWS_TO_KEEP)
 
-                        # # Delete old data by timestamp
-                        # RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
-                        # Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
+                        # Delete old data by timestamp
+                        RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
+                        Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
 
                         # Update
                         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
