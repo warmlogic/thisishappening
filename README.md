@@ -8,24 +8,20 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 
 ## TODO
 
-### Infrastructure
-
-- [ ] Use Redis for historical stats. Key: year, month, day, hour. Will be able to store more historical data (e.g., 1 week).
-
 ### ML for event finding
 
-- [ ] Cluster tweets when event threshold exceeded
+- [ ] Clustering
+  - [x] Cluster tweets when event threshold exceeded
   - [x] When an event is found, run DBSCAN on all recent tweets across all tiles to determine the full set of event tweets, since some tweets may fall outside of the current tile
   - [ ] Ensure one of the resulting clusters includes tweets from the original event detection (by tile id)
 
 ### Data
 
+- [ ] Separate "canonical city location" tweets from actually geotagged activity using a specific longitude+latitude.
 - [ ] Detect and ignore spam tweets, e.g., job postings, apartment listings
 - [x] Provide access to the tweets associated with each event
-- [ ] Maintain maximum recent_tweets table row count
-  - [x] Write query to keep N rows for
-  - [ ] Run query in main loop
-- [ ] Separate "canonical city location" tweets from actually geotagged activity using a specific longitude+latitude.
+- [x] Write query to keep most recent N days of data and run in main loop
+- [x] Maintain maximum recent_tweets table row count and run in main loop
 
 ### Analytics
 
@@ -33,8 +29,6 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 
 ### Maps
 
-- [ ] Setup: Plot preview of proposed map tiles (use folium)
-  - [ ] Estimate tile area
 - [x] When an event is found, tweet an image of a map with the location/heat map
 
 ## Realizations
