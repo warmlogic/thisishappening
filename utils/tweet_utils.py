@@ -5,6 +5,7 @@ import logging
 import operator
 import re
 import string
+from time import sleep
 from typing import Dict, List
 import urllib
 
@@ -12,8 +13,6 @@ import emoji
 import en_core_web_sm
 from ftfy import fix_text
 import pytz
-
-from utils.data_utils import reverse_geocode
 
 logger = logging.getLogger("happeninglogger")
 
@@ -302,6 +301,37 @@ def get_status_ids(tweets):
         logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
 
     return status_ids
+
+
+def reverse_geocode(twitter, longitude: float, latitude: float, sleep_seconds: int = 10) -> Dict:
+    # Reverse geocode latitude and longitude value
+    geo_granularity = ['neighborhood', 'city', 'admin', 'country']
+
+    unsuccessful_tries = 0
+    try_threshold = 10
+
+    rev_geo = {
+        'longitude': longitude,
+        'latitude': latitude,
+    }
+
+    while unsuccessful_tries < try_threshold:
+        response = twitter.reverse_geocode(lat=latitude, long=longitude, granularity='neighborhood')
+        if 'result' in response:
+            unsuccessful_tries = try_threshold
+        else:
+            unsuccessful_tries += 1
+            logger.info(f'Sleeping for {sleep_seconds} seconds due to failed reverse geocode')
+            sleep(sleep_seconds)
+
+    for gg in geo_granularity:
+        if 'result' in response:
+            name = [x['name'] for x in response['result']['places'] if x['place_type'] == gg]
+        else:
+            name = []
+        rev_geo[gg] = name[0] if name else None
+
+    return rev_geo
 
 
 def get_event_info(
