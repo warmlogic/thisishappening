@@ -44,9 +44,9 @@ class Events(Base):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
-        filter_td = timestamp - timedelta(hours=hours)
+        ts_start = timestamp - timedelta(hours=hours)
 
-        q = session.query(cls).filter(cls.timestamp >= filter_td).filter(cls.timestamp <= timestamp)
+        q = session.query(cls).filter(cls.timestamp >= ts_start).filter(cls.timestamp <= timestamp)
 
         return q.order_by(desc(cls.timestamp)).all()
 
@@ -91,14 +91,14 @@ class Events(Base):
             if timestamp is None:
                 timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
-            filter_td = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
+            ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
-                logger.info(f'Deleting events older than {filter_td}: {hours} hours {days} days {weeks} weeks')
-                delete_q = cls.__table__.delete().where(cls.timestamp < filter_td)
+                logger.info(f'Deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks')
+                delete_q = cls.__table__.delete().where(cls.timestamp < ts_end)
                 session.execute(delete_q)
                 session.commit()
             except Exception:
-                logger.exception(f'Exception when deleting events older than {filter_td}: {hours} hours {days} days {weeks} weeks')
+                logger.exception(f'Exception when deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks')
                 session.rollback()
 
     @classmethod
@@ -143,11 +143,11 @@ class RecentTweets(Base):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
-        filter_td = timestamp - timedelta(hours=hours)
+        ts_start = timestamp - timedelta(hours=hours)
 
         q = session.query(
             cls, func.count(cls.status_id_str)).filter(
-                cls.created_at >= filter_td).filter(cls.created_at <= timestamp)
+                cls.created_at >= ts_start).filter(cls.created_at <= timestamp)
 
         if bounding_box is not None:
             west_lon, south_lat, east_lon, north_lat = bounding_box
@@ -164,9 +164,9 @@ class RecentTweets(Base):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
-        filter_td = timestamp - timedelta(hours=hours)
+        ts_start = timestamp - timedelta(hours=hours)
 
-        q = session.query(cls).filter(cls.created_at >= filter_td).filter(cls.created_at <= timestamp)
+        q = session.query(cls).filter(cls.created_at >= ts_start).filter(cls.created_at <= timestamp)
 
         if bounding_box is not None:
             west_lon, south_lat, east_lon, north_lat = bounding_box
@@ -225,14 +225,14 @@ class RecentTweets(Base):
             if timestamp is None:
                 timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
-            filter_td = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
+            ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
-                logger.info(f'Deleting tweets older than {filter_td}: {hours} hours {days} days {weeks} weeks')
-                delete_q = cls.__table__.delete().where(cls.created_at < filter_td)
+                logger.info(f'Deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks')
+                delete_q = cls.__table__.delete().where(cls.created_at < ts_end)
                 session.execute(delete_q)
                 session.commit()
             except Exception:
-                logger.exception(f'Exception when deleting tweets older than {filter_td}: {hours} hours {days} days {weeks} weeks')
+                logger.exception(f'Exception when deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks')
                 session.rollback()
 
     @classmethod
