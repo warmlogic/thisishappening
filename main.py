@@ -60,7 +60,11 @@ LANGUAGE = os.getenv("LANGUAGE", default="en")
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = [float(coord) for coord in BOUNDING_BOX.split(',')] if BOUNDING_BOX else []
 assert len(BOUNDING_BOX) == 4
-EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="6"))
+EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
+KM_START = float(os.getenv("KM_START", default="0.05"))
+KM_STOP = float(os.getenv("KM_STOP", default="0.3"))
+KM_STEP = int(os.getenv("KM_STEP", default="5"))
+MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="8.0"))
@@ -172,7 +176,15 @@ class MyStreamer(TwythonStreamer):
 
                     if event_day and event_hour:
                         sample_weight = [x["weight"] for x in activity_curr_hour_w]
-                        clusters = cluster_activity(activity=activity_curr_hour_w, min_samples=EVENT_MIN_TWEETS, sample_weight=sample_weight)
+                        clusters = cluster_activity(
+                            activity=activity_curr_hour_w,
+                            min_samples=EVENT_MIN_TWEETS,
+                            km_start=KM_START,
+                            km_stop=KM_STOP,
+                            km_step=KM_STEP,
+                            min_n_clusters=MIN_N_CLUSTERS,
+                            sample_weight=sample_weight,
+                        )
 
                         for cluster in clusters.values():
                             event_info = get_event_info(
