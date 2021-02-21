@@ -97,7 +97,7 @@ class MyStreamer(TwythonStreamer):
         super(MyStreamer, self).__init__(*args, **kwargs)
         self.grid_coords = grid_coords
         if comparison_timestamp is None:
-            comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            comparison_timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=TEMPORAL_GRANULARITY_HOURS)
         self.comparison_timestamp = comparison_timestamp
         self.sleep_seconds = 2
         self.sleep_exponent = 0
