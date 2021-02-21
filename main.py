@@ -205,7 +205,6 @@ class MyStreamer(TwythonStreamer):
                             event_info = get_event_info(
                                 twitter,
                                 event_tweets=cluster['event_tweets'],
-                                timestamp=tweet_info.created_at,
                                 tweet_max_length=TWEET_MAX_LENGTH,
                                 tweet_url_length=TWEET_URL_LENGTH,
                                 base_event_url=BASE_EVENT_URL,

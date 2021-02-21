@@ -337,7 +337,6 @@ def reverse_geocode(twitter, longitude: float, latitude: float, sleep_seconds: i
 def get_event_info(
     twitter,
     event_tweets: List,
-    timestamp: datetime,
     tweet_max_length: int,
     tweet_url_length: int,
     base_event_url: str,
@@ -353,6 +352,9 @@ def get_event_info(
     longitude = sum(lons) / len(lons)
     latitude = sum(lats) / len(lats)
     lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+
+    # Event timestamp is the most recent tweet
+    timestamp = max(map(operator.itemgetter('created_at'), event_tweets))
 
     place_name = get_place_name(event_tweets, valid_place_types=['neighborhood', 'poi'])
 
