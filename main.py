@@ -19,7 +19,6 @@ from twython import (
 from utils.data_base import session_factory, RecentTweets, Events
 from utils.tweet_utils import (
     date_string_to_datetime,
-    TweetInfo,
     get_tweet_info,
     check_tweet,
     get_tokens_to_tweet,
@@ -138,7 +137,7 @@ class MyStreamer(TwythonStreamer):
 
             if inbounds(longitude=tweet_info.longitude, latitude=tweet_info.latitude, bounding_box=BOUNDING_BOX):
                 if LOG_TWEETS:
-                    log_tweet(tweet_info=tweet_info)
+                    _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
                 else:
                     logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
 
@@ -210,15 +209,12 @@ class MyStreamer(TwythonStreamer):
                         for cluster in clusters.values():
                             event_info = get_event_info(
                                 event_tweets=cluster['event_tweets'],
+                                timestamp=tweet_info.created_at,
                                 token_count_min=TOKEN_COUNT_MIN,
                             )
 
                             if LOG_EVENTS:
-                                log_event(
-                                    event_tweets=cluster['event_tweets'],
-                                    timestamp=tweet_info.created_at,
-                                    event_info=event_info,
-                                )
+                                _ = Events.log_event(session, event_info=event_info)
                             else:
                                 logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info['place_name']}: {event_info['tokens_str']}")
 
@@ -277,29 +273,7 @@ class MyStreamer(TwythonStreamer):
             self.sleep_exponent += 1
 
 
-def log_tweet(tweet_info: TweetInfo):
-    tweet = RecentTweets(
-        status_id_str=tweet_info.status_id_str,
-        user_screen_name=tweet_info.user_screen_name,
-        user_id_str=tweet_info.user_id_str,
-        created_at=tweet_info.created_at,
-        tweet_body=tweet_info.tweet_body,
-        tweet_language=tweet_info.tweet_language,
-        longitude=tweet_info.longitude,
-        latitude=tweet_info.latitude,
-        place_name=tweet_info.place_name,
-        place_type=tweet_info.place_type,
-    )
-    session.add(tweet)
-    try:
-        session.commit()
-        logger.info(f'Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
-    except Exception:
-        logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
-        session.rollback()
-
-
-def get_event_info(event_tweets, token_count_min: int = None):
+def get_event_info(event_tweets, timestamp, token_count_min: int = None):
     # Compute the average tweet location
     lons, lats = get_coords(event_tweets)
     west_lon = min(lons)
@@ -355,6 +329,8 @@ def get_event_info(event_tweets, token_count_min: int = None):
     logger.info(event_str)
 
     event_info = {
+        'timestamp': timestamp,
+        'n': len(event_tweets),
         'event_str': event_str,
         'longitude': longitude,
         'latitude': latitude,
@@ -364,36 +340,10 @@ def get_event_info(event_tweets, token_count_min: int = None):
         'north_lat': north_lat,
         'place_name': place_name,
         'tokens_str': tokens_str,
+        'status_ids': status_ids,
     }
 
     return event_info
-
-
-def log_event(event_tweets, timestamp, event_info):
-    status_ids = get_status_ids(event_tweets)
-
-    # Add to events table
-    ev = Events(
-        timestamp=timestamp,
-        count=len(event_tweets),
-        longitude=event_info['longitude'],
-        latitude=event_info['latitude'],
-        west_lon=event_info['west_lon'],
-        south_lat=event_info['south_lat'],
-        east_lon=event_info['east_lon'],
-        north_lat=event_info['north_lat'],
-        place_name=event_info['place_name'],
-        description=event_info['tokens_str'],
-        status_ids=status_ids,
-    )
-    session.add(ev)
-
-    try:
-        session.commit()
-        logger.info(f"Logged event: {timestamp} {event_info['place_name']}: {event_info['tokens_str']}")
-    except Exception:
-        logger.exception(f"Exception when logging event: {timestamp} {event_info['place_name']}: {event_info['tokens_str']}")
-        session.rollback()
 
 
 # Establish connection to Twitter

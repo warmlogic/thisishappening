@@ -3,11 +3,22 @@ import logging
 from typing import List
 
 import pytz
-from sqlalchemy import create_engine, desc, func
-from sqlalchemy import Column, String, Integer, DateTime, Float, ARRAY
+from sqlalchemy import (
+    create_engine,
+    desc,
+    func,
+    Column,
+    String,
+    Integer,
+    DateTime,
+    Float,
+    ARRAY,
+)
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+from utils.tweet_utils import TweetInfo
 
 logger = logging.getLogger("happeninglogger")
 
@@ -38,6 +49,32 @@ class Events(Base):
     place_name = Column(String, nullable=True)
     description = Column(String, nullable=False)
     status_ids = Column(ARRAY(String), nullable=True)
+
+    @classmethod
+    def log_event(cls, session, event_info):
+        # Add to events table
+        event = cls(
+            timestamp=event_info['timestamp'],
+            count=event_info['n'],
+            longitude=event_info['longitude'],
+            latitude=event_info['latitude'],
+            west_lon=event_info['west_lon'],
+            south_lat=event_info['south_lat'],
+            east_lon=event_info['east_lon'],
+            north_lat=event_info['north_lat'],
+            place_name=event_info['place_name'],
+            description=event_info['tokens_str'],
+            status_ids=event_info['status_ids'],
+        )
+        session.add(event)
+        try:
+            session.commit()
+            logger.info(f"Logged event: {event_info['timestamp']} {event_info['place_name']}: {event_info['tokens_str']}")
+        except Exception:
+            logger.exception(f"Exception when logging event: {event_info['timestamp']} {event_info['place_name']}: {event_info['tokens_str']}")
+            session.rollback()
+
+        return event
 
     @classmethod
     def get_recent_events(cls, session, timestamp: datetime = None, hours: float = 1):
@@ -137,6 +174,30 @@ class RecentTweets(Base):
     latitude = Column(Float(precision=8), nullable=False)
     place_name = Column(String, nullable=True)
     place_type = Column(String, nullable=True)
+
+    @classmethod
+    def log_tweet(cls, session, tweet_info: TweetInfo):
+        tweet = cls(
+            status_id_str=tweet_info.status_id_str,
+            user_screen_name=tweet_info.user_screen_name,
+            user_id_str=tweet_info.user_id_str,
+            created_at=tweet_info.created_at,
+            tweet_body=tweet_info.tweet_body,
+            tweet_language=tweet_info.tweet_language,
+            longitude=tweet_info.longitude,
+            latitude=tweet_info.latitude,
+            place_name=tweet_info.place_name,
+            place_type=tweet_info.place_type,
+        )
+        session.add(tweet)
+        try:
+            session.commit()
+            logger.info(f'Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
+        except Exception:
+            logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
+            session.rollback()
+
+        return tweet
 
     @classmethod
     def count_tweets(cls, session, timestamp: datetime = None, hours: float = 0, bounding_box: List[float] = None):
