@@ -122,8 +122,7 @@ class MyStreamer(TwythonStreamer):
                     logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
 
                 if tweet_info.created_at - self.comparison_timestamp >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
-                    logger.info(f'Current tweet time: {tweet_info.created_at}')
-                    logger.info(f'Been more than {TEMPORAL_GRANULARITY_HOURS} hour since oldest event')
+                    logger.info(f'{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour since oldest event')
 
                     activity_curr_day = RecentTweets.get_recent_tweets(
                         session,
