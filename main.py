@@ -8,11 +8,25 @@ import urllib
 from dotenv import load_dotenv
 import numpy as np
 import pytz
-from twython import Twython, TwythonStreamer
-from twython import TwythonError, TwythonRateLimitError, TwythonAuthError
+from twython import (
+    Twython,
+    TwythonStreamer,
+    TwythonError,
+    TwythonRateLimitError,
+    TwythonAuthError,
+)
 
 from utils.data_base import session_factory, RecentTweets, Events
-from utils.tweet_utils import TweetInfo, get_tweet_info, check_tweet, get_tokens_to_tweet, get_coords, get_place_name, get_status_ids
+from utils.tweet_utils import (
+    date_string_to_datetime,
+    TweetInfo,
+    get_tweet_info,
+    check_tweet,
+    get_tokens_to_tweet,
+    get_coords,
+    get_place_name,
+    get_status_ids,
+)
 from utils.data_utils import get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
@@ -375,11 +389,17 @@ twitter = Twython(
 session = session_factory(DATABASE_URL, echo=ECHO)
 
 # Find out when the last event happened
+# First check the database
 most_recent_event = Events.get_most_recent_event(session)
 if most_recent_event is not None:
     event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
 else:
-    event_comparison_ts = None
+    # If no db events, use most recent tweet timestamp as the time of the last event
+    most_recent_tweet = twitter.get_user_timeline(screen_name=MY_SCREEN_NAME, count=1, trim_user=True)
+    if len(most_recent_tweet) > 0:
+        event_comparison_ts = date_string_to_datetime(most_recent_tweet[0]['created_at'])
+    else:
+        event_comparison_ts = None
 
 if __name__ == '__main__':
     logger.info('Initializing tweet streamer...')
