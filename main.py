@@ -123,7 +123,7 @@ class MyStreamer(TwythonStreamer):
                     logger.info(f'Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})')
 
                 if tweet_info.created_at - self.event_comparison_ts >= timedelta(hours=TEMPORAL_GRANULARITY_HOURS):
-                    logger.info(f'{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour(s) since an event occurred')
+                    logger.info(f'{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour(s) since an event occurred, comparing activity...')
 
                     activity_curr_day = RecentTweets.get_recent_tweets(
                         session,
@@ -216,6 +216,8 @@ class MyStreamer(TwythonStreamer):
 
                         # Update the comparison tweet time
                         self.event_comparison_ts = tweet_info.created_at
+                    else:
+                        logger.info('No event found')
 
                     # Purge old data every hour
                     if PURGE_OLD_DATA and (datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts >= timedelta(hours=1)):
