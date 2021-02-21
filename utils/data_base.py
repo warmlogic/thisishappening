@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import logging
+from typing import List
 
 import pytz
 from sqlalchemy import create_engine, desc, func
@@ -30,6 +31,10 @@ class Events(Base):
     count = Column(Integer, nullable=False)
     longitude = Column(Float(precision=8), nullable=False)
     latitude = Column(Float(precision=8), nullable=False)
+    west_lon = Column(Float(precision=8), nullable=False)
+    south_lat = Column(Float(precision=8), nullable=False)
+    east_lon = Column(Float(precision=8), nullable=False)
+    north_lat = Column(Float(precision=8), nullable=False)
     place_name = Column(String, nullable=True)
     description = Column(String, nullable=False)
     status_ids = Column(ARRAY(String), nullable=True)
@@ -55,8 +60,9 @@ class Events(Base):
     def get_event_tweets(cls, session, event_id: int, hours: float = 1):
         event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
         timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
+        bounding_box = [event.west_lon, event.south_lat, event.east_lon, event.north_lat]
 
-        return RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=hours)
+        return RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=hours, bounding_box=bounding_box)
 
     def __repr__(self):
         return f'Event {self.id}'
@@ -128,7 +134,7 @@ class RecentTweets(Base):
     place_type = Column(String, nullable=True)
 
     @classmethod
-    def count_tweets(cls, session, timestamp: datetime = None, hours: float = 0):
+    def count_tweets(cls, session, timestamp: datetime = None, hours: float = 0, bounding_box: List[float] = None):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -138,10 +144,18 @@ class RecentTweets(Base):
             cls, func.count(cls.status_id_str)).filter(
                 cls.created_at >= filter_td).filter(cls.created_at <= timestamp)
 
+        if bounding_box is not None:
+            west_lon, south_lat, east_lon, north_lat = bounding_box
+            q = q.filter(
+                cls.longitude >= west_lon).filter(
+                cls.longitude < east_lon).filter(
+                cls.latitude >= south_lat).filter(
+                cls.latitude < north_lat)
+
         return q.all()
 
     @classmethod
-    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1):
+    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, bounding_box: List[float] = None):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -149,17 +163,41 @@ class RecentTweets(Base):
 
         q = session.query(cls).filter(cls.created_at >= filter_td).filter(cls.created_at <= timestamp)
 
+        if bounding_box is not None:
+            west_lon, south_lat, east_lon, north_lat = bounding_box
+            q = q.filter(
+                cls.longitude >= west_lon).filter(
+                cls.longitude < east_lon).filter(
+                cls.latitude >= south_lat).filter(
+                cls.latitude < north_lat)
+
         return q.order_by(desc(cls.created_at)).all()
 
     @classmethod
-    def get_oldest_tweet(cls, session):
+    def get_oldest_tweet(cls, session, bounding_box: List[float] = None):
         q = session.query(cls)
+
+        if bounding_box is not None:
+            west_lon, south_lat, east_lon, north_lat = bounding_box
+            q = q.filter(
+                cls.longitude >= west_lon).filter(
+                cls.longitude < east_lon).filter(
+                cls.latitude >= south_lat).filter(
+                cls.latitude < north_lat)
 
         return q.order_by(cls.created_at).first()
 
     @classmethod
-    def get_most_recent_tweet(cls, session):
+    def get_most_recent_tweet(cls, session, bounding_box: List[float] = None):
         q = session.query(cls)
+
+        if bounding_box is not None:
+            west_lon, south_lat, east_lon, north_lat = bounding_box
+            q = q.filter(
+                cls.longitude >= west_lon).filter(
+                cls.longitude < east_lon).filter(
+                cls.latitude >= south_lat).filter(
+                cls.latitude < north_lat)
 
         return q.order_by(desc(cls.created_at)).first()
 

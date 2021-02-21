@@ -294,6 +294,10 @@ def log_tweet(tweet_info: TweetInfo):
 def get_event_info(event_tweets, token_count_min: int = None):
     # Compute the average tweet location
     lons, lats = get_coords(event_tweets)
+    west_lon = min(lons)
+    south_lat = min(lats)
+    east_lon = max(lons)
+    north_lat = max(lats)
     longitude = sum(lons) / len(lons)
     latitude = sum(lats) / len(lats)
     lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
@@ -346,6 +350,10 @@ def get_event_info(event_tweets, token_count_min: int = None):
         'event_str': event_str,
         'longitude': longitude,
         'latitude': latitude,
+        'west_lon': west_lon,
+        'south_lat': south_lat,
+        'east_lon': east_lon,
+        'north_lat': north_lat,
         'place_name': place_name,
         'tokens_str': tokens_str,
     }
@@ -362,6 +370,10 @@ def log_event(event_tweets, timestamp, event_info):
         count=len(event_tweets),
         longitude=event_info['longitude'],
         latitude=event_info['latitude'],
+        west_lon=event_info['west_lon'],
+        south_lat=event_info['south_lat'],
+        east_lon=event_info['east_lon'],
+        north_lat=event_info['north_lat'],
         place_name=event_info['place_name'],
         description=event_info['tokens_str'],
         status_ids=status_ids,
