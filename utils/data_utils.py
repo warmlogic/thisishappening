@@ -114,17 +114,24 @@ def set_activity_weight(activity, weighted: bool = None, weight_factor: float = 
 
 def get_kde(grid_coords, activity, bw_method: float = None, weighted: bool = None, weight_factor: float = None):
     bw_method = 0.3 if bw_method is None else bw_method
+    gc_shape = int(np.sqrt(grid_coords.shape[0]))
 
     activity_weighted = set_activity_weight(activity, weighted=weighted, weight_factor=weight_factor)
     sample_weight = [x["weight"] for x in activity_weighted]
 
     lon_lat = np.array([[x["longitude"], x["latitude"]] for x in activity_weighted])
 
-    kernel = stats.gaussian_kde(lon_lat.T, bw_method=bw_method, weights=sample_weight)
+    try:
+        kernel = stats.gaussian_kde(lon_lat.T, bw_method=bw_method, weights=sample_weight)
+    except np.linalg.LinAlgError as e:
+        logger.info(f"Could not get KDE, {e}")
+        kernel = None
 
-    z = kernel(grid_coords.T)
-    gc_shape = int(np.sqrt(grid_coords.shape[0]))
-    z = z.reshape(gc_shape, gc_shape)
+    if kernel is not None:
+        z = kernel(grid_coords.T)
+        z = z.reshape(gc_shape, gc_shape)
+    else:
+        z = np.zeros([gc_shape, gc_shape])
 
     return z, kernel, activity_weighted
 
