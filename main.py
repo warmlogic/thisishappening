@@ -16,12 +16,7 @@ from twython import (
 )
 
 from utils.data_base import session_factory, RecentTweets, Events
-from utils.tweet_utils import (
-    date_string_to_datetime,
-    check_tweet,
-    get_tweet_info,
-    get_event_info,
-)
+from utils.tweet_utils import date_string_to_datetime, check_tweet, get_tweet_info, get_event_info
 from utils.data_utils import get_grid_coords, inbounds, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
