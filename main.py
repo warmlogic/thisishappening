@@ -54,6 +54,10 @@ if DEBUG_RUN:
     LOG_TWEETS = False
     LOG_EVENTS = False
     PURGE_OLD_DATA = False
+    RECENT_TWEETS_ROWS_TO_KEEP = None
+    EVENTS_ROWS_TO_KEEP = None
+    # RECENT_TWEETS_DAYS_TO_KEEP = None
+    # EVENTS_DAYS_TO_KEEP = None
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
@@ -62,6 +66,10 @@ else:
     LOG_TWEETS = True
     LOG_EVENTS = True
     PURGE_OLD_DATA = True
+    RECENT_TWEETS_ROWS_TO_KEEP = int(os.getenv("RECENT_TWEETS_ROWS_TO_KEEP", default="9000"))
+    EVENTS_ROWS_TO_KEEP = int(os.getenv("EVENTS_ROWS_TO_KEEP", default="500"))
+    # RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="8.0"))
+    # EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
     ECHO = False
 
 APP_KEY = os.getenv("API_KEY", default=None)
@@ -81,8 +89,6 @@ KM_STEP = int(os.getenv("KM_STEP", default="5"))
 MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
-RECENT_TWEETS_DAYS_TO_KEEP = float(os.getenv("RECENT_TWEETS_DAYS_TO_KEEP", default="8.0"))
-EVENTS_DAYS_TO_KEEP = float(os.getenv("EVENTS_DAYS_TO_KEEP", default="365.0"))
 # Use docs/index.html to render words and map of tweets
 BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?")
 
@@ -233,13 +239,15 @@ class MyStreamer(TwythonStreamer):
                     else:
                         logger.info('No event found')
 
-                    # Purge old data every hour
-                    if PURGE_OLD_DATA and (datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts >= timedelta(hours=1)):
-                        # Delete old recent tweets rows
-                        RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
+                    # Purge old data every so often
+                    if PURGE_OLD_DATA and (datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts >= timedelta(minutes=10)):
+                        # Delete old data by row count
+                        RecentTweets.keep_tweets_n_rows(session, n=RECENT_TWEETS_ROWS_TO_KEEP)
+                        Events.keep_events_n_rows(session, n=EVENTS_ROWS_TO_KEEP)
 
-                        # Delete old events rows
-                        Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
+                        # # Delete old data by timestamp
+                        # RecentTweets.delete_tweets_older_than(session, timestamp=tweet_info.created_at, days=RECENT_TWEETS_DAYS_TO_KEEP)
+                        # Events.delete_events_older_than(session, timestamp=tweet_info.created_at, days=EVENTS_DAYS_TO_KEEP)
 
                         # Update
                         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
