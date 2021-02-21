@@ -59,10 +59,15 @@ class Events(Base):
     @classmethod
     def get_event_tweets(cls, session, event_id: int, hours: float = 1):
         event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
-        timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
-        bounding_box = [event.west_lon, event.south_lat, event.east_lon, event.north_lat]
+        if event is not None:
+            timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
+            bounding_box = [event.west_lon, event.south_lat, event.east_lon, event.north_lat]
+            event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=hours, bounding_box=bounding_box)
+        else:
+            logger.info(f"Event ID {event_id} not found")
+            event_tweets = []
 
-        return RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=hours, bounding_box=bounding_box)
+        return event_tweets
 
     def __repr__(self):
         return f'Event {self.id}'
