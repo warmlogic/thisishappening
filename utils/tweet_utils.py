@@ -21,7 +21,7 @@ url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
 ellipsis_unicode = '\u2026'
 
-nlp = en_core_web_sm.load(disable=["tagger", "parser", "ner"])
+nlp = en_core_web_sm.load(exclude=["parser", "ner"])
 
 TweetInfo = namedtuple(
     'TweetInfo',
@@ -177,7 +177,7 @@ def clean_text(text: str) -> str:
     return ' '.join(tokens)
 
 
-def filter_tokens(text: str) -> str:
+def filter_tokens(text: str, lemmatize: bool = False) -> str:
     def _token_filter(token):
         return not any([
             token.is_punct,
@@ -187,8 +187,10 @@ def filter_tokens(text: str) -> str:
             (len(token.text) <= 1),
         ])
 
-    # tokens = [token.lemma_ for token in nlp(text) if _token_filter(token)]
-    tokens = [token.text for token in nlp(text) if _token_filter(token)]
+    tokens = [
+        token.lemma_ if lemmatize else token.text for token in nlp(text)
+        if _token_filter(token)
+    ]
 
     return ' '.join(tokens)
 
