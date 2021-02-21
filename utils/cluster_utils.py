@@ -10,28 +10,20 @@ logger = logging.getLogger("happeninglogger")
 KMS_PER_RADIAN = 6371.0088
 
 
-def cluster_activity(activity, min_samples: int, kms: float = 0.1, min_n_clusters: int = 1, max_tries: int = 5, sample_weight=None):
-    if not activity:
+def cluster_activity(activity, min_samples: int, km_start: float = 0.05, km_stop: float = 0.3, km_step: int = 5, min_n_clusters: int = 1, sample_weight=None):
+    if len(activity) == 0:
         return {}
 
-    eps = kms / KMS_PER_RADIAN
-    eps_step = eps / 2.0
+    kms = np.linspace(km_start, km_stop, km_step)
+    _eps = [(km / KMS_PER_RADIAN) for km in kms]
 
     # haversine metric requires radians
     lons, lats = get_coords(activity)
     X = np.radians([[lon, lat] for lon, lat in zip(lons, lats)])
 
-    clusters = {}
     unique_labels = []
-    n_tries = 0
-    while len(unique_labels) < min_n_clusters:
-        n_tries += 1
-
-        if n_tries > max_tries:
-            logger.info(f'Tried maximum number of times ({max_tries}), not continuing')
-            break
-
-        logger.info(f'Running clustering attempt {n_tries}')
+    for km, eps in zip(kms, _eps):
+        logger.info(f'Clustering, max neighbor distance {km:.3f} km')
         db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine')
         db.fit(X, sample_weight=sample_weight)
 
@@ -39,10 +31,10 @@ def cluster_activity(activity, min_samples: int, kms: float = 0.1, min_n_cluster
         unique_labels = [x for x in set(db.labels_) if x != -1]
         logger.info(f'Found {len(unique_labels)} clusters')
 
-        if len(unique_labels) < min_n_clusters:
-            logger.info(f'Increasing epsilon from {eps} to {eps + eps_step}')
-            eps += eps_step
+        if len(unique_labels) >= min_n_clusters:
+            break
 
+    clusters = {}
     for k in unique_labels:
         cluster_mask = (db.labels_ == k)
         cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
