@@ -3,7 +3,6 @@ import logging
 import os
 from pathlib import Path
 from time import sleep
-import urllib
 
 from dotenv import load_dotenv
 import numpy as np
@@ -19,14 +18,11 @@ from twython import (
 from utils.data_base import session_factory, RecentTweets, Events
 from utils.tweet_utils import (
     date_string_to_datetime,
-    get_tweet_info,
     check_tweet,
-    get_tokens_to_tweet,
-    get_coords,
-    get_place_name,
-    get_status_ids,
+    get_tweet_info,
+    get_event_info,
 )
-from utils.data_utils import get_grid_coords, inbounds, reverse_geocode, compare_activity_kde
+from utils.data_utils import get_grid_coords, inbounds, compare_activity_kde
 from utils.cluster_utils import cluster_activity
 
 logging.basicConfig(format='{asctime} : {levelname} : {message}', style='{')
@@ -212,19 +208,24 @@ class MyStreamer(TwythonStreamer):
 
                         for cluster in clusters.values():
                             event_info = get_event_info(
+                                twitter,
                                 event_tweets=cluster['event_tweets'],
                                 timestamp=tweet_info.created_at,
+                                tweet_max_length=TWEET_MAX_LENGTH,
+                                tweet_url_length=TWEET_URL_LENGTH,
+                                base_event_url=BASE_EVENT_URL,
                                 token_count_min=TOKEN_COUNT_MIN,
+                                remove_username_at=REMOVE_USERNAME_AT,
                             )
 
                             if LOG_EVENTS:
                                 _ = Events.log_event(session, event_info=event_info)
                             else:
-                                logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info['place_name']}: {event_info['tokens_str']}")
+                                logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info.place_name}: {event_info.tokens_str}")
 
                             if POST_EVENT:
                                 try:
-                                    status = twitter.update_status(status=event_info['event_str'])
+                                    status = twitter.update_status(status=event_info.event_str)
                                 except TwythonAuthError:
                                     logger.exception('Authorization error, did you create read+write credentials?')
                                 except TwythonRateLimitError:
@@ -275,79 +276,6 @@ class MyStreamer(TwythonStreamer):
             logger.warning(f'Some other error occurred. Sleeping for {seconds} seconds.')
             sleep(seconds)
             self.sleep_exponent += 1
-
-
-def get_event_info(event_tweets, timestamp, token_count_min: int = None):
-    # Compute the average tweet location
-    lons, lats = get_coords(event_tweets)
-    west_lon = min(lons)
-    south_lat = min(lats)
-    east_lon = max(lons)
-    north_lat = max(lats)
-    longitude = sum(lons) / len(lons)
-    latitude = sum(lats) / len(lats)
-    lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
-
-    place_name = get_place_name(event_tweets, valid_place_types=['neighborhood', 'poi'])
-
-    # Get a larger granular name to include after a neighborhood or poi
-    city_name = get_place_name(event_tweets, valid_place_types=['city'])
-
-    # If the tweets didn't have a valid place name, reverse geocode to get the neighborhood name
-    if place_name is None:
-        rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
-        try:
-            place_name = rev_geo['neighborhood']
-        except KeyError:
-            logger.info("No place name found for event")
-
-    # Prepare the tweet text
-    tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=REMOVE_USERNAME_AT)
-    tokens_str = ' '.join(tokens_to_tweet)
-
-    # Construct the message to tweet
-    event_str = "Something's happening"
-    event_str = f'{event_str} in {place_name}' if place_name else event_str
-    event_str = f'{event_str}, {city_name}' if city_name else event_str
-    event_str = f'{event_str} ({lat_long_str}):'
-    remaining_chars = TWEET_MAX_LENGTH - len(event_str) - 2 - TWEET_URL_LENGTH
-    # Find the largest set of tokens to fill out the remaining charaters
-    possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
-    mask = [len(x) <= remaining_chars for x in possible_token_sets]
-    tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
-
-    # tweets are ordered newest to oldest
-    coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
-    status_ids = get_status_ids(event_tweets)
-    tweet_ids = ','.join(sorted(status_ids)[::-1])
-
-    urlparams = {
-        'words': tokens,
-        'coords': coords,
-        'tweets': tweet_ids,
-    }
-    event_url = BASE_EVENT_URL + urllib.parse.urlencode(urlparams)
-    event_str = f'{event_str} {tokens} {event_url}'
-
-    logger.info(f'{place_name}: Found event with {len(event_tweets)} tweets: {tokens_str}')
-    logger.info(event_str)
-
-    event_info = {
-        'timestamp': timestamp,
-        'n': len(event_tweets),
-        'event_str': event_str,
-        'longitude': longitude,
-        'latitude': latitude,
-        'west_lon': west_lon,
-        'south_lat': south_lat,
-        'east_lon': east_lon,
-        'north_lat': north_lat,
-        'place_name': place_name,
-        'tokens_str': tokens_str,
-        'status_ids': status_ids,
-    }
-
-    return event_info
 
 
 # Establish connection to Twitter

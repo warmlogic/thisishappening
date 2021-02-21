@@ -6,11 +6,14 @@ import operator
 import re
 import string
 from typing import Dict, List
+import urllib
 
 import emoji
 import en_core_web_sm
 from ftfy import fix_text
 import pytz
+
+from utils.data_utils import reverse_geocode
 
 logger = logging.getLogger("happeninglogger")
 
@@ -36,6 +39,24 @@ TweetInfo = namedtuple(
         'latitude',
         'place_name',
         'place_type',
+    ],
+)
+
+EventInfo = namedtuple(
+    'EventInfo',
+    [
+        'timestamp',
+        'n',
+        'event_str',
+        'longitude',
+        'latitude',
+        'west_lon',
+        'south_lat',
+        'east_lon',
+        'north_lat',
+        'place_name',
+        'tokens_str',
+        'status_ids',
     ],
 )
 
@@ -195,9 +216,9 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
     return ' '.join(tokens)
 
 
-def get_tokens_to_tweet(tweets: List, token_count_min: int = None, remove_username_at: bool = True):
-    if token_count_min is None:
-        token_count_min = 2
+def get_tokens_to_tweet(tweets: List, token_count_min: int = None, remove_username_at: bool = None):
+    token_count_min = token_count_min if token_count_min else 2
+    remove_username_at = remove_username_at if remove_username_at else True
 
     try:
         tweets = [remove_urls(x.tweet_body) for x in tweets]
@@ -281,3 +302,85 @@ def get_status_ids(tweets):
         logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
 
     return status_ids
+
+
+def get_event_info(
+    twitter,
+    event_tweets: List,
+    timestamp: datetime,
+    tweet_max_length: int,
+    tweet_url_length: int,
+    base_event_url: str,
+    token_count_min: int = None,
+    remove_username_at: bool = None,
+):
+    # Compute the average tweet location
+    lons, lats = get_coords(event_tweets)
+    west_lon = min(lons)
+    south_lat = min(lats)
+    east_lon = max(lons)
+    north_lat = max(lats)
+    longitude = sum(lons) / len(lons)
+    latitude = sum(lats) / len(lats)
+    lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
+
+    place_name = get_place_name(event_tweets, valid_place_types=['neighborhood', 'poi'])
+
+    # Get a larger granular name to include after a neighborhood or poi
+    city_name = get_place_name(event_tweets, valid_place_types=['city'])
+
+    # If the tweets didn't have a valid place name, reverse geocode to get the neighborhood name
+    if place_name is None:
+        rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
+        try:
+            place_name = rev_geo['neighborhood']
+        except KeyError:
+            logger.info("No place name found for event")
+
+    # Prepare the tweet text
+    tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=remove_username_at)
+    tokens_str = ' '.join(tokens_to_tweet)
+
+    # Construct the message to tweet
+    event_str = "Something's happening"
+    event_str = f'{event_str} in {place_name}' if place_name else event_str
+    event_str = f'{event_str}, {city_name}' if city_name else event_str
+    event_str = f'{event_str} ({lat_long_str}):'
+    remaining_chars = tweet_max_length - len(event_str) - 2 - tweet_url_length
+    # Find the largest set of tokens to fill out the remaining charaters
+    possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]
+    mask = [len(x) <= remaining_chars for x in possible_token_sets]
+    tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
+
+    # tweets are ordered newest to oldest
+    coords = ','.join([f'{lon}+{lat}' for lon, lat in zip(lons, lats)])
+    status_ids = get_status_ids(event_tweets)
+    tweet_ids = ','.join(sorted(status_ids)[::-1])
+
+    urlparams = {
+        'words': tokens,
+        'coords': coords,
+        'tweets': tweet_ids,
+    }
+    event_url = base_event_url + urllib.parse.urlencode(urlparams)
+    event_str = f'{event_str} {tokens} {event_url}'
+
+    logger.info(f'{place_name}: Found event with {len(event_tweets)} tweets: {tokens_str}')
+    logger.info(event_str)
+
+    event_info = EventInfo(
+        timestamp=timestamp,
+        n=len(event_tweets),
+        event_str=event_str,
+        longitude=longitude,
+        latitude=latitude,
+        west_lon=west_lon,
+        south_lat=south_lat,
+        east_lon=east_lon,
+        north_lat=north_lat,
+        place_name=place_name,
+        tokens_str=tokens_str,
+        status_ids=status_ids,
+    )
+
+    return event_info
