@@ -18,7 +18,7 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from utils.tweet_utils import TweetInfo
+from utils.tweet_utils import TweetInfo, EventInfo
 
 logger = logging.getLogger("happeninglogger")
 
@@ -51,27 +51,27 @@ class Events(Base):
     status_ids = Column(ARRAY(String), nullable=True)
 
     @classmethod
-    def log_event(cls, session, event_info):
+    def log_event(cls, session, event_info: EventInfo):
         # Add to events table
         event = cls(
-            timestamp=event_info['timestamp'],
-            count=event_info['n'],
-            longitude=event_info['longitude'],
-            latitude=event_info['latitude'],
-            west_lon=event_info['west_lon'],
-            south_lat=event_info['south_lat'],
-            east_lon=event_info['east_lon'],
-            north_lat=event_info['north_lat'],
-            place_name=event_info['place_name'],
-            description=event_info['tokens_str'],
-            status_ids=event_info['status_ids'],
+            timestamp=event_info.timestamp,
+            count=event_info.n,
+            longitude=event_info.longitude,
+            latitude=event_info.latitude,
+            west_lon=event_info.west_lon,
+            south_lat=event_info.south_lat,
+            east_lon=event_info.east_lon,
+            north_lat=event_info.north_lat,
+            place_name=event_info.place_name,
+            description=event_info.tokens_str,
+            status_ids=event_info.status_ids,
         )
         session.add(event)
         try:
             session.commit()
-            logger.info(f"Logged event: {event_info['timestamp']} {event_info['place_name']}: {event_info['tokens_str']}")
+            logger.info(f"Logged event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}")
         except Exception:
-            logger.exception(f"Exception when logging event: {event_info['timestamp']} {event_info['place_name']}: {event_info['tokens_str']}")
+            logger.exception(f"Exception when logging event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}")
             session.rollback()
 
         return event
