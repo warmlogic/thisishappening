@@ -215,9 +215,15 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
     return ' '.join(tokens)
 
 
-def get_tokens_to_tweet(tweets: List, token_count_min: int = None, remove_username_at: bool = None):
+def get_tokens_to_tweet(
+    tweets: List,
+    token_count_min: int = None,
+    remove_username_at: bool = None,
+    deduplicate_each_tweet: bool = None,
+):
     token_count_min = token_count_min if token_count_min else 2
     remove_username_at = remove_username_at if remove_username_at else True
+    deduplicate_each_tweet = deduplicate_each_tweet if deduplicate_each_tweet else True
 
     try:
         tweets = [remove_urls(x.tweet_body) for x in tweets]
@@ -229,29 +235,49 @@ def get_tokens_to_tweet(tweets: List, token_count_min: int = None, remove_userna
     tweets = [clean_text(tweet) for tweet in tweets]
 
     # Pull out user names, hashtags, and emojis
-    users_hashtags_emojis = [[token for token in split_text(tweet) if is_username_or_hashtag(token) or emoji.emoji_count(token)] for tweet in tweets]
+    users_hashtags_emojis = [
+        [
+            token.lower() for token in split_text(tweet) if is_username_or_hashtag(token) or emoji.emoji_count(token)
+        ]
+        for tweet in tweets
+    ]
 
     # Get the remaining text
-    tweets = [' '.join([token for token in tweet.split() if (not is_username_or_hashtag(token)) and (not emoji.emoji_count(token))]) for tweet in tweets]
+    tweets = [
+        ' '.join([
+            token for token in split_text(tweet) if (not is_username_or_hashtag(token)) and (not emoji.emoji_count(token))
+        ]) for tweet in tweets
+    ]
 
     # Remove stopwords
     tweets = [filter_tokens(tweet) for tweet in tweets]
 
-    # Flatten list of lists
-    tokens = [token.lower() for tweet in tweets for token in tweet.split()]
-    users_hashtags_emojis = [token for tweet in users_hashtags_emojis for token in tweet]
+    # Lowercase and split each tweet into a list
+    tweets = [tweet.lower().split() for tweet in tweets]
+
+    # Keep alphanumeric tokens
+    tweets = [[token for token in tweet if token.isalnum()] for tweet in tweets]
 
     # Optionally remove @ from username so user won't be tagged when event is posted
     if remove_username_at:
         users_hashtags_emojis = [
-            token.replace('@', '') if is_username(token) else token
-            for token in users_hashtags_emojis
+            [
+                token.replace('@', '') if is_username(token) else token
+                for token in tweet
+            ]
+            for tweet in users_hashtags_emojis
         ]
 
-    # Keep alphanumeric tokens
-    tokens = [token for token in tokens if token.isalnum()]
+    # Combine tokens and usernames/hashtags/emojis from each tweet
+    tweets = [t + u for t, u in zip(tweets, users_hashtags_emojis)]
 
-    counter = Counter(tokens + users_hashtags_emojis).most_common()
+    if deduplicate_each_tweet:
+        tweets = [list(dict.fromkeys(tweet)) for tweet in tweets]
+
+    # Flatten list of lists
+    tokens = [token for tweet in tweets for token in tweet]
+
+    counter = Counter(tokens).most_common()
     # Get tokens; reduce threshold if no tokens are above the threshold
     tokens_to_tweet = []
     while not tokens_to_tweet and token_count_min > 0:
@@ -259,7 +285,7 @@ def get_tokens_to_tweet(tweets: List, token_count_min: int = None, remove_userna
         tokens_to_tweet = [tc[0] for tc in counter if tc[1] >= token_count_min]
         token_count_min -= 1
 
-    if not tokens_to_tweet:
+    if len(tokens_to_tweet) == 0:
         tokens_to_tweet = ['No tweet text found']
 
     return tokens_to_tweet
