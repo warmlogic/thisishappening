@@ -22,6 +22,7 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 - [x] Provide access to the tweets associated with each event
 - [x] Write query to keep most recent N days of data and run in main loop
 - [x] Maintain maximum recent_tweets table row count and run in main loop
+- [x] Deduplicate tokens within each tweet
 
 ### Analytics
 
