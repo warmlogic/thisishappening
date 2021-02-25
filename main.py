@@ -102,8 +102,8 @@ GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
 WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
 WEIGHT_FACTOR = float(os.getenv("WEIGHT_FACTOR", default="1.0"))
-ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="500.0"))
-ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="3000.0"))
+ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="100.0"))
+ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="1000.0"))
 
 
 class MyStreamer(TwythonStreamer):
@@ -177,7 +177,7 @@ class MyStreamer(TwythonStreamer):
                         if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
                             event_day = True
 
-                        logger.info(f"Day event: {event_hour}, max activity difference: {z_diff_day.max():.2f}, threshold: {ACTIVITY_THRESHOLD_DAY}")
+                        logger.info(f"Day event: {event_day}, current: {len(activity_curr_day)}, previous: {len(activity_prev_day)}, max diff: {z_diff_day.max():.2f}, threshold: {ACTIVITY_THRESHOLD_DAY}")
 
                     if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
                         z_diff_hour, _, activity_curr_hour_w = compare_activity_kde(
@@ -191,7 +191,7 @@ class MyStreamer(TwythonStreamer):
                         if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
                             event_hour = True
 
-                        logger.info(f"Hour event: {event_hour}, max activity difference: {z_diff_hour.max():.2f}, threshold: {ACTIVITY_THRESHOLD_HOUR}")
+                        logger.info(f"Hour event: {event_hour}, current: {len(activity_curr_hour)}, previous: {len(activity_prev_hour)}, max diff: {z_diff_hour.max():.2f}, threshold: {ACTIVITY_THRESHOLD_HOUR}")
 
                     if event_day and event_hour:
                         sample_weight = [x["weight"] for x in activity_curr_hour_w]
