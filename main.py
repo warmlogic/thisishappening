@@ -177,6 +177,8 @@ class MyStreamer(TwythonStreamer):
                         if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
                             event_day = True
 
+                        logger.info(f"Day event: {event_hour}, max activity difference: {z_diff_day.max():.2f}, threshold: {ACTIVITY_THRESHOLD_DAY}")
+
                     if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
                         z_diff_hour, activity_prev_hour_w, activity_curr_hour_w = compare_activity_kde(
                             self.grid_coords,
@@ -188,6 +190,8 @@ class MyStreamer(TwythonStreamer):
 
                         if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
                             event_hour = True
+
+                        logger.info(f"Hour event: {event_hour}, max activity difference: {z_diff_hour.max():.2f}, threshold: {ACTIVITY_THRESHOLD_HOUR}")
 
                     if event_day and event_hour:
                         sample_weight = [x["weight"] for x in activity_curr_hour_w]
@@ -231,8 +235,6 @@ class MyStreamer(TwythonStreamer):
 
                         # Update the comparison tweet time
                         self.event_comparison_ts = tweet_info.created_at
-                    else:
-                        logger.info('No event found')
 
                     # Purge old data every so often
                     if PURGE_OLD_DATA and (datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts >= timedelta(minutes=10)):
