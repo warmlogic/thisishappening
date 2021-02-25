@@ -166,7 +166,7 @@ class MyStreamer(TwythonStreamer):
                     event_hour = False
 
                     if (len(activity_prev_day) > 1) and (len(activity_curr_day) > 1):
-                        z_diff_day, activity_prev_day_w, activity_curr_day_w = compare_activity_kde(
+                        z_diff_day, _, _ = compare_activity_kde(
                             self.grid_coords,
                             activity_prev_day, activity_curr_day,
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
@@ -180,7 +180,7 @@ class MyStreamer(TwythonStreamer):
                         logger.info(f"Day event: {event_hour}, max activity difference: {z_diff_day.max():.2f}, threshold: {ACTIVITY_THRESHOLD_DAY}")
 
                     if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
-                        z_diff_hour, activity_prev_hour_w, activity_curr_hour_w = compare_activity_kde(
+                        z_diff_hour, _, activity_curr_hour_w = compare_activity_kde(
                             self.grid_coords,
                             activity_prev_hour, activity_curr_hour,
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
