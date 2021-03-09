@@ -54,6 +54,7 @@ EventInfo = namedtuple(
         'east_lon',
         'north_lat',
         'place_name',
+        'place_id',
         'tokens_str',
         'status_ids',
     ],
@@ -395,6 +396,11 @@ def get_event_info(
         except KeyError:
             logger.info("No place name found for event")
 
+    # TODO - only if poi
+    place_id = None
+    if place_name is not None:
+        place_id = None
+
     # Prepare the tweet text
     tokens_to_tweet = get_tokens_to_tweet(event_tweets, token_count_min=token_count_min, remove_username_at=remove_username_at)
     tokens_str = ' '.join(tokens_to_tweet)
@@ -437,6 +443,7 @@ def get_event_info(
         east_lon=east_lon,
         north_lat=north_lat,
         place_name=place_name,
+        place_id=place_id,
         tokens_str=tokens_str,
         status_ids=status_ids,
     )

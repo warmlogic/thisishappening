@@ -31,6 +31,8 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 ### Publishing / Analytics
 
 - [x] When an event is found, tweet an image of a map with the location/heat map
+- [x] Set my tweet's location to the event latitude and longitude
+- [ ] Exclude my own tweets from the search
 - [ ] Plot the pulse of a neighborhood over time: count of tweets by hour
 
 ## Realizations
@@ -40,3 +42,4 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
   - Potentially splits events across regions
   - Keeping the running statistics requires storing many rows in database table; wouldn't be an issue if I wasn't trying to operate on a shoestring budget because I could run my own database
 - It's not uncommon to get a false alarm due to one user posting many tweets in a short time period
+- To add a location to the bot tweets, need to enable in: Settings and privacy -> Privacy and safety -> Location information -> Add location information to your Tweets

@@ -223,7 +223,12 @@ class MyStreamer(TwythonStreamer):
 
                             if POST_EVENT:
                                 try:
-                                    status = twitter.update_status(status=event_info.event_str)
+                                    status = twitter.update_status(
+                                        status=event_info.event_str,
+                                        lat=event_info.latitude,
+                                        long=event_info.longitude,
+                                        # place_id=event_info.place_id,
+                                    )
                                 except TwythonAuthError:
                                     logger.exception('Authorization error, did you create read+write credentials?')
                                 except TwythonRateLimitError:
