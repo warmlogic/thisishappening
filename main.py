@@ -319,6 +319,8 @@ if __name__ == '__main__':
     bounding_box_str = ','.join([str(x) for x in BOUNDING_BOX])
     logger.info(f'Looking for tweets in bounding box: {bounding_box_str}')
     while True:
+        # Use try/except to avoid ChunkedEncodingError
+        # https://github.com/ryanmcgrath/twython/issues/288
         try:
             stream.statuses.filter(locations=bounding_box_str)
         except Exception:
