@@ -173,6 +173,7 @@ class RecentTweets(Base):
     tweet_language = Column(String, nullable=True)
     longitude = Column(Float(precision=8), nullable=False)
     latitude = Column(Float(precision=8), nullable=False)
+    place_id = Column(String, nullable=True)
     place_name = Column(String, nullable=True)
     place_type = Column(String, nullable=True)
 
@@ -187,6 +188,7 @@ class RecentTweets(Base):
             tweet_language=tweet_info.tweet_language,
             longitude=tweet_info.longitude,
             latitude=tweet_info.latitude,
+            place_id=tweet_info.place_id,
             place_name=tweet_info.place_name,
             place_type=tweet_info.place_type,
         )
