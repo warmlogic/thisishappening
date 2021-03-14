@@ -15,7 +15,7 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
     - [ ] Define activity thresholds using intuitive, human readable values
   - [x] Prevent a single prolific user from easily triggering an event by decreasing the weight of their tweets
   - [x] Deduplicate tokens within each tweet
-  - [ ] Separate "canonical city location" tweets from other geotagged activity. Could identify these tweets by selecting the ones with a specific longitude and latitude.
+  - [x] Reduce weight for tweets with specific longitude and latitude (e.g., "canonical" city locations that get assigned to Instagram photo posts)
   - [ ] Detect and ignore spam tweets, e.g., job postings, apartment listings
 - Queries
   - [x] Provide access to the tweets associated with each event
