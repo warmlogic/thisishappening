@@ -54,9 +54,9 @@ def get_grid_coords(bounding_box: List[float], grid_resolution: int):
     return grid_coords, x_flat, y_flat
 
 
-def compute_weight(x: int, weight_factor: float = None) -> float:
+def compute_weight(weight: float, x: int, weight_factor: float = None) -> float:
     weight_factor = 1.0 if weight_factor is None else weight_factor
-    return 1 / np.exp(x * weight_factor)
+    return weight / np.exp(x * weight_factor)
 
 
 def set_activity_weight(activity, weighted: bool = None, weight_factor: float = None) -> List[Dict]:
@@ -65,6 +65,10 @@ def set_activity_weight(activity, weighted: bool = None, weight_factor: float = 
     # Create a list of dictionaries and remove the sqlalchemy instance state key
     activity_dict = [{k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"} for x in activity]
 
+    # Give every tweet a weight
+    for tweet in activity_dict:
+        tweet["weight"] = 1.0
+
     # Compute tweet weight within a user
     activity_sorted = sorted(activity_dict, key=itemgetter("user_id_str"))
     activity_grouped = {}
@@ -72,7 +76,7 @@ def set_activity_weight(activity, weighted: bool = None, weight_factor: float = 
         # Sort user tweets so first tweet has highest weight
         activity_grouped[user_id] = sorted(tweets, key=itemgetter("created_at"))
         for i, tweet in enumerate(activity_grouped[user_id]):
-            tweet["weight"] = compute_weight(i, weight_factor) if weighted else 1.0
+            tweet["weight"] = compute_weight(tweet["weight"], i, weight_factor) if weighted else 1.0
 
     # Get a flat list of tweets
     activity_weighted = [tweet for tweets in list(activity_grouped.values()) for tweet in tweets]
