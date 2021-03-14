@@ -32,7 +32,7 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 
 - [x] When an event is found, tweet an image of a map with the location/heat map
 - [x] Set my tweet's location to the event latitude and longitude
-- [ ] Exclude my own tweets from the search
+- [x] Exclude my own tweets from the search (put myself in the list of users to ignore)
 - [ ] Plot the pulse of a neighborhood over time: count of tweets by hour
 
 ## Realizations
