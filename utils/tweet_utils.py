@@ -36,7 +36,11 @@ TweetInfo = namedtuple(
         'tweet_language',
         'longitude',
         'latitude',
+        'place_id',
         'place_name',
+        'place_full_name',
+        'place_country',
+        'place_country_code',
         'place_type',
     ],
 )
@@ -53,8 +57,8 @@ EventInfo = namedtuple(
         'south_lat',
         'east_lon',
         'north_lat',
-        'place_name',
         'place_id',
+        'place_name',
         'tokens_str',
         'status_ids',
     ],
@@ -79,9 +83,13 @@ def get_tweet_info(status: Dict) -> Dict:
     else:
         longitude = None
         latitude = None
-    place_name = status['place']['name']
+    place_id = status['place'].get('id')
+    place_name = status['place'].get('name')
+    place_full_name = status['place'].get('full_name')
+    place_country = status['place'].get('country')
+    place_country_code = status['place'].get('country_code')
     # Possible place_type values: country, admin, city, neighborhood, poi
-    place_type = status['place']['place_type']
+    place_type = status['place'].get('place_type')
 
     tweet_info = TweetInfo(
         status_id_str=status_id_str,
@@ -92,7 +100,11 @@ def get_tweet_info(status: Dict) -> Dict:
         tweet_language=tweet_language,
         longitude=longitude,
         latitude=latitude,
+        place_id=place_id,
         place_name=place_name,
+        place_full_name=place_full_name,
+        place_country=place_country,
+        place_country_code=place_country_code,
         place_type=place_type,
     )
 
@@ -442,8 +454,8 @@ def get_event_info(
         south_lat=south_lat,
         east_lon=east_lon,
         north_lat=north_lat,
-        place_name=place_name,
         place_id=place_id,
+        place_name=place_name,
         tokens_str=tokens_str,
         status_ids=status_ids,
     )
