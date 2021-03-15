@@ -116,12 +116,16 @@ def get_kde(
     try:
         kernel = stats.gaussian_kde(lon_lat.T, bw_method=bw_method, weights=sample_weight)
     except np.linalg.LinAlgError as e:
-        logger.info(f"Could not get KDE, {e}")
+        logger.info(f"Could not get kernel density estimate, {e}")
         kernel = None
 
     if kernel is not None:
-        z = kernel(grid_coords.T)
-        z = z.reshape(gc_shape, gc_shape)
+        try:
+            z = kernel(grid_coords.T)
+            z = z.reshape(gc_shape, gc_shape)
+        except np.linalg.LinAlgError as e:
+            logger.info(f"Could not use kernel, {e}")
+            z = np.zeros([gc_shape, gc_shape])
     else:
         z = np.zeros([gc_shape, gc_shape])
 
