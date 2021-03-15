@@ -123,9 +123,9 @@ def check_tweet(
     ignore_words_cf = [y.casefold() for y in ignore_words]
     return all([
         ('text' in status),
-        (all([x.casefold() not in ignore_words_cf for x in clean_text(status['text']).split()])),
+        all([x.casefold() not in ignore_words_cf for x in clean_text(status['text']).split()]),
         (status['coordinates'] or (status['place'] and status['place']['place_type'] in valid_place_types)),
-        any([re.search(name, status['user']['screen_name'], flags=re.IGNORECASE) is not None for name in ignore_user_screen_names]),
+        all([re.search(name, status['user']['screen_name'], flags=re.IGNORECASE) is None for name in ignore_user_screen_names]),
         (status['user']['id_str'] not in ignore_user_id_str),
         (status['user']['friends_count'] > 0),  # following
         (status['user']['followers_count'] > 0),  # followers
