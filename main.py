@@ -84,6 +84,7 @@ MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 TWEET_LAT_LON = os.getenv("TWEET_LAT_LON", default="False").casefold() == "true".casefold()
+TWEET_GEOTAG = os.getenv("TWEET_GEOTAG", default="True").casefold() == "true".casefold()
 # Use docs/index.html to render words and map of tweets
 BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?")
 
@@ -239,9 +240,9 @@ class MyStreamer(TwythonStreamer):
                                 try:
                                     status = twitter.update_status(
                                         status=event_info.event_str,
-                                        lat=event_info.latitude,
-                                        long=event_info.longitude,
-                                        # place_id=event_info.place_id,
+                                        lat=event_info.latitude if TWEET_GEOTAG else None,
+                                        long=event_info.longitude if TWEET_GEOTAG else None,
+                                        # place_id=event_info.place_id if TWEET_GEOTAG else None,
                                     )
 
                                     # Update the comparison tweet time
