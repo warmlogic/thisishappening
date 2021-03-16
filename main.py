@@ -234,7 +234,7 @@ class MyStreamer(TwythonStreamer):
                             if LOG_EVENTS:
                                 _ = Events.log_event(session, event_info=event_info)
                             else:
-                                logger.info(f"Not logging event due to environment variable settings: {tweet_info.created_at} {event_info.place_name}: {event_info.tokens_str}")
+                                logger.info(f"Not logging event due to environment variable settings: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}")
 
                             if POST_EVENT:
                                 try:
