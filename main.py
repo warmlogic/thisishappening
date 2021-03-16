@@ -243,6 +243,9 @@ class MyStreamer(TwythonStreamer):
                                         long=event_info.longitude,
                                         # place_id=event_info.place_id,
                                     )
+
+                                    # Update the comparison tweet time
+                                    self.event_comparison_ts = event_info.timestamp
                                 except TwythonAuthError:
                                     logger.exception('Authorization error, did you create read+write credentials?')
                                 except TwythonRateLimitError:
@@ -251,9 +254,6 @@ class MyStreamer(TwythonStreamer):
                                     logger.exception('Encountered some other error')
                             else:
                                 logger.info('Not posting event due to environment variable settings')
-
-                        # Update the comparison tweet time
-                        self.event_comparison_ts = tweet_info.created_at
 
                     # Purge old data every so often
                     if PURGE_OLD_DATA and (datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts >= timedelta(minutes=10)):
