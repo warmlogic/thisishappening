@@ -267,6 +267,8 @@ class MyStreamer(TwythonStreamer):
 
                         # Update
                         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
+                else:
+                    logger.info(f"Not looking for new event, recent event in the last {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours ({self.event_comparison_ts})")
             else:
                 logger.info(f"Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})")
         else:
