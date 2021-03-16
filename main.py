@@ -182,6 +182,8 @@ class MyStreamer(TwythonStreamer):
                             event_day = True
 
                         logger.info(f"Day event: {event_day}, current: {len(activity_curr_day)}, previous: {len(activity_prev_day)}, max diff: {z_diff_day.max():.2f}, threshold: {ACTIVITY_THRESHOLD_DAY}")
+                    else:
+                        logger.info(f"Day event: {event_day}, current: {len(activity_curr_day)}, previous: {len(activity_prev_day)}, not enough activity, threshold: {ACTIVITY_THRESHOLD_DAY}")
 
                     if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
                         z_diff_hour, _, activity_curr_hour_w = compare_activity_kde(
@@ -197,6 +199,8 @@ class MyStreamer(TwythonStreamer):
                             event_hour = True
 
                         logger.info(f"Hour event: {event_hour}, current: {len(activity_curr_hour)}, previous: {len(activity_prev_hour)}, max diff: {z_diff_hour.max():.2f}, threshold: {ACTIVITY_THRESHOLD_HOUR}")
+                    else:
+                        logger.info(f"Hour event: {event_hour}, current: {len(activity_curr_hour)}, previous: {len(activity_prev_hour)}, not enough activity, threshold: {ACTIVITY_THRESHOLD_HOUR}")
 
                     if event_day and event_hour:
                         sample_weight = [x["weight"] for x in activity_curr_hour_w]
