@@ -381,6 +381,7 @@ def get_event_info(
     base_event_url: str,
     token_count_min: int = None,
     remove_username_at: bool = None,
+    tweet_lat_lon: bool = False,
 ):
     # Compute the average tweet location
     lons, lats = get_coords(event_tweets)
@@ -390,7 +391,6 @@ def get_event_info(
     north_lat = max(lats)
     longitude = sum(lons) / len(lons)
     latitude = sum(lats) / len(lats)
-    lat_long_str = f'{latitude:.4f}, {longitude:.4f}'
 
     # Event timestamp is the most recent tweet
     timestamp = max(map(operator.itemgetter('created_at'), event_tweets))
@@ -421,7 +421,7 @@ def get_event_info(
     event_str = "Something's happening"
     event_str = f'{event_str} in {place_name}' if place_name else event_str
     event_str = f'{event_str}, {city_name}' if city_name else event_str
-    event_str = f'{event_str} ({lat_long_str}):'
+    event_str = f'{event_str} ({latitude:.4f}, {longitude:.4f}):' if tweet_lat_lon else f'{event_str}:'
     remaining_chars = tweet_max_length - len(event_str) - 2 - tweet_url_length
     # Find the largest set of tokens to fill out the remaining charaters
     possible_token_sets = [' '.join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]]

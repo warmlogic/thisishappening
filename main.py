@@ -83,6 +83,7 @@ KM_STEP = int(os.getenv("KM_STEP", default="5"))
 MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
+TWEET_LAT_LON = os.getenv("TWEET_LAT_LON", default="False").casefold() == "true".casefold()
 # Use docs/index.html to render words and map of tweets
 BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?")
 
@@ -226,6 +227,7 @@ class MyStreamer(TwythonStreamer):
                                 base_event_url=BASE_EVENT_URL,
                                 token_count_min=TOKEN_COUNT_MIN,
                                 remove_username_at=REMOVE_USERNAME_AT,
+                                tweet_lat_lon=TWEET_LAT_LON,
                             )
 
                             if LOG_EVENTS:
