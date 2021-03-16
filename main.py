@@ -107,6 +107,7 @@ ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="10
 
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = [(float(c[0].strip()), float(c[1].strip())) for c in [coords.split(',') for coords in REDUCE_WEIGHT_LON_LAT.split(';')]] if REDUCE_WEIGHT_LON_LAT else []
+WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="0.7"))
 
 
 class MyStreamer(TwythonStreamer):
@@ -174,6 +175,7 @@ class MyStreamer(TwythonStreamer):
                             activity_prev_day, activity_curr_day,
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                             reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
+                            weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
                         )
 
                         lat_activity_day, lon_activity_day = np.where(z_diff_day > ACTIVITY_THRESHOLD_DAY)
@@ -191,6 +193,7 @@ class MyStreamer(TwythonStreamer):
                             activity_prev_hour, activity_curr_hour,
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                             reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
+                            weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
                         )
 
                         lat_activity_hour, lon_activity_hour = np.where(z_diff_hour > ACTIVITY_THRESHOLD_HOUR)

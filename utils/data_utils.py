@@ -64,9 +64,11 @@ def set_activity_weight(
     weighted: bool = None,
     weight_factor: float = None,
     reduce_weight_lon_lat: List[Tuple[float, float]] = None,
+    weight_factor_lon_lat: float = None,
 ) -> List[Dict]:
     weighted = True if weighted is None else weighted
     reduce_weight_lon_lat = [] if reduce_weight_lon_lat is None else reduce_weight_lon_lat
+    weight_factor_lon_lat = 0.7 if weight_factor_lon_lat is None else weight_factor_lon_lat
 
     # Create a list of dictionaries and remove the sqlalchemy instance state key
     activity_dict = [{k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"} for x in activity]
@@ -79,7 +81,7 @@ def set_activity_weight(
     if weighted and reduce_weight_lon_lat:
         for tweet in activity_dict:
             if (tweet["longitude"], tweet["latitude"]) in reduce_weight_lon_lat:
-                tweet["weight"] = compute_weight(tweet["weight"], 1, 0.5)
+                tweet["weight"] = compute_weight(tweet["weight"], 1, weight_factor_lon_lat)
 
     # Compute tweet weight within a user
     activity_sorted = sorted(activity_dict, key=itemgetter("user_id_str"))
@@ -104,11 +106,18 @@ def get_kde(
     weighted: bool = None,
     weight_factor: float = None,
     reduce_weight_lon_lat: List[Tuple[float, float]] = None,
+    weight_factor_lon_lat: float = None,
 ):
     bw_method = 0.3 if bw_method is None else bw_method
     gc_shape = int(np.sqrt(grid_coords.shape[0]))
 
-    activity_weighted = set_activity_weight(activity, weighted=weighted, weight_factor=weight_factor, reduce_weight_lon_lat=reduce_weight_lon_lat)
+    activity_weighted = set_activity_weight(
+        activity,
+        weighted=weighted,
+        weight_factor=weight_factor,
+        reduce_weight_lon_lat=reduce_weight_lon_lat,
+        weight_factor_lon_lat=weight_factor_lon_lat,
+    )
     sample_weight = [x["weight"] for x in activity_weighted]
 
     lon_lat = np.array([[x["longitude"], x["latitude"]] for x in activity_weighted])
@@ -140,9 +149,26 @@ def compare_activity_kde(
     weighted: bool = None,
     weight_factor: float = None,
     reduce_weight_lon_lat: List[Tuple[float, float]] = None,
+    weight_factor_lon_lat: float = None,
 ):
-    z_prev, _, activity_prev_weighted = get_kde(grid_coords, activity_prev, bw_method=bw_method, weighted=weighted, weight_factor=weight_factor, reduce_weight_lon_lat=reduce_weight_lon_lat)
-    z_curr, _, activity_curr_weighted = get_kde(grid_coords, activity_curr, bw_method=bw_method, weighted=weighted, weight_factor=weight_factor, reduce_weight_lon_lat=reduce_weight_lon_lat)
+    z_prev, _, activity_prev_weighted = get_kde(
+        grid_coords,
+        activity_prev,
+        bw_method=bw_method,
+        weighted=weighted,
+        weight_factor=weight_factor,
+        reduce_weight_lon_lat=reduce_weight_lon_lat,
+        weight_factor_lon_lat=weight_factor_lon_lat,
+    )
+    z_curr, _, activity_curr_weighted = get_kde(
+        grid_coords,
+        activity_curr,
+        bw_method=bw_method,
+        weighted=weighted,
+        weight_factor=weight_factor,
+        reduce_weight_lon_lat=reduce_weight_lon_lat,
+        weight_factor_lon_lat=weight_factor_lon_lat,
+    )
     z_diff = z_curr - z_prev
 
     return z_diff, activity_prev_weighted, activity_curr_weighted
