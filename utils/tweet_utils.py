@@ -393,7 +393,7 @@ def get_event_info(
     latitude = sum(lats) / len(lats)
 
     # Event timestamp is the most recent tweet
-    timestamp = max(map(operator.itemgetter('created_at'), event_tweets))
+    timestamp = max(map(operator.itemgetter('created_at'), event_tweets)).replace(tzinfo=pytz.UTC)
 
     place_name = get_place_name(event_tweets, valid_place_types=['neighborhood', 'poi'])
 
