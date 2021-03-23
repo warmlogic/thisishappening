@@ -7,12 +7,14 @@ import re
 import string
 from time import sleep
 from typing import Dict, List
+import unicodedata
 import urllib
 
 import emoji
 import en_core_web_sm
 from ftfy import fix_text
 import pytz
+from unidecode import unidecode
 
 logger = logging.getLogger("happeninglogger")
 
@@ -21,7 +23,11 @@ logger = logging.getLogger("happeninglogger")
 url_all_re = r'\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
 url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
-ellipsis_unicode = '\u2026'
+UNICODE_ELLIPSIS = '\\u2026'  # Ellipsis
+UNICODE_IGNORE = [
+    UNICODE_ELLIPSIS,
+    '\\u3164',  # Hangul Filler
+]
 
 nlp = en_core_web_sm.load(exclude=["parser", "ner"])
 
@@ -166,6 +172,10 @@ def clean_token(token: str) -> str:
         idx = next((i for i, j in enumerate(reversed(text)) if j.isalnum()), 0)
         return text[:-idx] if idx else text
 
+    # Keep URLs
+    if re.search(url_all_re, token) is not None:
+        return token
+
     # Replace some punctuation with space; everything in string.punctuation except: # ' . @
     punct_to_remove = '!"$%&()*+,-/:;<=>?[\\]^_`{|}~'
     punct_to_remove = f'[{re.escape(punct_to_remove)}]'
@@ -195,14 +205,33 @@ def remove_urls(text: str) -> str:
 
 
 def clean_text(text: str) -> str:
-    # Remove tokens with ellipses; assume they are truncated words
-    text = ' '.join([token for token in text.split() if not (ellipsis_unicode in token)])
+    # Remove token if it contains an ellipsis; assume it is a truncated word
+    text_cleaned = ' '.join(
+        [
+            token for token in text.split() if not (UNICODE_ELLIPSIS in token.encode('unicode-escape').decode())
+        ]
+    )
 
-    # Fix wonky characters
-    text = fix_text(text)
+    # Remove some unicode letters
+    text_cleaned = ' '.join(
+        [''.join(
+            [letter for letter in word if letter.encode('unicode-escape').decode() not in UNICODE_IGNORE]
+        ) for word in fix_text(text_cleaned).split()]
+    )
+
+    # Decode unicode letters and keep emojis
+    text_cleaned = ' '.join(
+        [''.join(
+            [unidecode(letter) if (str(letter.encode('unicode-escape'))[2] != '\\')
+                else letter for letter in word]
+        ) for word in text_cleaned.split()]
+    )
+
+    # Normalize unicode letters
+    text_cleaned = unicodedata.normalize('NFKD', text_cleaned)
 
     # Ensure emojis are surrounded by whitespace
-    tokens = split_text(text)
+    tokens = split_text(text_cleaned)
 
     # Clean up punctuation
     tokens = [clean_token(token) for token in tokens]
