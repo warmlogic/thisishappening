@@ -228,7 +228,8 @@ def clean_text(text: str) -> str:
     )
 
     # Normalize unicode letters
-    text_cleaned = unicodedata.normalize('NFKD', text_cleaned)
+    # NFKD: decomposes, NFKC: composes pre-combined characters again
+    text_cleaned = unicodedata.normalize('NFKC', text_cleaned)
 
     # Ensure emojis are surrounded by whitespace
     tokens = split_text(text_cleaned)
