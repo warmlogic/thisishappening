@@ -71,15 +71,22 @@ EventInfo = namedtuple(
 )
 
 
+def get_tweet_body(status):
+    if 'extended_tweet' in status:
+        tweet_body = status['extended_tweet']['full_text']
+    elif 'text' in status:
+        tweet_body = status['text']
+    else:
+        tweet_body = ''
+    return tweet_body
+
+
 def get_tweet_info(status: Dict) -> Dict:
     status_id_str = status['id_str']
     user_screen_name = status['user']['screen_name']
     user_id_str = status['user']['id_str']
     created_at = date_string_to_datetime(status['created_at'])
-    try:
-        tweet_body = status['extended_tweet']['full_text']
-    except KeyError:
-        tweet_body = status['text']
+    tweet_body = get_tweet_body(status)
     tweet_language = status['lang']
     if status['coordinates']:
         longitude = status['coordinates']['coordinates'][0]
@@ -129,11 +136,9 @@ def check_tweet(
 ) -> bool:
     '''Return True if tweet satisfies specific criteria
     '''
-    try:
-        tweet_body = status['extended_tweet']['full_text']
-    except KeyError:
-        tweet_body = status['text']
-    except KeyError:
+    tweet_body = get_tweet_body(status)
+
+    if not tweet_body:
         return False
 
     ignore_words_cf = [y.casefold() for y in ignore_words]

@@ -342,6 +342,6 @@ if __name__ == '__main__':
         # https://github.com/ryanmcgrath/twython/issues/288
         try:
             stream.statuses.filter(locations=bounding_box_str)
-        except Exception:
-            logger.exception('Exception when streaming tweets')
+        except Exception as e:
+            logger.info(f"Exception when streaming tweets: {e}")
             continue
