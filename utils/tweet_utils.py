@@ -76,7 +76,10 @@ def get_tweet_info(status: Dict) -> Dict:
     user_screen_name = status['user']['screen_name']
     user_id_str = status['user']['id_str']
     created_at = date_string_to_datetime(status['created_at'])
-    tweet_body = status['text']
+    try:
+        tweet_body = status['extended_tweet']['full_text']
+    except KeyError:
+        tweet_body = status['text']
     tweet_language = status['lang']
     if status['coordinates']:
         longitude = status['coordinates']['coordinates'][0]
@@ -126,10 +129,17 @@ def check_tweet(
 ) -> bool:
     '''Return True if tweet satisfies specific criteria
     '''
+    try:
+        tweet_body = status['extended_tweet']['full_text']
+    except KeyError:
+        tweet_body = status['text']
+    except KeyError:
+        return False
+
     ignore_words_cf = [y.casefold() for y in ignore_words]
+
     return all([
-        ('text' in status),
-        all([x.casefold() not in ignore_words_cf for x in clean_text(status['text']).split()]),
+        all([x.casefold() not in ignore_words_cf for x in clean_text(tweet_body).split()]),
         (status['coordinates'] or (status['place'] and status['place']['place_type'] in valid_place_types)),
         all([re.search(name, status['user']['screen_name'], flags=re.IGNORECASE) is None for name in ignore_user_screen_names]),
         (status['user']['id_str'] not in ignore_user_id_str),
