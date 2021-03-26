@@ -187,9 +187,9 @@ def get_tweet_info(status: Dict) -> Dict:
     place_country_code = status["place"].get("country_code")
     # Possible place_type values: country, admin, city, neighborhood, poi
     place_type = status["place"].get("place_type")
-    try:
+    if "extended_tweet" in status:
         media_urls = get_media_urls(status["extended_tweet"])
-    except KeyError:
+    else:
         media_urls = get_media_urls(status)
 
     tweet_info = TweetInfo(
