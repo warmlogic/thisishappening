@@ -71,8 +71,8 @@ class Events(Base):
         try:
             session.commit()
             logger.info(f"Logged event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}")
-        except Exception:
-            logger.exception(f"Exception when logging event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}")
+        except Exception as e:
+            logger.warning(f"Exception when logging event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}: {e}")
             session.rollback()
 
         return event
@@ -135,8 +135,8 @@ class Events(Base):
                 delete_q = cls.__table__.delete().where(cls.timestamp < ts_end)
                 session.execute(delete_q)
                 session.commit()
-            except Exception:
-                logger.exception(f'Exception when deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks')
+            except Exception as e:
+                logger.warning(f'Exception when deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}')
                 session.rollback()
 
     @classmethod
@@ -154,8 +154,8 @@ class Events(Base):
 
                     session.execute(delete_q)
                     session.commit()
-                except Exception:
-                    logger.exception(f'Exception when keeping most recent {n} rows of events')
+                except Exception as e:
+                    logger.warning(f'Exception when keeping most recent {n} rows of events: {e}')
                     session.rollback()
 
 
@@ -196,8 +196,8 @@ class RecentTweets(Base):
         try:
             session.commit()
             logger.info(f'Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
-        except Exception:
-            logger.exception(f'Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
+        except Exception as e:
+            logger.warning(f'Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type}): {e}')
             session.rollback()
 
         return tweet
@@ -295,8 +295,8 @@ class RecentTweets(Base):
                 delete_q = cls.__table__.delete().where(cls.created_at < ts_end)
                 session.execute(delete_q)
                 session.commit()
-            except Exception:
-                logger.exception(f'Exception when deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks')
+            except Exception as e:
+                logger.warning(f'Exception when deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}')
                 session.rollback()
 
     @classmethod
@@ -314,6 +314,6 @@ class RecentTweets(Base):
 
                     session.execute(delete_q)
                     session.commit()
-                except Exception:
-                    logger.exception(f'Exception when keeping most recent {n} rows of tweets')
+                except Exception as e:
+                    logger.warning(f'Exception when keeping most recent {n} rows of tweets: {e}')
                     session.rollback()
