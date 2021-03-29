@@ -102,13 +102,13 @@ def set_activity_weight(
 def get_kde(
     grid_coords,
     activity,
-    bw_method: float = None,
+    bw_method=None,
     weighted: bool = None,
     weight_factor: float = None,
     reduce_weight_lon_lat: List[Tuple[float, float]] = None,
     weight_factor_lon_lat: float = None,
 ):
-    bw_method = 0.3 if bw_method is None else bw_method
+    bw_method = "scott" if bw_method is None else bw_method
     gc_shape = int(np.sqrt(grid_coords.shape[0]))
 
     activity_weighted = set_activity_weight(
@@ -118,7 +118,7 @@ def get_kde(
         reduce_weight_lon_lat=reduce_weight_lon_lat,
         weight_factor_lon_lat=weight_factor_lon_lat,
     )
-    sample_weight = [x["weight"] for x in activity_weighted]
+    sample_weight = np.array([x["weight"] for x in activity_weighted])
 
     lon_lat = np.array([[x["longitude"], x["latitude"]] for x in activity_weighted])
 
