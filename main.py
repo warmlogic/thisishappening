@@ -109,7 +109,7 @@ ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="30
 
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = [(float(c[0].strip()), float(c[1].strip())) for c in [coords.split(',') for coords in REDUCE_WEIGHT_LON_LAT.split(';')]] if REDUCE_WEIGHT_LON_LAT else []
-WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="0.9"))
+WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="1.0"))
 
 
 class MyStreamer(TwythonStreamer):
