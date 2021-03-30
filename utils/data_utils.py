@@ -108,7 +108,7 @@ def get_kde(
     reduce_weight_lon_lat: List[Tuple[float, float]] = None,
     weight_factor_lon_lat: float = None,
 ):
-    bw_method = "scott" if bw_method is None else bw_method
+    bw_method = 0.3 if bw_method is None else bw_method
     gc_shape = int(np.sqrt(grid_coords.shape[0]))
 
     activity_weighted = set_activity_weight(

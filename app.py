@@ -101,7 +101,7 @@ TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
 
 GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
-BW_METHOD = os.getenv("BW_METHOD", default="scott")
+BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
 WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
 WEIGHT_FACTOR = float(os.getenv("WEIGHT_FACTOR", default="1.0"))
 ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0"))
