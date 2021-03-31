@@ -117,8 +117,7 @@ REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = [(float(c[0].strip()), float(c[1].strip())) for c in [coords.split(',') for coords in REDUCE_WEIGHT_LON_LAT.split(';')]] if REDUCE_WEIGHT_LON_LAT else []
 REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
 WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
-REDUCE_WEIGHT_CITY = os.getenv("REDUCE_WEIGHT_CITY", default="True").casefold() == "true".casefold()
-WEIGHT_FACTOR_CITY = float(os.getenv("WEIGHT_FACTOR_CITY", default="2.0"))
+WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="4.0"))
 
 HAS_COORDS_ONLY = os.getenv("HAS_COORDS_ONLY", default="True").casefold() == "true".casefold()
 HAS_COORDS_ONLY = HAS_COORDS_ONLY if HAS_COORDS_ONLY else None
@@ -194,8 +193,7 @@ class MyStreamer(TwythonStreamer):
                             bw_method=BW_METHOD, weighted=WEIGHTED, weight_factor=WEIGHT_FACTOR,
                             reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
                             weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
-                            reduce_weight_city=REDUCE_WEIGHT_CITY,
-                            weight_factor_city=WEIGHT_FACTOR_CITY,
+                            weight_factor_no_coords=WEIGHT_FACTOR_NO_COORDS,
                         )
 
                         lat_activity_day, lon_activity_day = np.where(z_diff_day > ACTIVITY_THRESHOLD_DAY)
