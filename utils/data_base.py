@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     DateTime,
     Float,
+    Boolean,
     ARRAY,
 )
 from sqlalchemy.pool import NullPool
@@ -171,6 +172,7 @@ class RecentTweets(Base):
     created_at = Column(DateTime, nullable=False)
     tweet_body = Column(String, nullable=False)
     tweet_language = Column(String, nullable=True)
+    has_coords = Column(Boolean, nullable=False)
     longitude = Column(Float(precision=8), nullable=False)
     latitude = Column(Float(precision=8), nullable=False)
     place_id = Column(String, nullable=True)
@@ -186,6 +188,7 @@ class RecentTweets(Base):
             created_at=tweet_info.created_at,
             tweet_body=tweet_info.tweet_body,
             tweet_language=tweet_info.tweet_language,
+            has_coords=tweet_info.has_coords,
             longitude=tweet_info.longitude,
             latitude=tweet_info.latitude,
             place_id=tweet_info.place_id,
