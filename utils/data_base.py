@@ -227,7 +227,7 @@ class RecentTweets(Base):
         return q.all()
 
     @classmethod
-    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, bounding_box: List[float] = None):
+    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, bounding_box: List[float] = None, place_type: List[str] = None, has_coords: bool = None):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -242,6 +242,12 @@ class RecentTweets(Base):
                 cls.longitude < east_lon).filter(
                 cls.latitude >= south_lat).filter(
                 cls.latitude < north_lat)
+
+        if place_type is not None:
+            q = q.filter(cls.place_type.in_(place_type))
+
+        if has_coords is not None:
+            q = q.filter(cls.has_coords.is_(has_coords))
 
         return q.order_by(desc(cls.created_at)).all()
 
