@@ -172,7 +172,7 @@ class RecentTweets(Base):
     created_at = Column(DateTime, nullable=False)
     tweet_body = Column(String, nullable=False)
     tweet_language = Column(String, nullable=True)
-    has_coords = Column(Boolean, nullable=False)
+    has_coords = Column(Boolean, nullable=False, default=False)
     longitude = Column(Float(precision=8), nullable=False)
     latitude = Column(Float(precision=8), nullable=False)
     place_id = Column(String, nullable=True)
