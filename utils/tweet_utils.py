@@ -150,6 +150,7 @@ def check_tweet(
         (status['user']['id_str'] not in ignore_user_id_str),
         (status['user']['friends_count'] > 0),  # following
         (status['user']['followers_count'] > 0),  # followers
+        (~status.get('possibly_sensitive', False)),
     ])
 
 
