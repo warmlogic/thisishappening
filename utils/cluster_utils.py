@@ -23,16 +23,16 @@ def cluster_activity(activity, min_samples: int, km_start: float = 0.05, km_stop
 
     unique_labels = []
     for km, eps in zip(kms, _eps):
-        logger.info(f'Clustering, max neighbor distance {km:.3f} km')
         db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine')
         db.fit(X, sample_weight=sample_weight)
 
         # label -1 means not assigned to a cluster
         unique_labels = [x for x in set(db.labels_) if x != -1]
-        logger.info(f'Found {len(unique_labels)} clusters')
 
         if len(unique_labels) >= min_n_clusters:
             break
+
+    logger.info(f'Clustered to max neighbor distance {km:.3f} km, found {len(unique_labels)} clusters')
 
     clusters = {}
     for k in unique_labels:

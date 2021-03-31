@@ -271,7 +271,7 @@ class MyStreamer(TwythonStreamer):
                 else:
                     logger.info(f"Not looking for new event, recent event in the last {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours ({self.event_comparison_ts})")
             else:
-                logger.info(f"Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})")
+                logger.debug(f"Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})")
         else:
             logger.debug(f"Tweet {status.get('id_str')} failed check tweet: screen name: {status['user'].get('screen_name')} (id: {status['user'].get('id_str')}, following: {status['user'].get('friends_count')}, followers: {status['user'].get('followers_count')}), coordinates: {status.get('coordinates')}, place type: {status['place'].get('place_type')}, text: {status.get('text')}")
 
