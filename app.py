@@ -71,7 +71,8 @@ APP_SECRET = os.getenv("API_SECRET", default=None)
 OAUTH_TOKEN = os.getenv("ACCESS_TOKEN", default=None)
 OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
-MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default="twitter")
+MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
+assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = [float(coord) for coord in BOUNDING_BOX.split(',')] if BOUNDING_BOX else []
@@ -90,12 +91,17 @@ BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://USERNAME.github.io
 
 VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="city, neighborhood, poi")
 VALID_PLACE_TYPES = [x.strip() for x in VALID_PLACE_TYPES.split(',')] if VALID_PLACE_TYPES else []
+VALID_PLACE_TYPES = list(set(VALID_PLACE_TYPES))
 IGNORE_WORDS = os.getenv("IGNORE_WORDS", default=None)
 IGNORE_WORDS = [x.strip() for x in IGNORE_WORDS.split(',')] if IGNORE_WORDS else []
+IGNORE_WORDS = list(set(IGNORE_WORDS))
 IGNORE_USER_SCREEN_NAMES = os.getenv("IGNORE_USER_SCREEN_NAMES", default=None)
 IGNORE_USER_SCREEN_NAMES = [x.strip() for x in IGNORE_USER_SCREEN_NAMES.split(',')] if IGNORE_USER_SCREEN_NAMES else []
+IGNORE_USER_SCREEN_NAMES.append(MY_SCREEN_NAME)  # Ignore tweets from own screen name
+IGNORE_USER_SCREEN_NAMES = list(set(IGNORE_USER_SCREEN_NAMES))
 IGNORE_USER_ID_STR = os.getenv("IGNORE_USER_ID_STR", default=None)
 IGNORE_USER_ID_STR = [x.strip() for x in IGNORE_USER_ID_STR.split(',')] if IGNORE_USER_ID_STR else []
+IGNORE_USER_ID_STR = list(set(IGNORE_USER_ID_STR))
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
@@ -109,6 +115,7 @@ ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="30
 
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = [(float(c[0].strip()), float(c[1].strip())) for c in [coords.split(',') for coords in REDUCE_WEIGHT_LON_LAT.split(';')]] if REDUCE_WEIGHT_LON_LAT else []
+REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
 WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
 
 
