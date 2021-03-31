@@ -88,7 +88,7 @@ TWEET_GEOTAG = os.getenv("TWEET_GEOTAG", default="True").casefold() == "true".ca
 # Use docs/index.html to render words and map of tweets
 BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?")
 
-VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
+VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="city, neighborhood, poi")
 VALID_PLACE_TYPES = [x.strip() for x in VALID_PLACE_TYPES.split(',')] if VALID_PLACE_TYPES else []
 IGNORE_WORDS = os.getenv("IGNORE_WORDS", default=None)
 IGNORE_WORDS = [x.strip() for x in IGNORE_WORDS.split(',')] if IGNORE_WORDS else []

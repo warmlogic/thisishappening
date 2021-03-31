@@ -129,7 +129,7 @@ def get_tweet_info(status: Dict) -> Dict:
 
 def check_tweet(
     status,
-    valid_place_types: List[str] = ['neighborhood', 'poi'],
+    valid_place_types: List[str] = ['city', 'neighborhood', 'poi'],
     ignore_words: List[str] = [],
     ignore_user_screen_names: List[str] = [],
     ignore_user_id_str: List[str] = [],
