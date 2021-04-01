@@ -160,26 +160,34 @@ class MyStreamer(TwythonStreamer):
                         session,
                         timestamp=tweet_info.created_at,
                         hours=24,
+                        place_type=VALID_PLACE_TYPES,
                         has_coords=HAS_COORDS_ONLY,
+                        place_type_or_coords=True,
                     )
                     activity_prev_day = RecentTweets.get_recent_tweets(
                         session,
                         timestamp=tweet_info.created_at - timedelta(days=1),
                         hours=24,
+                        place_type=VALID_PLACE_TYPES,
                         has_coords=HAS_COORDS_ONLY,
+                        place_type_or_coords=True,
                     )
 
                     activity_curr_hour = RecentTweets.get_recent_tweets(
                         session,
                         timestamp=tweet_info.created_at,
                         hours=TEMPORAL_GRANULARITY_HOURS,
+                        place_type=VALID_PLACE_TYPES,
                         has_coords=HAS_COORDS_ONLY,
+                        place_type_or_coords=True,
                     )
                     activity_prev_hour = RecentTweets.get_recent_tweets(
                         session,
                         timestamp=tweet_info.created_at - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
                         hours=TEMPORAL_GRANULARITY_HOURS,
+                        place_type=VALID_PLACE_TYPES,
                         has_coords=HAS_COORDS_ONLY,
+                        place_type_or_coords=True,
                     )
 
                     # Decide whether an event occurred
