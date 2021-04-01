@@ -7,6 +7,7 @@ from sqlalchemy import (
     create_engine,
     desc,
     func,
+    or_,
     Column,
     String,
     Integer,
@@ -227,7 +228,7 @@ class RecentTweets(Base):
         return q.all()
 
     @classmethod
-    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, bounding_box: List[float] = None, place_type: List[str] = None, has_coords: bool = None):
+    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, bounding_box: List[float] = None, place_type: List[str] = None, has_coords: bool = None, place_type_or_coords: bool = True):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -243,11 +244,14 @@ class RecentTweets(Base):
                 cls.latitude >= south_lat).filter(
                 cls.latitude < north_lat)
 
-        if place_type is not None:
-            q = q.filter(cls.place_type.in_(place_type))
+        if place_type_or_coords and (place_type is not None) and (has_coords is not None):
+            q = q.filter(or_(cls.place_type.in_(place_type), cls.has_coords.is_(has_coords)))
+        else:
+            if place_type is not None:
+                q = q.filter(cls.place_type.in_(place_type))
 
-        if has_coords is not None:
-            q = q.filter(cls.has_coords.is_(has_coords))
+            if has_coords is not None:
+                q = q.filter(cls.has_coords.is_(has_coords))
 
         return q.order_by(desc(cls.created_at)).all()
 
