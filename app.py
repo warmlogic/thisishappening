@@ -196,14 +196,16 @@ class MyStreamer(TwythonStreamer):
                     _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
                 else:
                     logger.info(
-                        f"Not logging tweet due to environment variable settings: {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})"
+                        "Not logging tweet due to environment variable settings:"
+                        + f" {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})"
                     )
 
                 if tweet_info.created_at - self.event_comparison_ts >= timedelta(
                     hours=TEMPORAL_GRANULARITY_HOURS
                 ):
                     logger.info(
-                        f"{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour(s) since an event occurred, comparing activity..."
+                        f"{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour(s)"
+                        + " since an event occurred, comparing activity..."
                     )
 
                     activity_curr_day = RecentTweets.get_recent_tweets(
@@ -266,11 +268,15 @@ class MyStreamer(TwythonStreamer):
                             event_day = True
 
                         logger.info(
-                            f"Day event: {event_day}, current: {len(activity_curr_day)}, previous: {len(activity_prev_day)}, max diff: {z_diff_day.max():.2f}, threshold: {ACTIVITY_THRESHOLD_DAY}"
+                            f"Day event: {event_day}, current: {len(activity_curr_day)},"
+                            + f" previous: {len(activity_prev_day)}, max diff: {z_diff_day.max():.2f},"
+                            + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
                         )
                     else:
                         logger.info(
-                            f"Day event: {event_day}, current: {len(activity_curr_day)}, previous: {len(activity_prev_day)}, not enough activity, threshold: {ACTIVITY_THRESHOLD_DAY}"
+                            f"Day event: {event_day}, current: {len(activity_curr_day)},"
+                            + f" previous: {len(activity_prev_day)}, not enough activity,"
+                            + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
                         )
 
                     if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
@@ -295,11 +301,15 @@ class MyStreamer(TwythonStreamer):
                             event_hour = True
 
                         logger.info(
-                            f"Hour event: {event_hour}, current: {len(activity_curr_hour)}, previous: {len(activity_prev_hour)}, max diff: {z_diff_hour.max():.2f}, threshold: {ACTIVITY_THRESHOLD_HOUR}"
+                            f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
+                            + f" previous: {len(activity_prev_hour)}, max diff: {z_diff_hour.max():.2f},"
+                            + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
                         )
                     else:
                         logger.info(
-                            f"Hour event: {event_hour}, current: {len(activity_curr_hour)}, previous: {len(activity_prev_hour)}, not enough activity, threshold: {ACTIVITY_THRESHOLD_HOUR}"
+                            f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
+                            + f" previous: {len(activity_prev_hour)}, not enough activity,"
+                            + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
                         )
 
                     if event_day and event_hour:
@@ -330,7 +340,8 @@ class MyStreamer(TwythonStreamer):
                                 _ = Events.log_event(session, event_info=event_info)
                             else:
                                 logger.info(
-                                    f"Not logging event due to environment variable settings: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}"
+                                    "Not logging event due to environment variable settings:"
+                                    + f" {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}"
                                 )
 
                             if POST_EVENT:
@@ -391,15 +402,21 @@ class MyStreamer(TwythonStreamer):
                         )
                 else:
                     logger.info(
-                        f"Not looking for new event, recent event in the last {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours ({self.event_comparison_ts})"
+                        "Not looking for new event, recent event in the last"
+                        + f" {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours ({self.event_comparison_ts})"
                     )
             else:
                 logger.debug(
-                    f"Tweet {tweet_info.status_id_str} out of bounds: coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})"
+                    f"Tweet {tweet_info.status_id_str} out of bounds: coordinates:"
+                    + f" ({tweet_info.latitude}, {tweet_info.longitude}),"
+                    + f" {tweet_info.place_name} ({tweet_info.place_type})"
                 )
         else:
             logger.debug(
-                f"Tweet {status.get('id_str')} failed check tweet: screen name: {status['user'].get('screen_name')} (id: {status['user'].get('id_str')}, following: {status['user'].get('friends_count')}, followers: {status['user'].get('followers_count')}), coordinates: {status.get('coordinates')}, place type: {status['place'].get('place_type')}, text: {status.get('text')}"
+                f"Tweet {status.get('id_str')} failed check tweet: screen name: {status['user'].get('screen_name')}"
+                + f" (id: {status['user'].get('id_str')}, following: {status['user'].get('friends_count')},"
+                + f" followers: {status['user'].get('followers_count')}), coordinates: {status.get('coordinates')},"
+                + f" place type: {status['place'].get('place_type')}, text: {status.get('text')}"
             )
 
     def on_error(self, status_code, content, headers=None):

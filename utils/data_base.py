@@ -77,7 +77,8 @@ class Events(Base):
             )
         except Exception as e:
             logger.warning(
-                f"Exception when logging event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}: {e}"
+                f"Exception when logging event: {event_info.timestamp} {event_info.place_name}:"
+                + f" {event_info.tokens_str}: {e}"
             )
             session.rollback()
 
@@ -160,7 +161,8 @@ class Events(Base):
                 session.commit()
             except Exception as e:
                 logger.warning(
-                    f"Exception when deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}"
+                    f"Exception when deleting events older than {ts_end}:"
+                    + f" {hours} hours {days} days {weeks} weeks: {e}"
                 )
                 session.rollback()
 
@@ -224,11 +226,15 @@ class RecentTweets(Base):
         try:
             session.commit()
             logger.info(
-                f"Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})"
+                f"Logged tweet: {tweet_info.status_id_str},"
+                + f" coordinates: ({tweet_info.latitude}, {tweet_info.longitude}),"
+                + f" {tweet_info.place_name} ({tweet_info.place_type})"
             )
         except Exception as e:
             logger.warning(
-                f"Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type}): {e}"
+                f"Exception when logging tweet: {tweet_info.status_id_str},"
+                + f" coordinates: ({tweet_info.latitude}, {tweet_info.longitude}),"
+                + f" {tweet_info.place_name} ({tweet_info.place_type}): {e}"
             )
             session.rollback()
 
@@ -378,7 +384,8 @@ class RecentTweets(Base):
                 session.commit()
             except Exception as e:
                 logger.warning(
-                    f"Exception when deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}"
+                    f"Exception when deleting tweets older than {ts_end}:"
+                    + f" {hours} hours {days} days {weeks} weeks: {e}"
                 )
                 session.rollback()
 

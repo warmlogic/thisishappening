@@ -20,7 +20,11 @@ logger = logging.getLogger("happeninglogger")
 
 # Regex to look for all URLs (mailto:, x-whatever://, etc.) https://gist.github.com/gruber/249502
 # Removed case insensitive flag from the start: (?i)
-url_all_re = r'\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))'
+url_all_re = (
+    r"\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)"
+    + r"(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|"
+    + r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+)
 url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
 UNICODE_ELLIPSIS = "\\u2026"  # Ellipsis
