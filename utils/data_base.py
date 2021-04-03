@@ -73,7 +73,8 @@ class Events(Base):
         try:
             session.commit()
             logger.info(
-                f"Logged event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}"
+                f"Logged event: {event_info.timestamp} {event_info.place_name}:"
+                + f" {event_info.tokens_str}"
             )
         except Exception as e:
             logger.warning(

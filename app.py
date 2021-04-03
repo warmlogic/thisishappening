@@ -197,14 +197,16 @@ class MyStreamer(TwythonStreamer):
                 else:
                     logger.info(
                         "Not logging tweet due to environment variable settings:"
-                        + f" {tweet_info.status_id_str}, {tweet_info.place_name} ({tweet_info.place_type})"
+                        + f" {tweet_info.status_id_str},"
+                        + f" {tweet_info.place_name} ({tweet_info.place_type})"
                     )
 
                 if tweet_info.created_at - self.event_comparison_ts >= timedelta(
                     hours=TEMPORAL_GRANULARITY_HOURS
                 ):
                     logger.info(
-                        f"{tweet_info.created_at} Been more than {TEMPORAL_GRANULARITY_HOURS} hour(s)"
+                        f"{tweet_info.created_at} Been more than"
+                        + f" {TEMPORAL_GRANULARITY_HOURS} hour(s)"
                         + " since an event occurred, comparing activity..."
                     )
 
@@ -269,13 +271,15 @@ class MyStreamer(TwythonStreamer):
 
                         logger.info(
                             f"Day event: {event_day}, current: {len(activity_curr_day)},"
-                            + f" previous: {len(activity_prev_day)}, max diff: {z_diff_day.max():.2f},"
+                            + f" previous: {len(activity_prev_day)},"
+                            + f" max diff: {z_diff_day.max():.2f},"
                             + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
                         )
                     else:
                         logger.info(
                             f"Day event: {event_day}, current: {len(activity_curr_day)},"
-                            + f" previous: {len(activity_prev_day)}, not enough activity,"
+                            + f" previous: {len(activity_prev_day)},"
+                            + " not enough activity,"
                             + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
                         )
 
@@ -302,13 +306,15 @@ class MyStreamer(TwythonStreamer):
 
                         logger.info(
                             f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
-                            + f" previous: {len(activity_prev_hour)}, max diff: {z_diff_hour.max():.2f},"
+                            + f" previous: {len(activity_prev_hour)},"
+                            + f" max diff: {z_diff_hour.max():.2f},"
                             + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
                         )
                     else:
                         logger.info(
                             f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
-                            + f" previous: {len(activity_prev_hour)}, not enough activity,"
+                            + f" previous: {len(activity_prev_hour)},"
+                            + " not enough activity,"
                             + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
                         )
 
@@ -341,7 +347,8 @@ class MyStreamer(TwythonStreamer):
                             else:
                                 logger.info(
                                     "Not logging event due to environment variable settings:"
-                                    + f" {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}"
+                                    + f" {event_info.timestamp} {event_info.place_name}:"
+                                    + f" {event_info.tokens_str}"
                                 )
 
                             if POST_EVENT:
@@ -403,7 +410,8 @@ class MyStreamer(TwythonStreamer):
                 else:
                     logger.info(
                         "Not looking for new event, recent event in the last"
-                        + f" {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours ({self.event_comparison_ts})"
+                        + f" {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours"
+                        + f" ({self.event_comparison_ts})"
                     )
             else:
                 logger.debug(
@@ -413,10 +421,14 @@ class MyStreamer(TwythonStreamer):
                 )
         else:
             logger.debug(
-                f"Tweet {status.get('id_str')} failed check tweet: screen name: {status['user'].get('screen_name')}"
-                + f" (id: {status['user'].get('id_str')}, following: {status['user'].get('friends_count')},"
-                + f" followers: {status['user'].get('followers_count')}), coordinates: {status.get('coordinates')},"
-                + f" place type: {status['place'].get('place_type')}, text: {status.get('text')}"
+                f"Tweet {status.get('id_str')} failed check tweet:"
+                + f" screen name: {status['user'].get('screen_name')}"
+                + f" (id: {status['user'].get('id_str')},"
+                + f" following: {status['user'].get('friends_count')},"
+                + f" followers: {status['user'].get('followers_count')}),"
+                + f" coordinates: {status.get('coordinates')},"
+                + f" place type: {status['place'].get('place_type')},"
+                + f" text: {status.get('text')}"
             )
 
     def on_error(self, status_code, content, headers=None):
