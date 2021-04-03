@@ -32,7 +32,7 @@ def n_wise(iterable: List, n: int) -> zip(Tuple):
 def inbounds(longitude: float, latitude: float, bounding_box: List[float]) -> bool:
     lon = (longitude >= bounding_box[0]) and (longitude <= bounding_box[2])
     lat = (latitude >= bounding_box[1]) and (latitude <= bounding_box[3])
-    return (lon and lat)
+    return lon and lat
 
 
 def get_coords_min_max(bounding_box: List[float]):
@@ -68,12 +68,21 @@ def set_activity_weight(
     weight_factor_no_coords: float = None,
 ) -> List[Dict]:
     weighted = True if weighted is None else weighted
-    reduce_weight_lon_lat = [] if reduce_weight_lon_lat is None else reduce_weight_lon_lat
-    weight_factor_lon_lat = 2.0 if weight_factor_lon_lat is None else weight_factor_lon_lat
-    weight_factor_no_coords = 4.0 if weight_factor_no_coords is None else weight_factor_no_coords
+    reduce_weight_lon_lat = (
+        [] if reduce_weight_lon_lat is None else reduce_weight_lon_lat
+    )
+    weight_factor_lon_lat = (
+        2.0 if weight_factor_lon_lat is None else weight_factor_lon_lat
+    )
+    weight_factor_no_coords = (
+        4.0 if weight_factor_no_coords is None else weight_factor_no_coords
+    )
 
     # Create a list of dictionaries and remove the sqlalchemy instance state key
-    activity_dict = [{k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"} for x in activity]
+    activity_dict = [
+        {k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"}
+        for x in activity
+    ]
 
     # Give every tweet a weight
     for tweet in activity_dict:
@@ -83,18 +92,24 @@ def set_activity_weight(
     if weighted and reduce_weight_lon_lat:
         for tweet in activity_dict:
             if (tweet["longitude"], tweet["latitude"]) in reduce_weight_lon_lat:
-                tweet["weight"] = compute_weight(tweet["weight"], 1, weight_factor_lon_lat)
+                tweet["weight"] = compute_weight(
+                    tweet["weight"], 1, weight_factor_lon_lat
+                )
 
     # Reduce weight if tweet did not have specific coordinates
     if weighted and (weight_factor_no_coords is not None):
         for tweet in activity_dict:
             if not tweet["has_coords"]:
-                tweet["weight"] = compute_weight(tweet["weight"], 1, weight_factor_no_coords)
+                tweet["weight"] = compute_weight(
+                    tweet["weight"], 1, weight_factor_no_coords
+                )
 
     # Compute tweet weight within a user
     activity_sorted = sorted(activity_dict, key=itemgetter("user_id_str"))
     activity_grouped = {}
-    for user_id, tweets in itertools.groupby(activity_sorted, key=lambda x: x["user_id_str"]):
+    for user_id, tweets in itertools.groupby(
+        activity_sorted, key=lambda x: x["user_id_str"]
+    ):
         # Sort user tweets so first tweet has highest weight
         activity_grouped[user_id] = sorted(tweets, key=itemgetter("created_at"))
         if weighted:
@@ -102,7 +117,9 @@ def set_activity_weight(
                 tweet["weight"] = compute_weight(tweet["weight"], i, weight_factor)
 
     # Get a flat list of tweets
-    activity_weighted = [tweet for tweets in list(activity_grouped.values()) for tweet in tweets]
+    activity_weighted = [
+        tweet for tweets in list(activity_grouped.values()) for tweet in tweets
+    ]
 
     return activity_weighted
 
@@ -133,7 +150,9 @@ def get_kde(
     lon_lat = np.array([[x["longitude"], x["latitude"]] for x in activity_weighted])
 
     try:
-        kernel = stats.gaussian_kde(lon_lat.T, bw_method=bw_method, weights=sample_weight)
+        kernel = stats.gaussian_kde(
+            lon_lat.T, bw_method=bw_method, weights=sample_weight
+        )
     except np.linalg.LinAlgError as e:
         logger.info(f"Could not get kernel density estimate, {e}")
         kernel = None

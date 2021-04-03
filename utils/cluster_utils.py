@@ -10,7 +10,15 @@ logger = logging.getLogger("happeninglogger")
 KMS_PER_RADIAN = 6371.0088
 
 
-def cluster_activity(activity, min_samples: int, km_start: float = 0.05, km_stop: float = 0.3, km_step: int = 5, min_n_clusters: int = 1, sample_weight=None):
+def cluster_activity(
+    activity,
+    min_samples: int,
+    km_start: float = 0.05,
+    km_stop: float = 0.3,
+    km_step: int = 5,
+    min_n_clusters: int = 1,
+    sample_weight=None,
+):
     if len(activity) == 0:
         return {}
 
@@ -23,7 +31,9 @@ def cluster_activity(activity, min_samples: int, km_start: float = 0.05, km_stop
 
     unique_labels = []
     for km, eps in zip(kms, _eps):
-        db = DBSCAN(eps=eps, min_samples=min_samples, algorithm='ball_tree', metric='haversine')
+        db = DBSCAN(
+            eps=eps, min_samples=min_samples, algorithm="ball_tree", metric="haversine"
+        )
         db.fit(X, sample_weight=sample_weight)
 
         # label -1 means not assigned to a cluster
@@ -32,14 +42,16 @@ def cluster_activity(activity, min_samples: int, km_start: float = 0.05, km_stop
         if len(unique_labels) >= min_n_clusters:
             break
 
-    logger.info(f'Clustered to max neighbor distance {km:.3f} km, found {len(unique_labels)} clusters')
+    logger.info(
+        f"Clustered to max neighbor distance {km:.3f} km, found {len(unique_labels)} clusters"
+    )
 
     clusters = {}
     for k in unique_labels:
-        cluster_mask = (db.labels_ == k)
+        cluster_mask = db.labels_ == k
         cluster_tweets = [x for i, x in enumerate(activity) if cluster_mask[i]]
         clusters[k] = {
-            'event_tweets': cluster_tweets,
+            "event_tweets": cluster_tweets,
         }
 
     return clusters
