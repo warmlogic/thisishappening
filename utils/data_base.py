@@ -1,27 +1,27 @@
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 from typing import List
 
 import pytz
 from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
     create_engine,
     desc,
     func,
     or_,
-    Column,
-    String,
-    Integer,
-    DateTime,
-    Float,
-    Boolean,
-    ARRAY,
 )
-from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from utils.data_utils import get_coords_min_max
-from utils.tweet_utils import TweetInfo, EventInfo
+from utils.tweet_utils import EventInfo, TweetInfo
 
 logger = logging.getLogger("happeninglogger")
 
@@ -36,9 +36,9 @@ def session_factory(DATABASE_URL: str, echo: bool = False):
 
 
 class Events(Base):
-    '''To drop this table, run Events.metadata.drop_all(engine)
-    '''
-    __tablename__ = 'events'
+    """To drop this table, run Events.metadata.drop_all(engine)"""
+
+    __tablename__ = "events"
 
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, nullable=False)
@@ -72,9 +72,13 @@ class Events(Base):
         session.add(event)
         try:
             session.commit()
-            logger.info(f"Logged event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}")
+            logger.info(
+                f"Logged event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}"
+            )
         except Exception as e:
-            logger.warning(f"Exception when logging event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}: {e}")
+            logger.warning(
+                f"Exception when logging event: {event_info.timestamp} {event_info.place_name}: {event_info.tokens_str}: {e}"
+            )
             session.rollback()
 
         return event
@@ -86,7 +90,11 @@ class Events(Base):
 
         ts_start = timestamp - timedelta(hours=hours)
 
-        q = session.query(cls).filter(cls.timestamp >= ts_start).filter(cls.timestamp <= timestamp)
+        q = (
+            session.query(cls)
+            .filter(cls.timestamp >= ts_start)
+            .filter(cls.timestamp <= timestamp)
+        )
 
         return q.order_by(desc(cls.timestamp)).all()
 
@@ -98,11 +106,23 @@ class Events(Base):
 
     @classmethod
     def get_event_tweets(cls, session, event_id: int, hours: float = 1):
-        event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
+        event = (
+            session.query(cls)
+            .filter(cls.id == event_id)
+            .order_by(desc(cls.timestamp))
+            .first()
+        )
         if event is not None:
             timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
-            bounding_box = [event.west_lon, event.south_lat, event.east_lon, event.north_lat]
-            event_tweets = RecentTweets.get_recent_tweets(session, timestamp=timestamp, hours=hours, bounding_box=bounding_box)
+            bounding_box = [
+                event.west_lon,
+                event.south_lat,
+                event.east_lon,
+                event.north_lat,
+            ]
+            event_tweets = RecentTweets.get_recent_tweets(
+                session, timestamp=timestamp, hours=hours, bounding_box=bounding_box
+            )
         else:
             logger.info(f"Event ID {event_id} not found")
             event_tweets = []
@@ -110,7 +130,7 @@ class Events(Base):
         return event_tweets
 
     def __repr__(self):
-        return f'Event {self.id}'
+        return f"Event {self.id}"
 
     @classmethod
     def delete_events_older_than(
@@ -121,8 +141,7 @@ class Events(Base):
         days: float = None,
         weeks: float = None,
     ):
-        '''Delete all records older than the specified time window, optionally relative to a timestamp
-        '''
+        """Delete all records older than the specified time window, optionally relative to a timestamp"""
         hours = hours if hours else 0
         days = days if days else 0
         weeks = weeks if weeks else 0
@@ -133,38 +152,43 @@ class Events(Base):
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
-                logger.info(f'Deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks')
+                logger.info(
+                    f"Deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks"
+                )
                 delete_q = cls.__table__.delete().where(cls.timestamp < ts_end)
                 session.execute(delete_q)
                 session.commit()
             except Exception as e:
-                logger.warning(f'Exception when deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}')
+                logger.warning(
+                    f"Exception when deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}"
+                )
                 session.rollback()
 
     @classmethod
     def keep_events_n_rows(cls, session, n: int = None):
-        '''Keep the most recent n rows
-        '''
+        """Keep the most recent n rows"""
         if n is not None:
             ids = session.query(cls.id).order_by(desc(cls.timestamp)).all()
             ids_to_delete = [x[0] for x in ids[n:]]
 
             if ids_to_delete:
                 try:
-                    logger.info(f'Keeping most recent {n} rows of events')
+                    logger.info(f"Keeping most recent {n} rows of events")
                     delete_q = cls.__table__.delete().where(cls.id.in_(ids_to_delete))
 
                     session.execute(delete_q)
                     session.commit()
                 except Exception as e:
-                    logger.warning(f'Exception when keeping most recent {n} rows of events: {e}')
+                    logger.warning(
+                        f"Exception when keeping most recent {n} rows of events: {e}"
+                    )
                     session.rollback()
 
 
 class RecentTweets(Base):
-    '''To drop this table, run RecentTweets.metadata.drop_all(engine)
-    '''
-    __tablename__ = 'recent_tweets'
+    """To drop this table, run RecentTweets.metadata.drop_all(engine)"""
+
+    __tablename__ = "recent_tweets"
 
     id = Column(Integer, primary_key=True)
     status_id_str = Column(String, nullable=False)
@@ -199,53 +223,90 @@ class RecentTweets(Base):
         session.add(tweet)
         try:
             session.commit()
-            logger.info(f'Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})')
+            logger.info(
+                f"Logged tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type})"
+            )
         except Exception as e:
-            logger.warning(f'Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type}): {e}')
+            logger.warning(
+                f"Exception when logging tweet: {tweet_info.status_id_str}, coordinates: ({tweet_info.latitude}, {tweet_info.longitude}), {tweet_info.place_name} ({tweet_info.place_type}): {e}"
+            )
             session.rollback()
 
         return tweet
 
     @classmethod
-    def count_tweets(cls, session, timestamp: datetime = None, hours: float = 0, bounding_box: List[float] = None):
+    def count_tweets(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = 0,
+        bounding_box: List[float] = None,
+    ):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
-        q = session.query(
-            cls, func.count(cls.status_id_str)).filter(
-                cls.created_at >= ts_start).filter(cls.created_at <= timestamp)
+        q = (
+            session.query(cls, func.count(cls.status_id_str))
+            .filter(cls.created_at >= ts_start)
+            .filter(cls.created_at <= timestamp)
+        )
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
-            q = q.filter(
-                cls.longitude >= west_lon).filter(
-                cls.longitude < east_lon).filter(
-                cls.latitude >= south_lat).filter(
-                cls.latitude < north_lat)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
+            q = (
+                q.filter(cls.longitude >= west_lon)
+                .filter(cls.longitude < east_lon)
+                .filter(cls.latitude >= south_lat)
+                .filter(cls.latitude < north_lat)
+            )
 
         return q.all()
 
     @classmethod
-    def get_recent_tweets(cls, session, timestamp: datetime = None, hours: float = 1, bounding_box: List[float] = None, place_type: List[str] = None, has_coords: bool = None, place_type_or_coords: bool = True):
+    def get_recent_tweets(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = 1,
+        bounding_box: List[float] = None,
+        place_type: List[str] = None,
+        has_coords: bool = None,
+        place_type_or_coords: bool = True,
+    ):
         if timestamp is None:
             timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
-        q = session.query(cls).filter(cls.created_at >= ts_start).filter(cls.created_at <= timestamp)
+        q = (
+            session.query(cls)
+            .filter(cls.created_at >= ts_start)
+            .filter(cls.created_at <= timestamp)
+        )
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
-            q = q.filter(
-                cls.longitude >= west_lon).filter(
-                cls.longitude < east_lon).filter(
-                cls.latitude >= south_lat).filter(
-                cls.latitude < north_lat)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
+            q = (
+                q.filter(cls.longitude >= west_lon)
+                .filter(cls.longitude < east_lon)
+                .filter(cls.latitude >= south_lat)
+                .filter(cls.latitude < north_lat)
+            )
 
-        if place_type_or_coords and (place_type is not None) and (has_coords is not None):
-            q = q.filter(or_(cls.place_type.in_(place_type), cls.has_coords.is_(has_coords)))
+        if (
+            place_type_or_coords
+            and (place_type is not None)
+            and (has_coords is not None)
+        ):
+            q = q.filter(
+                or_(cls.place_type.in_(place_type), cls.has_coords.is_(has_coords))
+            )
         else:
             if place_type is not None:
                 q = q.filter(cls.place_type.in_(place_type))
@@ -260,12 +321,15 @@ class RecentTweets(Base):
         q = session.query(cls)
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
-            q = q.filter(
-                cls.longitude >= west_lon).filter(
-                cls.longitude < east_lon).filter(
-                cls.latitude >= south_lat).filter(
-                cls.latitude < north_lat)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
+            q = (
+                q.filter(cls.longitude >= west_lon)
+                .filter(cls.longitude < east_lon)
+                .filter(cls.latitude >= south_lat)
+                .filter(cls.latitude < north_lat)
+            )
 
         return q.order_by(cls.created_at).first()
 
@@ -274,12 +338,15 @@ class RecentTweets(Base):
         q = session.query(cls)
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
-            q = q.filter(
-                cls.longitude >= west_lon).filter(
-                cls.longitude < east_lon).filter(
-                cls.latitude >= south_lat).filter(
-                cls.latitude < north_lat)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
+            q = (
+                q.filter(cls.longitude >= west_lon)
+                .filter(cls.longitude < east_lon)
+                .filter(cls.latitude >= south_lat)
+                .filter(cls.latitude < north_lat)
+            )
 
         return q.order_by(desc(cls.created_at)).first()
 
@@ -292,8 +359,7 @@ class RecentTweets(Base):
         days: float = None,
         weeks: float = None,
     ):
-        '''Delete all records older than the specified time window, optionally relative to a timestamp
-        '''
+        """Delete all records older than the specified time window, optionally relative to a timestamp"""
         hours = hours if hours else 0
         days = days if days else 0
         weeks = weeks if weeks else 0
@@ -304,29 +370,34 @@ class RecentTweets(Base):
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
-                logger.info(f'Deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks')
+                logger.info(
+                    f"Deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks"
+                )
                 delete_q = cls.__table__.delete().where(cls.created_at < ts_end)
                 session.execute(delete_q)
                 session.commit()
             except Exception as e:
-                logger.warning(f'Exception when deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}')
+                logger.warning(
+                    f"Exception when deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks: {e}"
+                )
                 session.rollback()
 
     @classmethod
     def keep_tweets_n_rows(cls, session, n: int = None):
-        '''Keep the most recent n rows
-        '''
+        """Keep the most recent n rows"""
         if n is not None:
             ids = session.query(cls.id).order_by(desc(cls.created_at)).all()
             ids_to_delete = [x[0] for x in ids[n:]]
 
             if ids_to_delete:
                 try:
-                    logger.info(f'Keeping most recent {n} rows of tweets')
+                    logger.info(f"Keeping most recent {n} rows of tweets")
                     delete_q = cls.__table__.delete().where(cls.id.in_(ids_to_delete))
 
                     session.execute(delete_q)
                     session.commit()
                 except Exception as e:
-                    logger.warning(f'Exception when keeping most recent {n} rows of tweets: {e}')
+                    logger.warning(
+                        f"Exception when keeping most recent {n} rows of tweets: {e}"
+                    )
                     session.rollback()
