@@ -84,6 +84,8 @@ APP_SECRET = os.getenv("API_SECRET", default=None)
 OAUTH_TOKEN = os.getenv("ACCESS_TOKEN", default=None)
 OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")

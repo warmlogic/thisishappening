@@ -16,7 +16,7 @@ sort:
 
 .PHONY: lint
 lint:
-	python -m flake8
+	flake8 .
 
 .PHONY: typecheck
 typecheck:
