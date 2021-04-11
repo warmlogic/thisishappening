@@ -33,6 +33,8 @@ UNICODE_IGNORE = [
     "\\u3164",  # Hangul Filler
 ]
 
+EXTERNAL_MEDIA_SOURCES = ["instagram"]
+
 nlp = en_core_web_sm.load(exclude=["parser", "ner"])
 
 TweetInfo = namedtuple(
@@ -53,6 +55,7 @@ TweetInfo = namedtuple(
         "place_country",
         "place_country_code",
         "place_type",
+        "media_urls",
     ],
 )
 
@@ -86,6 +89,37 @@ def get_tweet_body(status):
     return tweet_body
 
 
+def get_media_urls(status):
+    media_urls = {}
+
+    # Twitter native media are stored in extended_entities
+    key = "extended_entities" if "extended_entities" in status else "entities"
+    urls = []
+    try:
+        for medium in status[key]["media"]:
+            urls.append(medium["media_url_https"])
+    except KeyError:
+        logger.debug(f"No media in {key}")
+    if len(urls) > 0:
+        media_urls["twitter"] = urls
+
+    # Other URLs are stored in entities
+    key = "entities"
+    for source in EXTERNAL_MEDIA_SOURCES:
+        urls = []
+        try:
+            for url in status[key]["urls"]:
+                media_url = url.get("expanded_url")
+                if (media_url is not None) and (source in media_url):
+                    urls.append(media_url)
+        except KeyError:
+            logger.debug(f"No urls in {key}")
+        if len(urls) > 0:
+            media_urls[source] = urls
+
+    return media_urls
+
+
 def get_tweet_info(status: Dict) -> Dict:
     status_id_str = status["id_str"]
     user_screen_name = status["user"]["screen_name"]
@@ -113,6 +147,10 @@ def get_tweet_info(status: Dict) -> Dict:
     place_country_code = status["place"].get("country_code")
     # Possible place_type values: country, admin, city, neighborhood, poi
     place_type = status["place"].get("place_type")
+    if "extended_tweet" in status:
+        media_urls = get_media_urls(status["extended_tweet"])
+    else:
+        media_urls = get_media_urls(status)
 
     tweet_info = TweetInfo(
         status_id_str=status_id_str,
@@ -130,6 +168,7 @@ def get_tweet_info(status: Dict) -> Dict:
         place_country=place_country,
         place_country_code=place_country_code,
         place_type=place_type,
+        media_urls=media_urls,
     )
 
     return tweet_info
