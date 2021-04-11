@@ -33,7 +33,7 @@ UNICODE_IGNORE = [
     "\\u3164",  # Hangul Filler
 ]
 
-EXTERNAL_MEDIA_SOURCES = ['instagram']
+EXTERNAL_MEDIA_SOURCES = ["instagram"]
 
 nlp = en_core_web_sm.load(exclude=["parser", "ner"])
 
@@ -93,23 +93,23 @@ def get_media_urls(status):
     media_urls = {}
 
     # Twitter native media are stored in extended_entities
-    key = 'extended_entities' if 'extended_entities' in status else 'entities'
+    key = "extended_entities" if "extended_entities" in status else "entities"
     urls = []
     try:
-        for medium in status[key]['media']:
-            urls.append(medium['media_url_https'])
+        for medium in status[key]["media"]:
+            urls.append(medium["media_url_https"])
     except KeyError:
         logger.debug(f"No media in {key}")
     if len(urls) > 0:
-        media_urls['twitter'] = urls
+        media_urls["twitter"] = urls
 
     # Other URLs are stored in entities
-    key = 'entities'
+    key = "entities"
     for source in EXTERNAL_MEDIA_SOURCES:
         urls = []
         try:
-            for url in status[key]['urls']:
-                media_url = url.get('expanded_url')
+            for url in status[key]["urls"]:
+                media_url = url.get("expanded_url")
                 if (media_url is not None) and (source in media_url):
                     urls.append(media_url)
         except KeyError:
