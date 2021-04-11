@@ -6,6 +6,47 @@ This app detects geotagged Twitter activity that stands out above typical backgr
 
 Example account: [https://twitter.com/happening_sf](https://twitter.com/happening_sf)
 
+## Setup
+
+### Credentials and other variables
+
+If running the app on Heroku (see below), `.env` is not needed but it may still be convenient to fill in the environment variables.
+
+1. Copy the (hidden) `.env_template.ini` file to `.env`
+1. Edit `.env` to include your credentials (don't commit this file)
+
+### Database
+
+- If running the app on Heroku, you can easily provision a database for your app by installing the Postgres add-on (see below).
+  - Your database credentials will automatically be added to your app's Config Vars.
+- If not running the app on Heroku, you'll need to set up your own database.
+  - Add your database credentials to `.env`
+
+## Run the application
+
+### As a Heroku app
+
+These instructions use the Heroku CLI
+
+1. Fork this repo on GitHub and ensure you have a branch called `main`
+1. Create a new app on Heroku: `heroku create my-app-name`
+1. Install add-ons for:
+   1. [Papertrail](https://elements.heroku.com/addons/papertrail)
+      1. `heroku addons:create papertrail -a my-app-name`
+   1. [Postgres](https://elements.heroku.com/addons/heroku-postgresql)
+      1. `heroku addons:create heroku-postgres -a my-app-name`
+1. Create a new token: `heroku authorizations:create -d "my cool token description"`
+   1. Add the token to your GitHub repo's Secrets under the name `HEROKU_API_KEY`
+1. Add your Heroku app's name to the GitHub repo's Secrets under the name `HEROKU_APP_NAME` (or however it is configured in `.github/workflows/deploy.yaml`)
+1. Configure the application by adding environment variables as [Config Vars](https://devcenter.heroku.com/articles/config-vars)
+1. Commit and push to your GitHub repo's `main` branch
+   1. This can be through committing a change, merging a PR, or just running `git commit -m "empty commit" --allow-empty`
+   1. This will use GitHub Actions to build the app using Docker and deploy to Heroku
+
+#### Heroku logs
+
+1. View the logs via the [Heroku CLI](https://devcenter.heroku.com/articles/logging#view-logs) or on Papertrail
+
 ## TODO
 
 ### Data
@@ -43,3 +84,7 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
   - Keeping the running statistics requires storing many rows in database table; wouldn't be an issue if I wasn't trying to operate on a shoestring budget because I could run my own database
 - It's not uncommon to get a false alarm due to one user posting many tweets in a short time period
 - To add a location to the bot tweets, need to enable in: Settings and privacy -> Privacy and safety -> Location information -> Add location information to your Tweets
+
+## License
+
+Copyright (c) 2020 Matt Mollison Licensed under the MIT license.

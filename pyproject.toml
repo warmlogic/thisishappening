@@ -1,3 +1,39 @@
+[build-system]
+requires = ["poetry>=1.1"]
+build-backend = "poetry.masonry.api"
+
+[tool.poetry]
+name = "thisishappening"
+version = "0.1.0"
+description = "Locate, summarize, and visualize geotagged social media activity"
+authors = ["Matt Mollison <matt.mollison@gmail.com>"]
+
+[tool.poetry.dependencies]
+emoji = "^1.2.0"
+ftfy = "^6.0"
+numpy = "^1.20.2"
+pandas = "^1.2.3"
+psycopg2-binary = "^2.8.6"
+python-dotenv = "^0.17.0"
+pytz = "^2021.1"
+python = ">=3.9,<3.10"
+scikit-learn = "^0.24.1"
+scipy = "^1.6.2"
+spacy = "^3.0.5"
+sqlalchemy = "^1.4.7"
+twython = "^3.8.2"
+unidecode = "^1.2.0"
+
+[tool.poetry.dependencies.en_core_web_sm]
+url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0.tar.gz"
+
+[tool.poetry.dev-dependencies]
+black = "20.8b1"
+flake8 = "^3.9.0"
+isort = "^5.8.0"
+mypy = "^0.812"
+# pytest = "^6.2.3"
+
 [tool.isort]
 profile = "black"
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]

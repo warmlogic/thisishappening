@@ -14,17 +14,16 @@ format:
 sort:
 	isort --profile black .
 
-.PHONY: lint
-lint:
+.PHONY: stylecheck
+stylecheck:
 	flake8 .
 
 .PHONY: typecheck
 typecheck:
 	mypy .
 
-.PHONY: fix
-fix:
+.PHONY: lint
+lint:
 	make format
 	make sort
-	make lint
-	# make typecheck
+	make stylecheck
