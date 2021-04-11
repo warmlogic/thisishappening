@@ -2,8 +2,8 @@ name: Build and deploy
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
 
 jobs:
   build:
@@ -25,18 +25,18 @@ jobs:
         run: |
         echo "Building ${HEROKU_APP_NAME}"
         docker build -t registry.heroku.com/${HEROKU_APP_NAME}/${HEROKU_PROCESS_TYPE} .
-      - name: Push app
-        run: docker push registry.heroku.com/${HEROKU_APP_NAME}/${HEROKU_PROCESS_TYPE}:latest
-      - name: Release app
-        run: heroku container:release -a ${HEROKU_APP_NAME} ${HEROKU_PROCESS_TYPE}
-      # App 2 (conditional)
-      - name: Build app 2
-        if: env.HEROKU_APP_NAME_2 != null
-        echo "Building ${HEROKU_APP_NAME_2}"
-        run: docker build -t registry.heroku.com/${HEROKU_APP_NAME_2}/${HEROKU_PROCESS_TYPE} .
-      - name: Push app 2
-        if: env.HEROKU_APP_NAME_2 != null
-        run: docker push registry.heroku.com/${HEROKU_APP_NAME_2}/${HEROKU_PROCESS_TYPE}:latest
-      - name: Release app 2
-        if: env.HEROKU_APP_NAME_2 != null
-        run: heroku container:release -a ${HEROKU_APP_NAME_2} ${HEROKU_PROCESS_TYPE}
+      # - name: Push app
+      #   run: docker push registry.heroku.com/${HEROKU_APP_NAME}/${HEROKU_PROCESS_TYPE}:latest
+      # - name: Release app
+      #   run: heroku container:release -a ${HEROKU_APP_NAME} ${HEROKU_PROCESS_TYPE}
+      # # App 2 (conditional)
+      # - name: Build app 2
+      #   if: env.HEROKU_APP_NAME_2 != null
+      #   echo "Building ${HEROKU_APP_NAME_2}"
+      #   run: docker build -t registry.heroku.com/${HEROKU_APP_NAME_2}/${HEROKU_PROCESS_TYPE} .
+      # - name: Push app 2
+      #   if: env.HEROKU_APP_NAME_2 != null
+      #   run: docker push registry.heroku.com/${HEROKU_APP_NAME_2}/${HEROKU_PROCESS_TYPE}:latest
+      # - name: Release app 2
+      #   if: env.HEROKU_APP_NAME_2 != null
+      #   run: heroku container:release -a ${HEROKU_APP_NAME_2} ${HEROKU_PROCESS_TYPE}
