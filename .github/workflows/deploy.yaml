@@ -1,0 +1,37 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build and deploy to Heroku
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_APP_NAME_1: ${{ secrets.HEROKU_APP_NAME_1 }}
+      HEROKU_APP_NAME_2: ${{ secrets.HEROKU_APP_NAME_2 }}
+      HEROKU_PROCESS_TYPE: worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Log in to Heroku Container registry
+        run: docker login --username=_ --password=${HEROKU_API_KEY} registry.heroku.com
+      # App 1
+      - name: Build app 1
+        run: docker build -t registry.heroku.com/${HEROKU_APP_NAME_1}/${HEROKU_PROCESS_TYPE} .
+      - name: Push app 1
+        run: docker push registry.heroku.com/${HEROKU_APP_NAME_1}/${HEROKU_PROCESS_TYPE}:latest
+      - name: Release app 1
+        run: heroku container:release -a ${HEROKU_APP_NAME_1} ${HEROKU_PROCESS_TYPE}
+      # App 2
+      - name: Build app 2
+        run: docker build -t registry.heroku.com/${HEROKU_APP_NAME_2}/${HEROKU_PROCESS_TYPE} .
+      - name: Push app 2
+        run: docker push registry.heroku.com/${HEROKU_APP_NAME_2}/${HEROKU_PROCESS_TYPE}:latest
+      - name: Release app 2
+        run: heroku container:release -a ${HEROKU_APP_NAME_2} ${HEROKU_PROCESS_TYPE}
