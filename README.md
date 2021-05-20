@@ -8,6 +8,11 @@ Example account: [https://twitter.com/happening_sf](https://twitter.com/happenin
 
 ## Setup
 
+### Local Python environment
+
+1. Install poetry as described [here](https://python-poetry.org/docs/#installation)
+1. Install requirements: `poetry install`
+
 ### Credentials and other variables
 
 If running the app on Heroku (see below), `.env` is not needed but it may still be convenient to fill in the environment variables.
@@ -23,6 +28,12 @@ If running the app on Heroku (see below), `.env` is not needed but it may still 
   - Add your database credentials to `.env`
 
 ## Run the application
+
+### Locally
+
+1. Run the application: `poetry run python app.py`
+   1. Alternatively, activate the virtual environment that poetry created by running `poetry shell` and then run the script: `python app.py`
+   1. Deactivate the virtual environment by running `deactivate`
 
 ### As a Heroku app
 
