@@ -469,6 +469,10 @@ if __name__ == "__main__":
         oauth_token_secret=OAUTH_TOKEN_SECRET,
     )
 
+    logger.info(f"Ignoring tweets containing these words: {IGNORE_WORDS}")
+    logger.info(f"Ignoring tweets from these screen names: {IGNORE_USER_SCREEN_NAMES}")
+    logger.info(f"Ignoring tweets from these user IDs: {IGNORE_USER_ID_STR}")
+
     bounding_box_str = ",".join([str(x) for x in BOUNDING_BOX])
     logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
     while True:
