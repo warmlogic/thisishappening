@@ -148,11 +148,15 @@ def check_tweet(
     if not tweet_body:
         return False
 
-    ignore_words_cf = [y.casefold() for y in ignore_words]
-
     return all(
         [
-            all([x.casefold() not in ignore_words_cf for x in clean_text(tweet_body).split()]),
+            all(
+                [
+                    re.search(ignore_word, word, flags=re.IGNORECASE) is None
+                    for word in clean_text(tweet_body).split()
+                    for ignore_word in ignore_words
+                ]
+            ),
             (
                 status["coordinates"]
                 or (status["place"] and status["place"]["place_type"] in valid_place_types)
