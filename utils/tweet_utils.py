@@ -145,6 +145,11 @@ def check_tweet(
     """Return True if tweet satisfies specific criteria"""
     tweet_body = get_tweet_body(status)
 
+    try:
+        quoted_tweet_body = status["quoted_status"]["text"]
+    except KeyError:
+        quoted_tweet_body = ""
+
     if not tweet_body:
         return False
 
@@ -154,6 +159,13 @@ def check_tweet(
                 [
                     re.search(ignore_word, word, flags=re.IGNORECASE) is None
                     for word in clean_text(tweet_body).split()
+                    for ignore_word in ignore_words
+                ]
+            ),
+            all(
+                [
+                    re.search(ignore_word, word, flags=re.IGNORECASE) is None
+                    for word in clean_text(quoted_tweet_body).split()
                     for ignore_word in ignore_words
                 ]
             ),
