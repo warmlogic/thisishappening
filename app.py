@@ -133,7 +133,7 @@ ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="30
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = (
     [
-        (float(c[0].strip()), float(c[1].strip()))
+        (f"{float(c[0].strip()):.5f}", f"{float(c[1].strip()):.5f}")
         for c in [coords.split(",") for coords in REDUCE_WEIGHT_LON_LAT.split(";")]
     ]
     if REDUCE_WEIGHT_LON_LAT

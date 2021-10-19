@@ -84,7 +84,7 @@ def set_activity_weight(
     # Reduce weight if tweet has specific coordinates
     if weighted and reduce_weight_lon_lat:
         for tweet in activity_dict:
-            if (tweet["longitude"], tweet["latitude"]) in reduce_weight_lon_lat:
+            if (f"{tweet['longitude']:.5f}", f"{tweet['latitude']:.5f}") in reduce_weight_lon_lat:
                 tweet["weight"] = compute_weight(tweet["weight"], 1, weight_factor_lon_lat)
 
     # Reduce weight if tweet did not have specific coordinates
