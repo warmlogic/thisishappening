@@ -194,7 +194,7 @@ class MyStreamer(TwythonStreamer):
                 if LOG_TWEETS:
                     _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
                 else:
-                    logger.info(
+                    logger.debug(
                         "Not logging tweet due to environment variable settings:"
                         + f" {tweet_info.status_id_str},"
                         + f" {tweet_info.place_name} ({tweet_info.place_type})"
