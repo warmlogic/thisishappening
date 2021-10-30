@@ -141,6 +141,10 @@ def check_tweet(
     ignore_words: List[str] = [],
     ignore_user_screen_names: List[str] = [],
     ignore_user_id_str: List[str] = [],
+    ignore_possibly_sensitive: bool = True,
+    ignore_quote_status: bool = True,
+    min_friends_count: int = 1,
+    min_followers_count: int = 1,
 ) -> bool:
     """Return True if tweet satisfies specific criteria"""
     tweet_body = get_tweet_body(status)
@@ -180,9 +184,10 @@ def check_tweet(
                 ]
             ),
             (status["user"]["id_str"] not in ignore_user_id_str),
-            (status["user"]["friends_count"] > 0),  # following
-            (status["user"]["followers_count"] > 0),  # followers
-            (~status.get("possibly_sensitive", False)),
+            (not status.get("possibly_sensitive", False) if ignore_possibly_sensitive else True),
+            (not status.get("is_quote_status", False) if ignore_quote_status else True),
+            (status["user"]["friends_count"] >= min_friends_count),  # following
+            (status["user"]["followers_count"] >= min_followers_count),  # followers
         ]
     )
 

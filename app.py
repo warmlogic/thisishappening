@@ -120,6 +120,15 @@ IGNORE_USER_ID_STR = (
 )
 IGNORE_USER_ID_STR = list(set(IGNORE_USER_ID_STR))
 
+MIN_FRIENDS_COUNT = int(os.getenv("MIN_FRIENDS_COUNT", default="1"))
+MIN_FOLLOWERS_COUNT = int(os.getenv("MIN_FOLLOWERS_COUNT", default="1"))
+IGNORE_POSSIBLY_SENSITIVE = (
+    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="True").casefold() == "true".casefold()
+)
+IGNORE_QUOTE_STATUS = (
+    os.getenv("IGNORE_QUOTE_STATUS", default="True").casefold() == "true".casefold()
+)
+
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
 
@@ -170,6 +179,10 @@ class MyStreamer(TwythonStreamer):
             ignore_words=IGNORE_WORDS,
             ignore_user_screen_names=IGNORE_USER_SCREEN_NAMES,
             ignore_user_id_str=IGNORE_USER_ID_STR,
+            ignore_possibly_sensitive=IGNORE_POSSIBLY_SENSITIVE,
+            ignore_quote_status=IGNORE_QUOTE_STATUS,
+            min_friends_count=MIN_FRIENDS_COUNT,
+            min_followers_count=MIN_FOLLOWERS_COUNT,
         ):
             tweet_info = get_tweet_info(status)
 
