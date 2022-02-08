@@ -20,7 +20,8 @@ from utils.data_utils import inbounds
 
 logger = logging.getLogger("happeninglogger")
 
-# Regex to look for all URLs (mailto:, x-whatever://, etc.) https://gist.github.com/gruber/249502
+# Regex to look for all URLs (mailto:, x-whatever://, etc.)
+# https://gist.github.com/gruber/249502
 # Removed case insensitive flag from the start: (?i)
 url_all_re = (
     r"\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)"
@@ -209,11 +210,15 @@ def check_tweet(
             ),
             (
                 status["coordinates"]
-                or (status["place"] and status["place"]["place_type"] in valid_place_types)
+                or (
+                    status["place"]
+                    and status["place"]["place_type"] in valid_place_types
+                )
             ),
             all(
                 [
-                    re.search(name, status["user"]["screen_name"], flags=re.IGNORECASE) is None
+                    re.search(name, status["user"]["screen_name"], flags=re.IGNORECASE)
+                    is None
                     for name in ignore_user_screen_names
                 ]
             ),
@@ -228,7 +233,11 @@ def check_tweet(
                     for lon_lat in ignore_lon_lat
                 ]
             ),
-            (not status.get("possibly_sensitive", False) if ignore_possibly_sensitive else True),
+            (
+                not status.get("possibly_sensitive", False)
+                if ignore_possibly_sensitive
+                else True
+            ),
             (not status.get("is_quote_status", False) if ignore_quote_status else True),
             (status["user"]["friends_count"] >= min_friends_count),  # following
             (status["user"]["followers_count"] >= min_followers_count),  # followers
@@ -274,7 +283,8 @@ def clean_token(token: str) -> str:
     if re.search(url_all_re, token) is not None:
         return token
 
-    # Replace some punctuation with space; everything in string.punctuation except: # ' . @
+    # Replace some punctuation with space;
+    # everything in string.punctuation except: # ' . @
     punct_to_remove = '!"$%&()*+,-/:;<=>?[\\]^_`{|}~'
     punct_to_remove = f"[{re.escape(punct_to_remove)}]"
     token = re.sub(punct_to_remove, " ", token).strip()
@@ -367,7 +377,9 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
         )
 
     tokens = [
-        token.lemma_ if lemmatize else token.text for token in nlp(text) if _token_filter(token)
+        token.lemma_ if lemmatize else token.text
+        for token in nlp(text)
+        if _token_filter(token)
     ]
 
     return " ".join(tokens)
@@ -408,7 +420,8 @@ def get_tokens_to_tweet(
             [
                 token
                 for token in split_text(tweet)
-                if (not is_username_or_hashtag(token)) and (not emoji.emoji_count(token))
+                if (not is_username_or_hashtag(token))
+                and (not emoji.emoji_count(token))
             ]
         )
         for tweet in tweets
@@ -467,11 +480,16 @@ def get_coords(tweets):
 
 
 def get_place_name(tweets, valid_place_types: List[str] = ["neighborhood", "poi"]):
-    # Get the most common place name from these tweets; only consider neighborhood or poi
+    # Get the most common place name from these tweets;
+    # only consider neighborhood or poi
     try:
-        place_names = [x.place_name for x in tweets if x.place_type in valid_place_types]
+        place_names = [
+            x.place_name for x in tweets if x.place_type in valid_place_types
+        ]
     except AttributeError:
-        place_names = [x["place_name"] for x in tweets if x["place_type"] in valid_place_types]
+        place_names = [
+            x["place_name"] for x in tweets if x["place_type"] in valid_place_types
+        ]
     except TypeError:
         logger.exception(f"Unsupported tweet dtype: {type(tweets[0])}")
 
@@ -491,7 +509,9 @@ def get_status_ids(tweets):
     return status_ids
 
 
-def reverse_geocode(twitter, longitude: float, latitude: float, sleep_seconds: int = 10) -> Dict:
+def reverse_geocode(
+    twitter, longitude: float, latitude: float, sleep_seconds: int = 10
+) -> Dict:
     # Reverse geocode latitude and longitude value
     geo_granularity = ["neighborhood", "city", "admin", "country"]
 
@@ -504,17 +524,23 @@ def reverse_geocode(twitter, longitude: float, latitude: float, sleep_seconds: i
     }
 
     while unsuccessful_tries < try_threshold:
-        response = twitter.reverse_geocode(lat=latitude, long=longitude, granularity="neighborhood")
+        response = twitter.reverse_geocode(
+            lat=latitude, long=longitude, granularity="neighborhood"
+        )
         if "result" in response:
             unsuccessful_tries = try_threshold
         else:
             unsuccessful_tries += 1
-            logger.info(f"Sleeping for {sleep_seconds} seconds due to failed reverse geocode")
+            logger.info(
+                f"Sleeping for {sleep_seconds} seconds due to failed reverse geocode"
+            )
             sleep(sleep_seconds)
 
     for gg in geo_granularity:
         if "result" in response:
-            name = [x["name"] for x in response["result"]["places"] if x["place_type"] == gg]
+            name = [
+                x["name"] for x in response["result"]["places"] if x["place_type"] == gg
+            ]
         else:
             name = []
         rev_geo[gg] = name[0] if name else None
@@ -542,14 +568,17 @@ def get_event_info(
     latitude = sum(lats) / len(lats)
 
     # Event timestamp is the most recent tweet
-    timestamp = max(map(operator.itemgetter("created_at"), event_tweets)).replace(tzinfo=pytz.UTC)
+    timestamp = max(map(operator.itemgetter("created_at"), event_tweets)).replace(
+        tzinfo=pytz.UTC
+    )
 
     place_name = get_place_name(event_tweets, valid_place_types=["neighborhood", "poi"])
 
     # Get a larger granular name to include after a neighborhood or poi
     city_name = get_place_name(event_tweets, valid_place_types=["city"])
 
-    # If the tweets didn't have a valid place name, reverse geocode to get the neighborhood name
+    # If the tweets didn't have a valid place name,
+    # reverse geocode to get the neighborhood name
     if place_name is None:
         rev_geo = reverse_geocode(twitter, longitude=longitude, latitude=latitude)
         try:
@@ -575,7 +604,9 @@ def get_event_info(
     event_str = f"{event_str} in {place_name}" if place_name else event_str
     event_str = f"{event_str}, {city_name}" if city_name else event_str
     event_str = (
-        f"{event_str} ({latitude:.4f}, {longitude:.4f}):" if tweet_lat_lon else f"{event_str}:"
+        f"{event_str} ({latitude:.4f}, {longitude:.4f}):"
+        if tweet_lat_lon
+        else f"{event_str}:"
     )
     remaining_chars = tweet_max_length - len(event_str) - 2 - tweet_url_length
     # Find the largest set of tokens to fill out the remaining charaters
@@ -598,7 +629,9 @@ def get_event_info(
     event_url = base_event_url + urllib.parse.urlencode(urlparams)
     event_str = f"{event_str} {tokens} {event_url}"
 
-    logger.info(f"{place_name}: Found event with {len(event_tweets)} tweets: {tokens_str}")
+    logger.info(
+        f"{place_name}: Found event with {len(event_tweets)} tweets: {tokens_str}"
+    )
     logger.info(event_str)
 
     event_info = EventInfo(

@@ -92,7 +92,11 @@ class Events(Base):
 
         ts_start = timestamp - timedelta(hours=hours)
 
-        q = session.query(cls).filter(cls.timestamp >= ts_start).filter(cls.timestamp <= timestamp)
+        q = (
+            session.query(cls)
+            .filter(cls.timestamp >= ts_start)
+            .filter(cls.timestamp <= timestamp)
+        )
 
         return q.order_by(desc(cls.timestamp)).all()
 
@@ -104,7 +108,12 @@ class Events(Base):
 
     @classmethod
     def get_event_tweets(cls, session, event_id: int, hours: float = 1):
-        event = session.query(cls).filter(cls.id == event_id).order_by(desc(cls.timestamp)).first()
+        event = (
+            session.query(cls)
+            .filter(cls.id == event_id)
+            .order_by(desc(cls.timestamp))
+            .first()
+        )
         if event is not None:
             timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
             bounding_box = [
@@ -174,7 +183,9 @@ class Events(Base):
                     session.execute(delete_q)
                     session.commit()
                 except Exception as e:
-                    logger.warning(f"Exception when keeping most recent {n} rows of events: {e}")
+                    logger.warning(
+                        f"Exception when keeping most recent {n} rows of events: {e}"
+                    )
                     session.rollback()
 
 
@@ -251,7 +262,9 @@ class RecentTweets(Base):
         )
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
             q = (
                 q.filter(cls.longitude >= west_lon)
                 .filter(cls.longitude < east_lon)
@@ -284,7 +297,9 @@ class RecentTweets(Base):
         )
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
             q = (
                 q.filter(cls.longitude >= west_lon)
                 .filter(cls.longitude < east_lon)
@@ -292,8 +307,14 @@ class RecentTweets(Base):
                 .filter(cls.latitude < north_lat)
             )
 
-        if place_type_or_coords and (place_type is not None) and (has_coords is not None):
-            q = q.filter(or_(cls.place_type.in_(place_type), cls.has_coords.is_(has_coords)))
+        if (
+            place_type_or_coords
+            and (place_type is not None)
+            and (has_coords is not None)
+        ):
+            q = q.filter(
+                or_(cls.place_type.in_(place_type), cls.has_coords.is_(has_coords))
+            )
         else:
             if place_type is not None:
                 q = q.filter(cls.place_type.in_(place_type))
@@ -308,7 +329,9 @@ class RecentTweets(Base):
         q = session.query(cls)
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
             q = (
                 q.filter(cls.longitude >= west_lon)
                 .filter(cls.longitude < east_lon)
@@ -323,7 +346,9 @@ class RecentTweets(Base):
         q = session.query(cls)
 
         if bounding_box is not None:
-            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(bounding_box=bounding_box)
+            west_lon, east_lon, south_lat, north_lat = get_coords_min_max(
+                bounding_box=bounding_box
+            )
             q = (
                 q.filter(cls.longitude >= west_lon)
                 .filter(cls.longitude < east_lon)
@@ -382,5 +407,7 @@ class RecentTweets(Base):
                     session.execute(delete_q)
                     session.commit()
                 except Exception as e:
-                    logger.warning(f"Exception when keeping most recent {n} rows of tweets: {e}")
+                    logger.warning(
+                        f"Exception when keeping most recent {n} rows of tweets: {e}"
+                    )
                     session.rollback()
