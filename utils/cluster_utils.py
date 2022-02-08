@@ -31,7 +31,9 @@ def cluster_activity(
 
     unique_labels = []
     for km, eps in zip(kms, _eps):
-        db = DBSCAN(eps=eps, min_samples=min_samples, algorithm="ball_tree", metric="haversine")
+        db = DBSCAN(
+            eps=eps, min_samples=min_samples, algorithm="ball_tree", metric="haversine"
+        )
         db.fit(X, sample_weight=sample_weight)
 
         # label -1 means not assigned to a cluster

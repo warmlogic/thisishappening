@@ -9,36 +9,36 @@ description = "Locate, summarize, and visualize geotagged social media activity"
 authors = ["Matt Mollison <matt.mollison@gmail.com>"]
 
 [tool.poetry.dependencies]
-emoji = "~1.6.1"
+emoji = "~1.6.3"
 ftfy = "~6.0.3"
-numpy = "~1.21.3"
-pandas = "~1.3.4"
-psycopg2-binary = "~2.9.1"
-python-dotenv = "~0.17.1"
+numpy = "~1.22.2"
+pandas = "~1.4.0"
+psycopg2-binary = "~2.9.3"
+python-dotenv = "~0.19.1"
 pytz = "~2021.3"
 python = ">=3.9,<3.10"
-scikit-learn = "1.0.1"
+scikit-learn = "~1.0.2"
 scipy = [
     {url = "https://pypi.anaconda.org/scipy-wheels-nightly/simple/scipy/1.8.0.dev0%2B1869.838cfbe/scipy-1.8.0.dev0%2B1869.838cfbe-cp39-cp39-macosx_11_0_arm64.whl", markers = "platform_machine == 'arm64'"},
     {version = "<=1.7.1", markers="platform_machine != 'arm64'"}
 ]
-spacy = "~3.1.4"
-sqlalchemy = "~1.4.26"
+spacy = "~3.2.1"
+sqlalchemy = "~1.4.31"
 twython = "~3.9.1"
 unidecode = "~1.3.2"
 
 [tool.poetry.dependencies.en_core_web_sm]
-url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.1.0/en_core_web_sm-3.1.0.tar.gz"
+url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.2.0/en_core_web_sm-3.2.0.tar.gz"
 
 [tool.poetry.dev-dependencies]
-black = "21.9b0"
-flake8 = "~3.9.2"
-isort = "~5.9.3"
-mypy = "~0.812"
+black = "22.1.0"
+flake8 = "~4.0.1"
+isort = "~5.10.1"
+mypy = "~0.931"
 # pytest = "~6.2.5"
 
 [tool.black]
-line-length = 100
+line-length = 88
 
 [tool.isort]
 profile = "black"

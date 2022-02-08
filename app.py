@@ -56,8 +56,12 @@ if DEBUG_RUN:
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
-    TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
-    POST_EVENT = os.getenv("POST_EVENT", default="False").casefold() == "true".casefold()
+    TEMPORAL_GRANULARITY_HOURS = int(
+        os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1")
+    )
+    POST_EVENT = (
+        os.getenv("POST_EVENT", default="False").casefold() == "true".casefold()
+    )
     LOG_TWEETS = True
     LOG_EVENTS = True
     PURGE_OLD_DATA = True
@@ -86,7 +90,9 @@ MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
-BOUNDING_BOX = [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
+BOUNDING_BOX = (
+    [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
+)
 assert len(BOUNDING_BOX) == 4
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
@@ -95,20 +101,28 @@ KM_STEP = int(os.getenv("KM_STEP", default="9"))
 MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
-TWEET_LAT_LON = os.getenv("TWEET_LAT_LON", default="False").casefold() == "true".casefold()
+TWEET_LAT_LON = (
+    os.getenv("TWEET_LAT_LON", default="False").casefold() == "true".casefold()
+)
 TWEET_GEOTAG = os.getenv("TWEET_GEOTAG", default="True").casefold() == "true".casefold()
 # Use docs/index.html to render words and map of tweets
-BASE_EVENT_URL = os.getenv("BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?")
+BASE_EVENT_URL = os.getenv(
+    "BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?"
+)
 
 VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
-VALID_PLACE_TYPES = [x.strip() for x in VALID_PLACE_TYPES.split(",")] if VALID_PLACE_TYPES else []
+VALID_PLACE_TYPES = (
+    [x.strip() for x in VALID_PLACE_TYPES.split(",")] if VALID_PLACE_TYPES else []
+)
 VALID_PLACE_TYPES = list(set(VALID_PLACE_TYPES))
 IGNORE_WORDS = os.getenv("IGNORE_WORDS", default=None)
-IGNORE_WORDS = [fr"\b{x.strip()}\b" for x in IGNORE_WORDS.split(",")] if IGNORE_WORDS else []
+IGNORE_WORDS = (
+    [rf"\b{x.strip()}\b" for x in IGNORE_WORDS.split(",")] if IGNORE_WORDS else []
+)
 IGNORE_WORDS = list(set(IGNORE_WORDS))
 IGNORE_USER_SCREEN_NAMES = os.getenv("IGNORE_USER_SCREEN_NAMES", default=None)
 IGNORE_USER_SCREEN_NAMES = (
-    [fr"{x.strip()}" for x in IGNORE_USER_SCREEN_NAMES.split(",")]
+    [rf"{x.strip()}" for x in IGNORE_USER_SCREEN_NAMES.split(",")]
     if IGNORE_USER_SCREEN_NAMES
     else []
 )
@@ -123,14 +137,17 @@ IGNORE_USER_ID_STR = list(set(IGNORE_USER_ID_STR))
 MIN_FRIENDS_COUNT = int(os.getenv("MIN_FRIENDS_COUNT", default="1"))
 MIN_FOLLOWERS_COUNT = int(os.getenv("MIN_FOLLOWERS_COUNT", default="1"))
 IGNORE_POSSIBLY_SENSITIVE = (
-    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="True").casefold() == "true".casefold()
+    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="True").casefold()
+    == "true".casefold()
 )
 IGNORE_QUOTE_STATUS = (
     os.getenv("IGNORE_QUOTE_STATUS", default="True").casefold() == "true".casefold()
 )
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
-REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
+REMOVE_USERNAME_AT = (
+    os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
+)
 
 GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
@@ -163,7 +180,9 @@ REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
 WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
 WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="4.0"))
 
-HAS_COORDS_ONLY = os.getenv("HAS_COORDS_ONLY", default="True").casefold() == "true".casefold()
+HAS_COORDS_ONLY = (
+    os.getenv("HAS_COORDS_ONLY", default="True").casefold() == "true".casefold()
+)
 HAS_COORDS_ONLY = HAS_COORDS_ONLY if HAS_COORDS_ONLY else None
 
 
@@ -172,9 +191,9 @@ class MyStreamer(TwythonStreamer):
         super(MyStreamer, self).__init__(*args, **kwargs)
         self.grid_coords = grid_coords
         if event_comparison_ts is None:
-            event_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(
-                hours=TEMPORAL_GRANULARITY_HOURS
-            )
+            event_comparison_ts = datetime.utcnow().replace(
+                tzinfo=pytz.UTC
+            ) - timedelta(hours=TEMPORAL_GRANULARITY_HOURS)
         self.event_comparison_ts = event_comparison_ts
         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.sleep_seconds = 2
@@ -184,7 +203,7 @@ class MyStreamer(TwythonStreamer):
         # Reset sleep seconds exponent
         self.sleep_exponent = 0
 
-        if check_tweet(
+        use_status = check_tweet(
             status=status,
             bounding_box=BOUNDING_BOX,
             valid_place_types=VALID_PLACE_TYPES,
@@ -196,218 +215,9 @@ class MyStreamer(TwythonStreamer):
             ignore_quote_status=IGNORE_QUOTE_STATUS,
             min_friends_count=MIN_FRIENDS_COUNT,
             min_followers_count=MIN_FOLLOWERS_COUNT,
-        ):
-            tweet_info = get_tweet_info(status)
+        )
 
-            if LOG_TWEETS:
-                _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
-            else:
-                logger.debug(
-                    "Not logging tweet due to environment variable settings:"
-                    + f" {tweet_info.status_id_str},"
-                    + f" {tweet_info.place_name} ({tweet_info.place_type})"
-                )
-
-            if tweet_info.created_at - self.event_comparison_ts >= timedelta(
-                hours=TEMPORAL_GRANULARITY_HOURS
-            ):
-                logger.info(
-                    f"{tweet_info.created_at} Been more than"
-                    + f" {TEMPORAL_GRANULARITY_HOURS} hour(s)"
-                    + " since an event occurred, comparing activity..."
-                )
-
-                activity_curr_day = RecentTweets.get_recent_tweets(
-                    session,
-                    timestamp=tweet_info.created_at,
-                    hours=24,
-                    place_type=VALID_PLACE_TYPES,
-                    has_coords=HAS_COORDS_ONLY,
-                    place_type_or_coords=True,
-                )
-                activity_prev_day = RecentTweets.get_recent_tweets(
-                    session,
-                    timestamp=tweet_info.created_at - timedelta(days=1),
-                    hours=24,
-                    place_type=VALID_PLACE_TYPES,
-                    has_coords=HAS_COORDS_ONLY,
-                    place_type_or_coords=True,
-                )
-
-                activity_curr_hour = RecentTweets.get_recent_tweets(
-                    session,
-                    timestamp=tweet_info.created_at,
-                    hours=TEMPORAL_GRANULARITY_HOURS,
-                    place_type=VALID_PLACE_TYPES,
-                    has_coords=HAS_COORDS_ONLY,
-                    place_type_or_coords=True,
-                )
-                activity_prev_hour = RecentTweets.get_recent_tweets(
-                    session,
-                    timestamp=tweet_info.created_at - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
-                    hours=TEMPORAL_GRANULARITY_HOURS,
-                    place_type=VALID_PLACE_TYPES,
-                    has_coords=HAS_COORDS_ONLY,
-                    place_type_or_coords=True,
-                )
-
-                # Decide whether an event occurred
-                event_day = False
-                event_hour = False
-
-                if (len(activity_prev_day) > 1) and (len(activity_curr_day) > 1):
-                    z_diff_day, _, _ = compare_activity_kde(
-                        self.grid_coords,
-                        activity_prev_day,
-                        activity_curr_day,
-                        bw_method=BW_METHOD,
-                        weighted=WEIGHTED,
-                        weight_factor=WEIGHT_FACTOR,
-                        reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
-                        weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
-                        weight_factor_no_coords=WEIGHT_FACTOR_NO_COORDS,
-                    )
-
-                    lat_activity_day, lon_activity_day = np.where(
-                        z_diff_day > ACTIVITY_THRESHOLD_DAY
-                    )
-
-                    if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
-                        event_day = True
-
-                    logger.info(
-                        f"Day event: {event_day}, current: {len(activity_curr_day)},"
-                        + f" previous: {len(activity_prev_day)},"
-                        + f" max diff: {z_diff_day.max():.2f},"
-                        + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
-                    )
-                else:
-                    logger.info(
-                        f"Day event: {event_day}, current: {len(activity_curr_day)},"
-                        + f" previous: {len(activity_prev_day)},"
-                        + " not enough activity,"
-                        + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
-                    )
-
-                if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
-                    z_diff_hour, _, activity_curr_hour_w = compare_activity_kde(
-                        self.grid_coords,
-                        activity_prev_hour,
-                        activity_curr_hour,
-                        bw_method=BW_METHOD,
-                        weighted=WEIGHTED,
-                        weight_factor=WEIGHT_FACTOR,
-                        reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
-                        weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
-                    )
-
-                    lat_activity_hour, lon_activity_hour = np.where(
-                        z_diff_hour > ACTIVITY_THRESHOLD_HOUR
-                    )
-
-                    if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
-                        event_hour = True
-
-                    logger.info(
-                        f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
-                        + f" previous: {len(activity_prev_hour)},"
-                        + f" max diff: {z_diff_hour.max():.2f},"
-                        + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
-                    )
-                else:
-                    logger.info(
-                        f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
-                        + f" previous: {len(activity_prev_hour)},"
-                        + " not enough activity,"
-                        + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
-                    )
-
-                if event_day and event_hour:
-                    sample_weight = [x["weight"] for x in activity_curr_hour_w]
-                    clusters = cluster_activity(
-                        activity=activity_curr_hour_w,
-                        min_samples=EVENT_MIN_TWEETS,
-                        km_start=KM_START,
-                        km_stop=KM_STOP,
-                        km_step=KM_STEP,
-                        min_n_clusters=MIN_N_CLUSTERS,
-                        sample_weight=sample_weight,
-                    )
-
-                    for cluster in clusters.values():
-                        event_info = get_event_info(
-                            twitter,
-                            event_tweets=cluster["event_tweets"],
-                            tweet_max_length=TWEET_MAX_LENGTH,
-                            tweet_url_length=TWEET_URL_LENGTH,
-                            base_event_url=BASE_EVENT_URL,
-                            token_count_min=TOKEN_COUNT_MIN,
-                            remove_username_at=REMOVE_USERNAME_AT,
-                            tweet_lat_lon=TWEET_LAT_LON,
-                        )
-
-                        if LOG_EVENTS:
-                            _ = Events.log_event(session, event_info=event_info)
-                        else:
-                            logger.info(
-                                "Not logging event due to environment variable settings:"
-                                + f" {event_info.timestamp} {event_info.place_name}:"
-                                + f" {event_info.tokens_str}"
-                            )
-
-                        if POST_EVENT:
-                            try:
-                                status = twitter.update_status(
-                                    status=event_info.event_str,
-                                    lat=event_info.latitude if TWEET_GEOTAG else None,
-                                    long=event_info.longitude if TWEET_GEOTAG else None,
-                                    # place_id=event_info.place_id if TWEET_GEOTAG else None,
-                                )
-
-                                # Update the comparison tweet time
-                                self.event_comparison_ts = event_info.timestamp
-                            except TwythonAuthError:
-                                logger.exception(
-                                    "Authorization error,"
-                                    + " did you create read+write credentials?"
-                                )
-                            except TwythonRateLimitError:
-                                logger.exception("Rate limit error")
-                            except TwythonError:
-                                logger.exception("Encountered some other error")
-                        else:
-                            logger.info("Not posting event due to environment variable settings")
-
-                # Purge old data every so often
-                if PURGE_OLD_DATA and (
-                    datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts
-                    >= timedelta(minutes=10)
-                ):
-                    # Delete old data by row count
-                    RecentTweets.keep_tweets_n_rows(session, n=RECENT_TWEETS_ROWS_TO_KEEP)
-                    Events.keep_events_n_rows(session, n=EVENTS_ROWS_TO_KEEP)
-
-                    # Delete old data by timestamp
-                    RecentTweets.delete_tweets_older_than(
-                        session,
-                        timestamp=tweet_info.created_at,
-                        days=RECENT_TWEETS_DAYS_TO_KEEP,
-                    )
-                    Events.delete_events_older_than(
-                        session,
-                        timestamp=tweet_info.created_at,
-                        days=EVENTS_DAYS_TO_KEEP,
-                    )
-
-                    # Update
-                    self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
-            else:
-                logger.info(
-                    "Not looking for new event, recent event in the last"
-                    + f" {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours"
-                    + f" ({self.event_comparison_ts})"
-                )
-        else:
+        if not use_status:
             logger.debug(
                 f"Tweet {status.get('id_str')} failed check tweet:"
                 + f" screen name: {status['user'].get('screen_name')}"
@@ -418,26 +228,249 @@ class MyStreamer(TwythonStreamer):
                 + f" place type: {status['place'].get('place_type')},"
                 + f" text: {status.get('text')}"
             )
+            return
+
+        tweet_info = get_tweet_info(status)
+
+        if LOG_TWEETS:
+            _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
+        else:
+            logger.debug(
+                "Not logging tweet due to environment variable settings:"
+                + f" {tweet_info.status_id_str},"
+                + f" {tweet_info.place_name} ({tweet_info.place_type})"
+            )
+
+        if tweet_info.created_at - self.event_comparison_ts >= timedelta(
+            hours=TEMPORAL_GRANULARITY_HOURS
+        ):
+            logger.info(
+                f"{tweet_info.created_at} Been more than"
+                + f" {TEMPORAL_GRANULARITY_HOURS} hour(s)"
+                + " since an event occurred, comparing activity..."
+            )
+
+            activity_curr_day = RecentTweets.get_recent_tweets(
+                session,
+                timestamp=tweet_info.created_at,
+                hours=24,
+                place_type=VALID_PLACE_TYPES,
+                has_coords=HAS_COORDS_ONLY,
+                place_type_or_coords=True,
+            )
+            activity_prev_day = RecentTweets.get_recent_tweets(
+                session,
+                timestamp=tweet_info.created_at - timedelta(days=1),
+                hours=24,
+                place_type=VALID_PLACE_TYPES,
+                has_coords=HAS_COORDS_ONLY,
+                place_type_or_coords=True,
+            )
+
+            activity_curr_hour = RecentTweets.get_recent_tweets(
+                session,
+                timestamp=tweet_info.created_at,
+                hours=TEMPORAL_GRANULARITY_HOURS,
+                place_type=VALID_PLACE_TYPES,
+                has_coords=HAS_COORDS_ONLY,
+                place_type_or_coords=True,
+            )
+            activity_prev_hour = RecentTweets.get_recent_tweets(
+                session,
+                timestamp=tweet_info.created_at
+                - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
+                hours=TEMPORAL_GRANULARITY_HOURS,
+                place_type=VALID_PLACE_TYPES,
+                has_coords=HAS_COORDS_ONLY,
+                place_type_or_coords=True,
+            )
+
+            # Decide whether an event occurred
+            event_day = False
+            event_hour = False
+
+            if (len(activity_prev_day) > 1) and (len(activity_curr_day) > 1):
+                z_diff_day, _, _ = compare_activity_kde(
+                    self.grid_coords,
+                    activity_prev_day,
+                    activity_curr_day,
+                    bw_method=BW_METHOD,
+                    weighted=WEIGHTED,
+                    weight_factor=WEIGHT_FACTOR,
+                    reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
+                    weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
+                    weight_factor_no_coords=WEIGHT_FACTOR_NO_COORDS,
+                )
+
+                lat_activity_day, lon_activity_day = np.where(
+                    z_diff_day > ACTIVITY_THRESHOLD_DAY
+                )
+
+                if (lat_activity_day.size > 0) and (lon_activity_day.size > 0):
+                    event_day = True
+
+                logger.info(
+                    f"Day event: {event_day}, current: {len(activity_curr_day)},"
+                    + f" previous: {len(activity_prev_day)},"
+                    + f" max diff: {z_diff_day.max():.2f},"
+                    + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
+                )
+            else:
+                logger.info(
+                    f"Day event: {event_day}, current: {len(activity_curr_day)},"
+                    + f" previous: {len(activity_prev_day)},"
+                    + " not enough activity,"
+                    + f" threshold: {ACTIVITY_THRESHOLD_DAY}"
+                )
+
+            if (len(activity_prev_hour) > 1) and (len(activity_curr_hour) > 1):
+                z_diff_hour, _, activity_curr_hour_w = compare_activity_kde(
+                    self.grid_coords,
+                    activity_prev_hour,
+                    activity_curr_hour,
+                    bw_method=BW_METHOD,
+                    weighted=WEIGHTED,
+                    weight_factor=WEIGHT_FACTOR,
+                    reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
+                    weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
+                )
+
+                lat_activity_hour, lon_activity_hour = np.where(
+                    z_diff_hour > ACTIVITY_THRESHOLD_HOUR
+                )
+
+                if (lat_activity_hour.size > 0) and (lon_activity_hour.size > 0):
+                    event_hour = True
+
+                logger.info(
+                    f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
+                    + f" previous: {len(activity_prev_hour)},"
+                    + f" max diff: {z_diff_hour.max():.2f},"
+                    + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
+                )
+            else:
+                logger.info(
+                    f"Hour event: {event_hour}, current: {len(activity_curr_hour)},"
+                    + f" previous: {len(activity_prev_hour)},"
+                    + " not enough activity,"
+                    + f" threshold: {ACTIVITY_THRESHOLD_HOUR}"
+                )
+
+            if event_day and event_hour:
+                sample_weight = [x["weight"] for x in activity_curr_hour_w]
+                clusters = cluster_activity(
+                    activity=activity_curr_hour_w,
+                    min_samples=EVENT_MIN_TWEETS,
+                    km_start=KM_START,
+                    km_stop=KM_STOP,
+                    km_step=KM_STEP,
+                    min_n_clusters=MIN_N_CLUSTERS,
+                    sample_weight=sample_weight,
+                )
+
+                for cluster in clusters.values():
+                    event_info = get_event_info(
+                        twitter,
+                        event_tweets=cluster["event_tweets"],
+                        tweet_max_length=TWEET_MAX_LENGTH,
+                        tweet_url_length=TWEET_URL_LENGTH,
+                        base_event_url=BASE_EVENT_URL,
+                        token_count_min=TOKEN_COUNT_MIN,
+                        remove_username_at=REMOVE_USERNAME_AT,
+                        tweet_lat_lon=TWEET_LAT_LON,
+                    )
+
+                    if LOG_EVENTS:
+                        _ = Events.log_event(session, event_info=event_info)
+                    else:
+                        logger.info(
+                            "Not logging event due to environment variable settings:"
+                            + f" {event_info.timestamp} {event_info.place_name}:"
+                            + f" {event_info.tokens_str}"
+                        )
+
+                    if POST_EVENT:
+                        try:
+                            status = twitter.update_status(
+                                status=event_info.event_str,
+                                lat=event_info.latitude if TWEET_GEOTAG else None,
+                                long=event_info.longitude if TWEET_GEOTAG else None,
+                            )
+
+                            # Update the comparison tweet time
+                            self.event_comparison_ts = event_info.timestamp
+                        except TwythonAuthError:
+                            logger.exception(
+                                "Authorization error,"
+                                + " did you create read+write credentials?"
+                            )
+                        except TwythonRateLimitError:
+                            logger.exception("Rate limit error")
+                        except TwythonError:
+                            logger.exception("Encountered some other error")
+                    else:
+                        logger.info(
+                            "Not posting event due to environment variable settings"
+                        )
+
+            # Purge old data every so often
+            if PURGE_OLD_DATA and (
+                datetime.utcnow().replace(tzinfo=pytz.UTC)
+                - self.purge_data_comparison_ts
+                >= timedelta(minutes=10)
+            ):
+                # Delete old data by row count
+                RecentTweets.keep_tweets_n_rows(session, n=RECENT_TWEETS_ROWS_TO_KEEP)
+                Events.keep_events_n_rows(session, n=EVENTS_ROWS_TO_KEEP)
+
+                # Delete old data by timestamp
+                RecentTweets.delete_tweets_older_than(
+                    session,
+                    timestamp=tweet_info.created_at,
+                    days=RECENT_TWEETS_DAYS_TO_KEEP,
+                )
+                Events.delete_events_older_than(
+                    session,
+                    timestamp=tweet_info.created_at,
+                    days=EVENTS_DAYS_TO_KEEP,
+                )
+
+                # Update
+                self.purge_data_comparison_ts = datetime.utcnow().replace(
+                    tzinfo=pytz.UTC
+                )
+        else:
+            logger.info(
+                "Not looking for new event, recent event in the last"
+                + f" {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours"
+                + f" ({self.event_comparison_ts})"
+            )
 
     def on_error(self, status_code, content, headers=None):
         logger.info("Error while streaming.")
         logger.info(f"status_code: {status_code}")
         logger.info(f"content: {content}")
         logger.info(f"headers: {headers}")
-        content = content.decode().strip() if isinstance(content, bytes) else content.strip()
+        content = (
+            content.decode().strip() if isinstance(content, bytes) else content.strip()
+        )
         if "Server overloaded, try again in a few seconds".lower() in content.lower():
-            seconds = self.sleep_seconds ** self.sleep_exponent
+            seconds = self.sleep_seconds**self.sleep_exponent
             logger.warning(f"Server overloaded. Sleeping for {seconds} seconds.")
             sleep(seconds)
             self.sleep_exponent += 1
         elif "Exceeded connection limit for user".lower() in content.lower():
-            seconds = self.sleep_seconds ** self.sleep_exponent
-            logger.warning(f"Exceeded connection limit. Sleeping for {seconds} seconds.")
+            seconds = self.sleep_seconds**self.sleep_exponent
+            logger.warning(
+                f"Exceeded connection limit. Sleeping for {seconds} seconds."
+            )
             sleep(seconds)
             self.sleep_exponent += 1
         else:
-            seconds = self.sleep_seconds ** self.sleep_exponent
-            logger.warning(f"Some other error occurred. Sleeping for {seconds} seconds.")
+            seconds = self.sleep_seconds**self.sleep_exponent
+            logger.warning(
+                f"Some other error occurred. Sleeping for {seconds} seconds."
+            )
             sleep(seconds)
             self.sleep_exponent += 1
 
@@ -465,13 +498,17 @@ else:
         screen_name=MY_SCREEN_NAME, count=1, trim_user=True
     )
     if len(most_recent_tweet) > 0:
-        event_comparison_ts = date_string_to_datetime(most_recent_tweet[0]["created_at"])
+        event_comparison_ts = date_string_to_datetime(
+            most_recent_tweet[0]["created_at"]
+        )
     else:
         event_comparison_ts = None
 
 if __name__ == "__main__":
     logger.info("Initializing tweet streamer...")
-    grid_coords, _, _ = get_grid_coords(bounding_box=BOUNDING_BOX, grid_resolution=GRID_RESOLUTION)
+    grid_coords, _, _ = get_grid_coords(
+        bounding_box=BOUNDING_BOX, grid_resolution=GRID_RESOLUTION
+    )
     stream = MyStreamer(
         grid_coords=grid_coords,
         event_comparison_ts=event_comparison_ts,
@@ -484,6 +521,11 @@ if __name__ == "__main__":
     logger.info(f"Ignoring tweets containing these words: {IGNORE_WORDS}")
     logger.info(f"Ignoring tweets from these screen names: {IGNORE_USER_SCREEN_NAMES}")
     logger.info(f"Ignoring tweets from these user IDs: {IGNORE_USER_ID_STR}")
+    logger.info(f"Ignoring tweets with these coordinates: {IGNORE_LON_LAT}")
+    if IGNORE_POSSIBLY_SENSITIVE:
+        logger.info("Ignoring possibly sensitive tweets")
+    if IGNORE_QUOTE_STATUS:
+        logger.info("Ignoring quote tweets")
 
     bounding_box_str = ",".join([str(x) for x in BOUNDING_BOX])
     logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
