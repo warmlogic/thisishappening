@@ -16,6 +16,8 @@ import pytz
 from ftfy import fix_text
 from unidecode import unidecode
 
+from utils.data_utils import inbounds
+
 logger = logging.getLogger("happeninglogger")
 
 # Regex to look for all URLs (mailto:, x-whatever://, etc.) https://gist.github.com/gruber/249502
@@ -86,13 +88,7 @@ def get_tweet_body(status):
     return tweet_body
 
 
-def get_tweet_info(status: Dict) -> Dict:
-    status_id_str = status["id_str"]
-    user_screen_name = status["user"]["screen_name"]
-    user_id_str = status["user"]["id_str"]
-    created_at = date_string_to_datetime(status["created_at"])
-    tweet_body = get_tweet_body(status)
-    tweet_language = status["lang"]
+def get_lon_lat(status):
     has_coords = False
     if status["coordinates"]:
         has_coords = True
@@ -106,6 +102,30 @@ def get_tweet_info(status: Dict) -> Dict:
     else:
         longitude = None
         latitude = None
+    return longitude, latitude, has_coords
+
+
+def get_place_bounding_box(status):
+    if status["coordinates"]:
+        place_bounding_box = [
+            status["place"]["bounding_box"]["coordinates"][0][0][0],
+            status["place"]["bounding_box"]["coordinates"][0][0][1],
+            status["place"]["bounding_box"]["coordinates"][0][1][0],
+            status["place"]["bounding_box"]["coordinates"][0][2][1],
+        ]
+    else:
+        place_bounding_box = None
+    return place_bounding_box
+
+
+def get_tweet_info(status: Dict) -> Dict:
+    status_id_str = status["id_str"]
+    user_screen_name = status["user"]["screen_name"]
+    user_id_str = status["user"]["id_str"]
+    created_at = date_string_to_datetime(status["created_at"])
+    tweet_body = get_tweet_body(status)
+    tweet_language = status["lang"]
+    longitude, latitude, has_coords = get_lon_lat(status)
     place_id = status["place"].get("id")
     place_name = status["place"].get("name")
     place_full_name = status["place"].get("full_name")
@@ -137,10 +157,12 @@ def get_tweet_info(status: Dict) -> Dict:
 
 def check_tweet(
     status,
+    bounding_box: List[float],
     valid_place_types: List[str] = ["city", "neighborhood", "poi"],
     ignore_words: List[str] = [],
     ignore_user_screen_names: List[str] = [],
     ignore_user_id_str: List[str] = [],
+    ignore_lon_lat: List[List[str]] = [],
     ignore_possibly_sensitive: bool = True,
     ignore_quote_status: bool = True,
     min_friends_count: int = 1,
@@ -157,8 +179,20 @@ def check_tweet(
     if not tweet_body:
         return False
 
+    longitude, latitude, _ = get_lon_lat(status)
+
+    in_bounding_box = inbounds(longitude, latitude, bounding_box)
+
+    # If the tweet has a place, is the tweet's location actually in that place?
+    in_place_bounding_box = True
+    place_bounding_box = get_place_bounding_box(status)
+    if place_bounding_box:
+        in_place_bounding_box = inbounds(longitude, latitude, place_bounding_box)
+
     return all(
         [
+            in_bounding_box,
+            in_place_bounding_box,
             all(
                 [
                     re.search(ignore_word, word, flags=re.IGNORECASE) is None
@@ -184,6 +218,16 @@ def check_tweet(
                 ]
             ),
             (status["user"]["id_str"] not in ignore_user_id_str),
+            all(
+                [
+                    longitude != lon_lat[0]
+                    if longitude
+                    else True and latitude != lon_lat[1]
+                    if latitude
+                    else True
+                    for lon_lat in ignore_lon_lat
+                ]
+            ),
             (not status.get("possibly_sensitive", False) if ignore_possibly_sensitive else True),
             (not status.get("is_quote_status", False) if ignore_quote_status else True),
             (status["user"]["friends_count"] >= min_friends_count),  # following
