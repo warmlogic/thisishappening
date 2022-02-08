@@ -109,10 +109,10 @@ def get_lon_lat(status):
 def get_place_bounding_box(status):
     if status["coordinates"]:
         place_bounding_box = [
-            status["place"]["bounding_box"]["coordinates"][0][0][0],
-            status["place"]["bounding_box"]["coordinates"][0][0][1],
-            status["place"]["bounding_box"]["coordinates"][0][1][0],
-            status["place"]["bounding_box"]["coordinates"][0][2][1],
+            min([c[0] for c in status["place"]["bounding_box"]["coordinates"][0]]),
+            min([c[1] for c in status["place"]["bounding_box"]["coordinates"][0]]),
+            max([c[0] for c in status["place"]["bounding_box"]["coordinates"][0]]),
+            max([c[1] for c in status["place"]["bounding_box"]["coordinates"][0]]),
         ]
     else:
         place_bounding_box = None
@@ -172,13 +172,13 @@ def check_tweet(
     """Return True if tweet satisfies specific criteria"""
     tweet_body = get_tweet_body(status)
 
+    if not tweet_body:
+        return False
+
     try:
         quoted_tweet_body = status["quoted_status"]["text"]
     except KeyError:
         quoted_tweet_body = ""
-
-    if not tweet_body:
-        return False
 
     longitude, latitude, _ = get_lon_lat(status)
 
@@ -190,59 +190,81 @@ def check_tweet(
     if place_bounding_box:
         in_place_bounding_box = inbounds(longitude, latitude, place_bounding_box)
 
-    return all(
+    tweet_ignore_words = all(
         [
-            in_bounding_box,
-            in_place_bounding_box,
-            all(
-                [
-                    re.search(ignore_word, word, flags=re.IGNORECASE) is None
-                    for word in clean_text(tweet_body).split()
-                    for ignore_word in ignore_words
-                ]
-            ),
-            all(
-                [
-                    re.search(ignore_word, word, flags=re.IGNORECASE) is None
-                    for word in clean_text(quoted_tweet_body).split()
-                    for ignore_word in ignore_words
-                ]
-            ),
-            (
-                status["coordinates"]
-                or (
-                    status["place"]
-                    and status["place"]["place_type"] in valid_place_types
-                )
-            ),
-            all(
-                [
-                    re.search(name, status["user"]["screen_name"], flags=re.IGNORECASE)
-                    is None
-                    for name in ignore_user_screen_names
-                ]
-            ),
-            (status["user"]["id_str"] not in ignore_user_id_str),
-            all(
-                [
-                    longitude != lon_lat[0]
-                    if longitude
-                    else True and latitude != lon_lat[1]
-                    if latitude
-                    else True
-                    for lon_lat in ignore_lon_lat
-                ]
-            ),
-            (
-                not status.get("possibly_sensitive", False)
-                if ignore_possibly_sensitive
-                else True
-            ),
-            (not status.get("is_quote_status", False) if ignore_quote_status else True),
-            (status["user"]["friends_count"] >= min_friends_count),  # following
-            (status["user"]["followers_count"] >= min_followers_count),  # followers
+            re.search(ignore_word, word, flags=re.IGNORECASE) is None
+            for word in clean_text(tweet_body).split()
+            for ignore_word in ignore_words
         ]
     )
+
+    quote_tweet_ignore_words = all(
+        [
+            re.search(ignore_word, word, flags=re.IGNORECASE) is None
+            for word in clean_text(quoted_tweet_body).split()
+            for ignore_word in ignore_words
+        ]
+    )
+
+    valid_location = status["coordinates"] or (
+        status["place"] and status["place"]["place_type"] in valid_place_types
+    )
+
+    valid_screen_name = all(
+        [
+            re.search(name, status["user"]["screen_name"], flags=re.IGNORECASE) is None
+            for name in ignore_user_screen_names
+        ]
+    )
+
+    valid_user_id = status["user"]["id_str"] not in ignore_user_id_str
+
+    valid_lat_lon = all(
+        [
+            longitude != lon_lat[0]
+            if longitude
+            else True and latitude != lon_lat[1]
+            if latitude
+            else True
+            for lon_lat in ignore_lon_lat
+        ]
+    )
+
+    valid_possibly_sensitive = (
+        not status.get("possibly_sensitive", False)
+        if ignore_possibly_sensitive
+        else True
+    )
+
+    valid_quoted = (
+        not status.get("is_quote_status", False) if ignore_quote_status else True
+    )
+
+    # following
+    valid_friends_count = status["user"]["friends_count"] >= min_friends_count
+    # followers
+    valid_followers_count = status["user"]["followers_count"] >= min_followers_count
+
+    checks = {
+        "in_bounding_box": in_bounding_box,
+        "in_place_bounding_box": in_place_bounding_box,
+        "tweet_ignore_words": tweet_ignore_words,
+        "quote_tweet_ignore_words": quote_tweet_ignore_words,
+        "valid_location": valid_location,
+        "valid_screen_name": valid_screen_name,
+        "valid_user_id": valid_user_id,
+        "valid_lat_lon": valid_lat_lon,
+        "valid_possibly_sensitive": valid_possibly_sensitive,
+        "valid_quoted": valid_quoted,
+        "valid_friends_count": valid_friends_count,
+        "valid_followers_count": valid_followers_count,
+    }
+
+    for check, value in checks.items():
+        if not value:
+            logger.debug(f"Tweet {status['id_str']} failed check {str(check)}")
+
+    return all(checks.values())
 
 
 def date_string_to_datetime(
