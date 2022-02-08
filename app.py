@@ -104,11 +104,11 @@ VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
 VALID_PLACE_TYPES = [x.strip() for x in VALID_PLACE_TYPES.split(",")] if VALID_PLACE_TYPES else []
 VALID_PLACE_TYPES = list(set(VALID_PLACE_TYPES))
 IGNORE_WORDS = os.getenv("IGNORE_WORDS", default=None)
-IGNORE_WORDS = [fr"\b{x.strip()}\b" for x in IGNORE_WORDS.split(",")] if IGNORE_WORDS else []
+IGNORE_WORDS = [rf"\b{x.strip()}\b" for x in IGNORE_WORDS.split(",")] if IGNORE_WORDS else []
 IGNORE_WORDS = list(set(IGNORE_WORDS))
 IGNORE_USER_SCREEN_NAMES = os.getenv("IGNORE_USER_SCREEN_NAMES", default=None)
 IGNORE_USER_SCREEN_NAMES = (
-    [fr"{x.strip()}" for x in IGNORE_USER_SCREEN_NAMES.split(",")]
+    [rf"{x.strip()}" for x in IGNORE_USER_SCREEN_NAMES.split(",")]
     if IGNORE_USER_SCREEN_NAMES
     else []
 )
@@ -426,17 +426,17 @@ class MyStreamer(TwythonStreamer):
         logger.info(f"headers: {headers}")
         content = content.decode().strip() if isinstance(content, bytes) else content.strip()
         if "Server overloaded, try again in a few seconds".lower() in content.lower():
-            seconds = self.sleep_seconds ** self.sleep_exponent
+            seconds = self.sleep_seconds**self.sleep_exponent
             logger.warning(f"Server overloaded. Sleeping for {seconds} seconds.")
             sleep(seconds)
             self.sleep_exponent += 1
         elif "Exceeded connection limit for user".lower() in content.lower():
-            seconds = self.sleep_seconds ** self.sleep_exponent
+            seconds = self.sleep_seconds**self.sleep_exponent
             logger.warning(f"Exceeded connection limit. Sleeping for {seconds} seconds.")
             sleep(seconds)
             self.sleep_exponent += 1
         else:
-            seconds = self.sleep_seconds ** self.sleep_exponent
+            seconds = self.sleep_seconds**self.sleep_exponent
             logger.warning(f"Some other error occurred. Sleeping for {seconds} seconds.")
             sleep(seconds)
             self.sleep_exponent += 1
