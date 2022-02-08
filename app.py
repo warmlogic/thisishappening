@@ -22,6 +22,7 @@ from utils.tweet_utils import (
     check_tweet,
     date_string_to_datetime,
     get_event_info,
+    get_place_bounding_box,
     get_tweet_info,
 )
 
@@ -226,6 +227,8 @@ class MyStreamer(TwythonStreamer):
                 + f" followers: {status['user'].get('followers_count')}),"
                 + f" coordinates: {status.get('coordinates')},"
                 + f" place type: {status['place'].get('place_type')},"
+                + f" place name: {status['place'].get('full_name')},"
+                + f" place bounding box: {get_place_bounding_box(status)},"
                 + f" text: {status.get('text')}"
             )
             return
@@ -526,6 +529,9 @@ if __name__ == "__main__":
         logger.info("Ignoring possibly sensitive tweets")
     if IGNORE_QUOTE_STATUS:
         logger.info("Ignoring quote tweets")
+    logger.info(
+        f"If tweet does not have coordinates, place type must be: {VALID_PLACE_TYPES}"
+    )
 
     bounding_box_str = ",".join([str(x) for x in BOUNDING_BOX])
     logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
