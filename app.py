@@ -526,20 +526,27 @@ if __name__ == "__main__":
         oauth_token_secret=OAUTH_TOKEN_SECRET,
     )
 
+    bounding_box_str = ",".join([str(x) for x in BOUNDING_BOX])
+    logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
+
+    logger.info(
+        "Keeping tweets with coordinates,"
+        + f" or that have place type: {VALID_PLACE_TYPES}"
+    )
+
     logger.info(f"Ignoring tweets containing these words: {IGNORE_WORDS}")
     logger.info(f"Ignoring tweets from these screen names: {IGNORE_USER_SCREEN_NAMES}")
     logger.info(f"Ignoring tweets from these user IDs: {IGNORE_USER_ID_STR}")
     logger.info(f"Ignoring tweets with these coordinates: {IGNORE_LON_LAT}")
     if IGNORE_POSSIBLY_SENSITIVE:
         logger.info("Ignoring possibly sensitive tweets")
+    else:
+        logger.info("Keeping possibly sensitive tweets")
     if IGNORE_QUOTE_STATUS:
         logger.info("Ignoring quote tweets")
-    logger.info(
-        f"If tweet does not have coordinates, place type must be: {VALID_PLACE_TYPES}"
-    )
+    else:
+        logger.info("Keeping quote tweets")
 
-    bounding_box_str = ",".join([str(x) for x in BOUNDING_BOX])
-    logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
     while True:
         # Use try/except to avoid ChunkedEncodingError
         # https://github.com/ryanmcgrath/twython/issues/288
