@@ -159,7 +159,7 @@ def get_tweet_info(status: Dict) -> Dict:
 def check_tweet(
     status,
     bounding_box: List[float],
-    valid_place_types: List[str] = ["city", "neighborhood", "poi"],
+    valid_place_types: List[str] = ["admin", "city", "neighborhood", "poi"],
     ignore_words: List[str] = [],
     ignore_user_screen_names: List[str] = [],
     ignore_user_id_str: List[str] = [],
@@ -206,6 +206,7 @@ def check_tweet(
         ]
     )
 
+    # Always keep if has coordinates, otherwise keep if has place in valid_place_types
     valid_location = status["coordinates"] or (
         status["place"] and status["place"]["place_type"] in valid_place_types
     )
