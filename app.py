@@ -111,7 +111,9 @@ BASE_EVENT_URL = os.getenv(
     "BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?"
 )
 
-VALID_PLACE_TYPES = os.getenv("VALID_PLACE_TYPES", default="neighborhood, poi")
+VALID_PLACE_TYPES = os.getenv(
+    "VALID_PLACE_TYPES", default="admin, city, neighborhood, poi"
+)
 VALID_PLACE_TYPES = (
     [x.strip() for x in VALID_PLACE_TYPES.split(",")] if VALID_PLACE_TYPES else []
 )
@@ -138,11 +140,11 @@ IGNORE_USER_ID_STR = list(set(IGNORE_USER_ID_STR))
 MIN_FRIENDS_COUNT = int(os.getenv("MIN_FRIENDS_COUNT", default="1"))
 MIN_FOLLOWERS_COUNT = int(os.getenv("MIN_FOLLOWERS_COUNT", default="1"))
 IGNORE_POSSIBLY_SENSITIVE = (
-    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="True").casefold()
+    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="False").casefold()
     == "true".casefold()
 )
 IGNORE_QUOTE_STATUS = (
-    os.getenv("IGNORE_QUOTE_STATUS", default="True").casefold() == "true".casefold()
+    os.getenv("IGNORE_QUOTE_STATUS", default="False").casefold() == "true".casefold()
 )
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
@@ -181,10 +183,10 @@ REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
 WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
 WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="4.0"))
 
-HAS_COORDS_ONLY = (
-    os.getenv("HAS_COORDS_ONLY", default="True").casefold() == "true".casefold()
+QUERY_HAS_COORDS_ONLY = (
+    os.getenv("QUERY_HAS_COORDS_ONLY", default="False").casefold() == "true".casefold()
 )
-HAS_COORDS_ONLY = HAS_COORDS_ONLY if HAS_COORDS_ONLY else None
+QUERY_HAS_COORDS_ONLY = QUERY_HAS_COORDS_ONLY if QUERY_HAS_COORDS_ONLY else None
 
 
 class MyStreamer(TwythonStreamer):
@@ -258,7 +260,7 @@ class MyStreamer(TwythonStreamer):
                 timestamp=tweet_info.created_at,
                 hours=24,
                 place_type=VALID_PLACE_TYPES,
-                has_coords=HAS_COORDS_ONLY,
+                has_coords=QUERY_HAS_COORDS_ONLY,
                 place_type_or_coords=True,
             )
             activity_prev_day = RecentTweets.get_recent_tweets(
@@ -266,7 +268,7 @@ class MyStreamer(TwythonStreamer):
                 timestamp=tweet_info.created_at - timedelta(days=1),
                 hours=24,
                 place_type=VALID_PLACE_TYPES,
-                has_coords=HAS_COORDS_ONLY,
+                has_coords=QUERY_HAS_COORDS_ONLY,
                 place_type_or_coords=True,
             )
 
@@ -275,7 +277,7 @@ class MyStreamer(TwythonStreamer):
                 timestamp=tweet_info.created_at,
                 hours=TEMPORAL_GRANULARITY_HOURS,
                 place_type=VALID_PLACE_TYPES,
-                has_coords=HAS_COORDS_ONLY,
+                has_coords=QUERY_HAS_COORDS_ONLY,
                 place_type_or_coords=True,
             )
             activity_prev_hour = RecentTweets.get_recent_tweets(
@@ -284,7 +286,7 @@ class MyStreamer(TwythonStreamer):
                 - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
                 hours=TEMPORAL_GRANULARITY_HOURS,
                 place_type=VALID_PLACE_TYPES,
-                has_coords=HAS_COORDS_ONLY,
+                has_coords=QUERY_HAS_COORDS_ONLY,
                 place_type_or_coords=True,
             )
 
@@ -398,6 +400,9 @@ class MyStreamer(TwythonStreamer):
                                 status=event_info.event_str,
                                 lat=event_info.latitude if TWEET_GEOTAG else None,
                                 long=event_info.longitude if TWEET_GEOTAG else None,
+                                # place_id=(
+                                #     event_info.place_id if TWEET_GEOTAG else None
+                                # ),
                             )
 
                             # Update the comparison tweet time
