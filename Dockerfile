@@ -52,4 +52,4 @@ COPY --chown=web:web . /app
 # Run as non-root user
 USER web
 
-ENTRYPOINT ["poetry", "run", "python", "./app.py"]
+ENTRYPOINT ["poetry", "run", "python", "./thisishappening/app.py"]
