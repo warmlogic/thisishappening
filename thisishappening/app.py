@@ -146,18 +146,6 @@ IGNORE_QUOTE_STATUS = (
     os.getenv("IGNORE_QUOTE_STATUS", default="False").casefold() == "true".casefold()
 )
 
-TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
-REMOVE_USERNAME_AT = (
-    os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
-)
-
-GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
-BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
-WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
-WEIGHT_FACTOR = float(os.getenv("WEIGHT_FACTOR", default="1.0"))
-ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0"))
-ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="300.0"))
-
 IGNORE_LON_LAT = os.getenv("IGNORE_LON_LAT", default=None)
 IGNORE_LON_LAT = (
     [
@@ -169,6 +157,18 @@ IGNORE_LON_LAT = (
 )
 IGNORE_LON_LAT = list(set(IGNORE_LON_LAT))
 
+TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
+REMOVE_USERNAME_AT = (
+    os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
+)
+
+GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
+BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
+ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0"))
+ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="300.0"))
+
+WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
+WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="1.0"))
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = (
     [
@@ -179,8 +179,8 @@ REDUCE_WEIGHT_LON_LAT = (
     else []
 )
 REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
-WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
-WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="4.0"))
+WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="1.0"))
+WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="1.0"))
 
 QUERY_HAS_COORDS_ONLY = (
     os.getenv("QUERY_HAS_COORDS_ONLY", default="False").casefold() == "true".casefold()
@@ -307,7 +307,7 @@ class MyStreamer(TwythonStreamer):
                 activity_curr_day,
                 bw_method=BW_METHOD,
                 weighted=WEIGHTED,
-                weight_factor=WEIGHT_FACTOR,
+                weight_factor_user=WEIGHT_FACTOR_USER,
                 reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
                 weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
                 weight_factor_no_coords=WEIGHT_FACTOR_NO_COORDS,
@@ -341,7 +341,7 @@ class MyStreamer(TwythonStreamer):
                 activity_curr_hour,
                 bw_method=BW_METHOD,
                 weighted=WEIGHTED,
-                weight_factor=WEIGHT_FACTOR,
+                weight_factor_user=WEIGHT_FACTOR_USER,
                 reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
                 weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
             )
