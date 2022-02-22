@@ -8,19 +8,19 @@ list:
 
 .PHONY: format
 format:
-	poetry run black .
+	black .
 
 .PHONY: sort
 sort:
-	poetry run isort --profile black .
+	isort .
 
 .PHONY: stylecheck
 stylecheck:
-	poetry run flake8 .
+	flake8 .
 
 .PHONY: typecheck
 typecheck:
-	poetry run mypy .
+	mypy .
 
 .PHONY: lint
 lint:
