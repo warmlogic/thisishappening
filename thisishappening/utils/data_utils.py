@@ -54,7 +54,8 @@ def get_grid_coords(bounding_box: List[float], grid_resolution: int):
     return grid_coords, x_flat, y_flat
 
 
-def compute_weight(weight: float, x: int, factor: float) -> float:
+def compute_weight(weight: float, x: int, factor: float = None) -> float:
+    factor = factor or 0.0
     return weight / np.exp(x * factor)
 
 
@@ -78,7 +79,7 @@ def set_activity_weight(
         tweet["weight"] = 1.0
 
     # Reduce weight if tweet has specific coordinates
-    if weighted and reduce_weight_lon_lat:
+    if weighted and reduce_weight_lon_lat and (weight_factor_lon_lat is not None):
         for tweet in activity_dict:
             if (
                 f"{tweet['longitude']:.5f}",
@@ -104,7 +105,7 @@ def set_activity_weight(
     ):
         # Sort user tweets so first tweet has highest weight
         activity_grouped[user_id] = sorted(tweets, key=itemgetter("created_at"))
-        if weighted:
+        if weighted and (weight_factor_user is not None):
             for i, tweet in enumerate(activity_grouped[user_id]):
                 tweet["weight"] = compute_weight(tweet["weight"], i, weight_factor_user)
 
