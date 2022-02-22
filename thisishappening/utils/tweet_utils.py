@@ -16,7 +16,7 @@ import pytz
 from ftfy import fix_text
 from unidecode import unidecode
 
-from utils.data_utils import inbounds
+from .data_utils import inbounds
 
 logger = logging.getLogger("happeninglogger")
 

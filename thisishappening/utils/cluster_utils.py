@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from utils.tweet_utils import get_coords
+from .tweet_utils import get_coords
 
 logger = logging.getLogger("happeninglogger")
 
@@ -43,7 +43,8 @@ def cluster_activity(
             break
 
     logger.info(
-        f"Clustered to max neighbor distance {km:.3f} km, found {len(unique_labels)} clusters"
+        f"Clustered to max neighbor distance {km:.3f} km,"
+        + f" found {len(unique_labels)} clusters"
     )
 
     clusters = {}

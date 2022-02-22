@@ -54,29 +54,18 @@ def get_grid_coords(bounding_box: List[float], grid_resolution: int):
     return grid_coords, x_flat, y_flat
 
 
-def compute_weight(weight: float, x: int, weight_factor: float = None) -> float:
-    weight_factor = 1.0 if weight_factor is None else weight_factor
-    return weight / np.exp(x * weight_factor)
+def compute_weight(weight: float, x: int, factor: float) -> float:
+    return weight / np.exp(x * factor)
 
 
 def set_activity_weight(
     activity,
-    weighted: bool = None,
-    weight_factor: float = None,
-    reduce_weight_lon_lat: List[Tuple[float, float]] = None,
-    weight_factor_lon_lat: float = None,
-    weight_factor_no_coords: float = None,
+    weighted: bool,
+    weight_factor_user: float,
+    reduce_weight_lon_lat: List[Tuple[float, float]],
+    weight_factor_lon_lat: float,
+    weight_factor_no_coords: float,
 ) -> List[Dict]:
-    weighted = True if weighted is None else weighted
-    reduce_weight_lon_lat = (
-        [] if reduce_weight_lon_lat is None else reduce_weight_lon_lat
-    )
-    weight_factor_lon_lat = (
-        2.0 if weight_factor_lon_lat is None else weight_factor_lon_lat
-    )
-    weight_factor_no_coords = (
-        4.0 if weight_factor_no_coords is None else weight_factor_no_coords
-    )
 
     # Create a list of dictionaries and remove the sqlalchemy instance state key
     activity_dict = [
@@ -117,7 +106,7 @@ def set_activity_weight(
         activity_grouped[user_id] = sorted(tweets, key=itemgetter("created_at"))
         if weighted:
             for i, tweet in enumerate(activity_grouped[user_id]):
-                tweet["weight"] = compute_weight(tweet["weight"], i, weight_factor)
+                tweet["weight"] = compute_weight(tweet["weight"], i, weight_factor_user)
 
     # Get a flat list of tweets
     activity_weighted = [
@@ -130,20 +119,19 @@ def set_activity_weight(
 def get_kde(
     grid_coords,
     activity,
-    bw_method=None,
-    weighted: bool = None,
-    weight_factor: float = None,
-    reduce_weight_lon_lat: List[Tuple[float, float]] = None,
-    weight_factor_lon_lat: float = None,
-    weight_factor_no_coords: float = None,
+    bw_method,
+    weighted: bool,
+    weight_factor_user: float,
+    reduce_weight_lon_lat: List[Tuple[float, float]],
+    weight_factor_lon_lat: float,
+    weight_factor_no_coords: float,
 ):
-    bw_method = 0.3 if bw_method is None else bw_method
     gc_shape = int(np.sqrt(grid_coords.shape[0]))
 
     activity_weighted = set_activity_weight(
         activity,
         weighted=weighted,
-        weight_factor=weight_factor,
+        weight_factor_user=weight_factor_user,
         reduce_weight_lon_lat=reduce_weight_lon_lat,
         weight_factor_lon_lat=weight_factor_lon_lat,
         weight_factor_no_coords=weight_factor_no_coords,
@@ -177,19 +165,19 @@ def compare_activity_kde(
     grid_coords,
     activity_prev,
     activity_curr,
-    bw_method: float = None,
-    weighted: bool = None,
-    weight_factor: float = None,
-    reduce_weight_lon_lat: List[Tuple[float, float]] = None,
-    weight_factor_lon_lat: float = None,
-    weight_factor_no_coords: float = None,
+    bw_method: float,
+    weighted: bool,
+    weight_factor_user: float,
+    reduce_weight_lon_lat: List[Tuple[float, float]],
+    weight_factor_lon_lat: float,
+    weight_factor_no_coords: float,
 ):
     z_prev, _, activity_prev_weighted = get_kde(
         grid_coords,
         activity_prev,
         bw_method=bw_method,
         weighted=weighted,
-        weight_factor=weight_factor,
+        weight_factor_user=weight_factor_user,
         reduce_weight_lon_lat=reduce_weight_lon_lat,
         weight_factor_lon_lat=weight_factor_lon_lat,
         weight_factor_no_coords=weight_factor_no_coords,
@@ -199,7 +187,7 @@ def compare_activity_kde(
         activity_curr,
         bw_method=bw_method,
         weighted=weighted,
-        weight_factor=weight_factor,
+        weight_factor_user=weight_factor_user,
         reduce_weight_lon_lat=reduce_weight_lon_lat,
         weight_factor_lon_lat=weight_factor_lon_lat,
         weight_factor_no_coords=weight_factor_no_coords,
