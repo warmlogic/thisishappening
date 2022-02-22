@@ -44,7 +44,6 @@ DEBUG_RUN = DEBUG_RUN == "true".casefold()
 
 if DEBUG_RUN:
     logger.setLevel(logging.DEBUG)
-    TEMPORAL_GRANULARITY_HOURS = 1
     POST_EVENT = False
     LOG_TWEETS = False
     LOG_EVENTS = False
@@ -56,9 +55,6 @@ if DEBUG_RUN:
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
-    TEMPORAL_GRANULARITY_HOURS = int(
-        os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1")
-    )
     POST_EVENT = (
         os.getenv("POST_EVENT", default="False").casefold() == "true".casefold()
     )
@@ -94,6 +90,7 @@ BOUNDING_BOX = (
     [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
 )
 assert len(BOUNDING_BOX) == 4
+TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
 KM_STOP = float(os.getenv("KM_STOP", default="0.3"))
@@ -179,7 +176,7 @@ REDUCE_WEIGHT_LON_LAT = (
 )
 REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
 WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
-WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="1.0"))
+WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="2.0"))
 WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="0.0"))
 
 QUERY_HAS_COORDS_ONLY = (
