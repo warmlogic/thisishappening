@@ -78,7 +78,8 @@ class Events(Base):
             )
         except Exception as e:
             logger.warning(
-                f"Exception when logging event: {event_info.timestamp} {event_info.place_name}:"
+                "Exception when logging event:"
+                + f" {event_info.timestamp} {event_info.place_name}:"
                 + f" {event_info.tokens_str}: {e}"
             )
             session.rollback()
@@ -156,7 +157,8 @@ class Events(Base):
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
                 logger.info(
-                    f"Deleting events older than {ts_end}: {hours} hours {days} days {weeks} weeks"
+                    f"Deleting events older than {ts_end}:"
+                    + f" {hours} hours {days} days {weeks} weeks"
                 )
                 delete_q = cls.__table__.delete().where(cls.timestamp < ts_end)
                 session.execute(delete_q)
@@ -380,7 +382,8 @@ class RecentTweets(Base):
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
                 logger.info(
-                    f"Deleting tweets older than {ts_end}: {hours} hours {days} days {weeks} weeks"
+                    f"Deleting tweets older than {ts_end}:"
+                    + f" {hours} hours {days} days {weeks} weeks"
                 )
                 delete_q = cls.__table__.delete().where(cls.created_at < ts_end)
                 session.execute(delete_q)

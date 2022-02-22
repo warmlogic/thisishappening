@@ -14,7 +14,6 @@ from twython import (
     TwythonRateLimitError,
     TwythonStreamer,
 )
-
 from utils.cluster_utils import cluster_activity
 from utils.data_base import Events, RecentTweets, session_factory
 from utils.data_utils import compare_activity_kde, get_grid_coords
