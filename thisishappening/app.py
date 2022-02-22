@@ -344,6 +344,7 @@ class MyStreamer(TwythonStreamer):
                 weight_factor_user=WEIGHT_FACTOR_USER,
                 reduce_weight_lon_lat=REDUCE_WEIGHT_LON_LAT,
                 weight_factor_lon_lat=WEIGHT_FACTOR_LON_LAT,
+                weight_factor_no_coords=WEIGHT_FACTOR_NO_COORDS,
             )
 
             lat_activity_hour, lon_activity_hour = np.where(
