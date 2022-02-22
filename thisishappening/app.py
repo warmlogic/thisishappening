@@ -175,9 +175,14 @@ REDUCE_WEIGHT_LON_LAT = (
     else []
 )
 REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
-WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default=None))
-WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default=None))
-WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default=None))
+WEIGHT_FACTOR_LON_LAT = os.getenv("WEIGHT_FACTOR_LON_LAT", default=None)
+WEIGHT_FACTOR_LON_LAT = float(WEIGHT_FACTOR_LON_LAT) if WEIGHT_FACTOR_LON_LAT else None
+WEIGHT_FACTOR_USER = os.getenv("WEIGHT_FACTOR_USER", default=None)
+WEIGHT_FACTOR_USER = float(WEIGHT_FACTOR_USER) if WEIGHT_FACTOR_USER else None
+WEIGHT_FACTOR_NO_COORDS = os.getenv("WEIGHT_FACTOR_NO_COORDS", default=None)
+WEIGHT_FACTOR_NO_COORDS = (
+    float(WEIGHT_FACTOR_NO_COORDS) if WEIGHT_FACTOR_NO_COORDS else None
+)
 
 QUERY_HAS_COORDS_ONLY = (
     os.getenv("QUERY_HAS_COORDS_ONLY", default="False").casefold() == "true".casefold()
