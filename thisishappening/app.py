@@ -179,7 +179,7 @@ REDUCE_WEIGHT_LON_LAT = (
 )
 REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
 WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
-WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="2.0"))
+WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="1.0"))
 WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="0.0"))
 
 QUERY_HAS_COORDS_ONLY = (
