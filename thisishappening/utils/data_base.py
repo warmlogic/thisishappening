@@ -20,8 +20,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
-from utils.data_utils import get_coords_min_max
-from utils.tweet_utils import EventInfo, TweetInfo
+from .data_utils import get_coords_min_max
+from .tweet_utils import EventInfo, TweetInfo
 
 logger = logging.getLogger("happeninglogger")
 
