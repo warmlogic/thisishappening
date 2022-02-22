@@ -168,7 +168,6 @@ ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0
 ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="300.0"))
 
 WEIGHTED = os.getenv("WEIGHTED", default="True").casefold() == "true".casefold()
-WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="1.0"))
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = (
     [
@@ -179,8 +178,9 @@ REDUCE_WEIGHT_LON_LAT = (
     else []
 )
 REDUCE_WEIGHT_LON_LAT = list(set(REDUCE_WEIGHT_LON_LAT))
-WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="1.0"))
-WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="1.0"))
+WEIGHT_FACTOR_LON_LAT = float(os.getenv("WEIGHT_FACTOR_LON_LAT", default="2.0"))
+WEIGHT_FACTOR_USER = float(os.getenv("WEIGHT_FACTOR_USER", default="2.0"))
+WEIGHT_FACTOR_NO_COORDS = float(os.getenv("WEIGHT_FACTOR_NO_COORDS", default="0.0"))
 
 QUERY_HAS_COORDS_ONLY = (
     os.getenv("QUERY_HAS_COORDS_ONLY", default="False").casefold() == "true".casefold()
