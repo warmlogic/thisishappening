@@ -18,10 +18,7 @@ python-dotenv = "~0.19.2"
 pytz = "~2021.3"
 python = ">=3.9,<3.10"
 scikit-learn = "~1.0.2"
-scipy = [
-    {url = "https://pypi.anaconda.org/scipy-wheels-nightly/simple/scipy/1.8.0.dev0%2B1869.838cfbe/scipy-1.8.0.dev0%2B1869.838cfbe-cp39-cp39-macosx_11_0_arm64.whl", markers = "platform_machine == 'arm64'"},
-    {version = "<=1.7.1", markers="platform_machine != 'arm64'"}
-]
+scipy = "~1.8.0"
 spacy = "~3.2.1"
 sqlalchemy = "~1.4.31"
 twython = "~3.9.1"
@@ -34,6 +31,7 @@ url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_s
 black = "~22.1.0"
 flake8 = "~4.0.1"
 isort = "~5.10.1"
+jupyterlab = "~3.2.9"
 mypy = "~0.931"
 # pytest = "~7.0.1"
 
