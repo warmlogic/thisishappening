@@ -146,9 +146,9 @@ class Events(Base):
     ):
         """Delete all records older than the specified time window,
         optionally relative to a timestamp"""
-        hours = hours if hours else 0
-        days = days if days else 0
-        weeks = weeks if weeks else 0
+        hours = hours or 0
+        days = days or 0
+        weeks = weeks or 0
 
         if any([hours, days, weeks]):
             if timestamp is None:
@@ -371,9 +371,9 @@ class RecentTweets(Base):
     ):
         """Delete all records older than the specified time window,
         optionally relative to a timestamp"""
-        hours = hours if hours else 0
-        days = days if days else 0
-        weeks = weeks if weeks else 0
+        hours = hours or 0
+        days = days or 0
+        weeks = weeks or 0
 
         if any([hours, days, weeks]):
             if timestamp is None:
