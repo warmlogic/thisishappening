@@ -93,6 +93,7 @@ if DATABASE_URL.startswith("postgres://"):
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
+TIMEZONE = os.getenv("TIMEZONE", default="UTC")
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = (
     [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
@@ -230,6 +231,7 @@ class MyStreamer(TwythonStreamer):
             ) - timedelta(hours=TEMPORAL_GRANULARITY_HOURS)
         self.event_comparison_ts = event_comparison_ts
         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        self.posted_daily_events = False
         self.sleep_seconds = 2
         self.sleep_exponent = 0
 
@@ -370,16 +372,26 @@ class MyStreamer(TwythonStreamer):
                 reduce_token_count_min=REDUCE_TOKEN_COUNT_MIN,
             )
 
+        # Only post once per day, at 11pm local time
         if POST_DAILY_EVENTS:
-            # TODO: only post once per day, at 11pm local time
-            # datetime.utcnow().replace(tzinfo=pytz.UTC)
-            self.find_and_tweet_events(
-                activity_curr_day_w,
-                min_samples=EVENT_MIN_TWEETS,
-                token_count_min=TOKEN_COUNT_MIN * 2,
-                reduce_token_count_min=False,
-                update_event_comparison_ts=False,
-            )
+            try:
+                tz = pytz.timezone(TIMEZONE)
+            except pytz.exceptions.UnknownTimeZoneError:
+                tz = "UTC"
+                logger.info(f"Could not find timezone {TIMEZONE}, defaulting to {tz}")
+            current_time = datetime.now(tz)
+
+            if not self.posted_daily_events and current_time.hour == 23:
+                self.find_and_tweet_events(
+                    activity_curr_day_w,
+                    min_samples=EVENT_MIN_TWEETS,
+                    token_count_min=TOKEN_COUNT_MIN * 2,
+                    reduce_token_count_min=False,
+                    update_event_comparison_ts=False,
+                )
+                self.posted_daily_events = True
+            else:
+                self.posted_daily_events = False
 
         # Purge old data every so often
         if PURGE_OLD_DATA and (
