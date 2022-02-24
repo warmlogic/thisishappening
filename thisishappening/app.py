@@ -527,7 +527,7 @@ class MyStreamer(TwythonStreamer):
             sleep(seconds)
             self.sleep_exponent += 1
 
-    def update_deleted_tweets(timestamp: datetime, hours: float):
+    def update_deleted_tweets(self, timestamp: datetime, hours: float):
         tweets = RecentTweets.get_recent_tweets(
             session,
             timestamp=timestamp,
