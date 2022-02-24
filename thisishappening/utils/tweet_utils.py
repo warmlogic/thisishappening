@@ -679,7 +679,6 @@ def get_event_info(
     urlparams = {
         "words": tokens,
         "coords": coords,
-        "tweets": tweet_ids,
     }
     if show_tweets_on_event:
         urlparams["tweets"] = tweet_ids
