@@ -101,6 +101,7 @@ BOUNDING_BOX = (
 assert len(BOUNDING_BOX) == 4
 TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
+DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
 KM_STOP = float(os.getenv("KM_STOP", default="0.3"))
 KM_STEP = int(os.getenv("KM_STEP", default="9"))
@@ -384,9 +385,10 @@ class MyStreamer(TwythonStreamer):
             if not self.posted_daily_events and current_time.hour == 23:
                 self.find_and_tweet_events(
                     activity_curr_day_w,
-                    min_samples=EVENT_MIN_TWEETS,
-                    token_count_min=TOKEN_COUNT_MIN * 2,
+                    min_samples=DAILY_EVENT_MIN_TWEETS,
+                    token_count_min=TOKEN_COUNT_MIN,
                     reduce_token_count_min=False,
+                    event_str="Something happened today",
                     update_event_comparison_ts=False,
                 )
                 self.posted_daily_events = True
@@ -513,6 +515,7 @@ class MyStreamer(TwythonStreamer):
         min_samples: int,
         token_count_min: int,
         reduce_token_count_min: bool,
+        event_str: str = None,
         update_event_comparison_ts: bool = True,
     ):
         clusters = cluster_activity(
@@ -532,6 +535,7 @@ class MyStreamer(TwythonStreamer):
                 tweet_max_length=TWEET_MAX_LENGTH,
                 tweet_url_length=TWEET_URL_LENGTH,
                 base_event_url=BASE_EVENT_URL,
+                event_str=event_str,
                 token_count_min=token_count_min,
                 reduce_token_count_min=reduce_token_count_min,
                 remove_username_at=REMOVE_USERNAME_AT,
