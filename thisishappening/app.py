@@ -105,6 +105,9 @@ TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 TWEET_LAT_LON = (
     os.getenv("TWEET_LAT_LON", default="False").casefold() == "true".casefold()
 )
+SHOW_TWEETS_ON_EVENT = (
+    os.getenv("SHOW_TWEETS_ON_EVENT", default="True").casefold() == "true".casefold()
+)
 TWEET_GEOTAG = os.getenv("TWEET_GEOTAG", default="True").casefold() == "true".casefold()
 # Use docs/index.html to render words and map of tweets
 BASE_EVENT_URL = os.getenv(
@@ -162,6 +165,9 @@ IGNORE_LON_LAT = (
 IGNORE_LON_LAT = list(set(IGNORE_LON_LAT))
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
+REDUCE_TOKEN_COUNT_MIN = (
+    os.getenv("REDUCE_TOKEN_COUNT_MIN", default="True").casefold() == "true".casefold()
+)
 REMOVE_USERNAME_AT = (
     os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
 )
@@ -435,8 +441,10 @@ class MyStreamer(TwythonStreamer):
                     tweet_url_length=TWEET_URL_LENGTH,
                     base_event_url=BASE_EVENT_URL,
                     token_count_min=TOKEN_COUNT_MIN,
+                    reduce_token_count_min=REDUCE_TOKEN_COUNT_MIN,
                     remove_username_at=REMOVE_USERNAME_AT,
                     tweet_lat_lon=TWEET_LAT_LON,
+                    show_tweets_on_event=SHOW_TWEETS_ON_EVENT,
                 )
 
                 if LOG_EVENTS:
