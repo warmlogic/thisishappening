@@ -431,9 +431,9 @@ def get_tokens_to_tweet(
     remove_username_at: bool = None,
     deduplicate_each_tweet: bool = None,
 ):
-    token_count_min = token_count_min if token_count_min else 2
-    remove_username_at = remove_username_at if remove_username_at else True
-    deduplicate_each_tweet = deduplicate_each_tweet if deduplicate_each_tweet else True
+    token_count_min = token_count_min or 2
+    remove_username_at = remove_username_at or True
+    deduplicate_each_tweet = deduplicate_each_tweet or True
 
     try:
         tweets = [remove_urls(x.tweet_body) for x in tweets]
