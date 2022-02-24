@@ -604,6 +604,7 @@ def get_event_info(
     tweet_max_length: int,
     tweet_url_length: int,
     base_event_url: str,
+    event_str: str = None,
     token_count_min: int = None,
     reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
@@ -655,7 +656,7 @@ def get_event_info(
     tokens_str = " ".join(tokens_to_tweet)
 
     # Construct the message to tweet
-    event_str = "Something's happening"
+    event_str = event_str or "Something's happening"
     event_str = f"{event_str} in {place_name}" if place_name else event_str
     event_str = f"{event_str}, {city_name}" if city_name else event_str
     event_str = (
