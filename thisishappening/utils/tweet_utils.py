@@ -428,12 +428,19 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
 def get_tokens_to_tweet(
     tweets: List,
     token_count_min: int = None,
+    reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
     deduplicate_each_tweet: bool = None,
 ):
+    # Set defaults
     token_count_min = token_count_min or 2
-    remove_username_at = remove_username_at or True
-    deduplicate_each_tweet = deduplicate_each_tweet or True
+    reduce_token_count_min = (
+        reduce_token_count_min if reduce_token_count_min is not None else True
+    )
+    remove_username_at = remove_username_at if remove_username_at is not None else True
+    deduplicate_each_tweet = (
+        deduplicate_each_tweet if deduplicate_each_tweet is not None else True
+    )
 
     try:
         tweets = [remove_urls(x.tweet_body) for x in tweets]
@@ -498,10 +505,13 @@ def get_tokens_to_tweet(
     while not tokens_to_tweet and token_count_min > 0:
         # keep those above the threshold
         tokens_to_tweet = [tc[0] for tc in counter if tc[1] >= token_count_min]
-        token_count_min -= 1
+        if reduce_token_count_min:
+            token_count_min -= 1
+        else:
+            break
 
     if len(tokens_to_tweet) == 0:
-        tokens_to_tweet = ["No tweet text found"]
+        tokens_to_tweet = ["No common tweet text found"]
 
     return tokens_to_tweet
 
@@ -595,8 +605,11 @@ def get_event_info(
     tweet_url_length: int,
     base_event_url: str,
     token_count_min: int = None,
+    reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
+    deduplicate_each_tweet: bool = None,
     tweet_lat_lon: bool = False,
+    show_tweets_on_event: bool = True,
 ):
     # Compute the average tweet location
     lons, lats = get_coords(event_tweets)
@@ -635,7 +648,9 @@ def get_event_info(
     tokens_to_tweet = get_tokens_to_tweet(
         event_tweets,
         token_count_min=token_count_min,
+        reduce_token_count_min=reduce_token_count_min,
         remove_username_at=remove_username_at,
+        deduplicate_each_tweet=deduplicate_each_tweet,
     )
     tokens_str = " ".join(tokens_to_tweet)
 
@@ -666,6 +681,8 @@ def get_event_info(
         "coords": coords,
         "tweets": tweet_ids,
     }
+    if show_tweets_on_event:
+        urlparams["tweets"] = tweet_ids
     event_url = base_event_url + urllib.parse.urlencode(urlparams)
     event_str = f"{event_str} {tokens} {event_url}"
 
