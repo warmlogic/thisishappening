@@ -175,8 +175,9 @@ def check_tweet(
     ignore_user_screen_names: List[str] = [],
     ignore_user_id_str: List[str] = [],
     ignore_lon_lat: List[List[str]] = [],
-    ignore_possibly_sensitive: bool = True,
-    ignore_quote_status: bool = True,
+    ignore_possibly_sensitive: bool = False,
+    ignore_quote_status: bool = False,
+    ignore_reply_status: bool = False,
     min_friends_count: int = 1,
     min_followers_count: int = 1,
 ) -> bool:
@@ -252,6 +253,10 @@ def check_tweet(
         not status.get("is_quote_status", False) if ignore_quote_status else True
     )
 
+    valid_reply = (
+        status.get("in_reply_to_status_id_str") is None if ignore_reply_status else True
+    )
+
     # following
     valid_friends_count = status["user"]["friends_count"] >= min_friends_count
     # followers
@@ -268,6 +273,7 @@ def check_tweet(
         "valid_lat_lon": valid_lat_lon,
         "valid_possibly_sensitive": valid_possibly_sensitive,
         "valid_quoted": valid_quoted,
+        "valid_reply": valid_reply,
         "valid_friends_count": valid_friends_count,
         "valid_followers_count": valid_followers_count,
     }
