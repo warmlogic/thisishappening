@@ -201,8 +201,11 @@ class RecentTweets(Base):
     user_screen_name = Column(String, nullable=False)
     user_id_str = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
     tweet_body = Column(String, nullable=False)
     tweet_language = Column(String, nullable=True)
+    is_quote_status = Column(Boolean, nullable=True)
+    possibly_sensitive = Column(Boolean, nullable=True, default=False)
     has_coords = Column(Boolean, nullable=False, default=False)
     longitude = Column(Float(precision=8), nullable=False)
     latitude = Column(Float(precision=8), nullable=False)
@@ -217,8 +220,11 @@ class RecentTweets(Base):
             user_screen_name=tweet_info.user_screen_name,
             user_id_str=tweet_info.user_id_str,
             created_at=tweet_info.created_at,
+            deleted_at=tweet_info.deleted_at,
             tweet_body=tweet_info.tweet_body,
             tweet_language=tweet_info.tweet_language,
+            is_quote_status=tweet_info.is_quote_status,
+            possibly_sensitive=tweet_info.possibly_sensitive,
             has_coords=tweet_info.has_coords,
             longitude=tweet_info.longitude,
             latitude=tweet_info.latitude,
