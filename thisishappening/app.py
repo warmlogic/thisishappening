@@ -146,6 +146,9 @@ IGNORE_POSSIBLY_SENSITIVE = (
 IGNORE_QUOTE_STATUS = (
     os.getenv("IGNORE_QUOTE_STATUS", default="False").casefold() == "true".casefold()
 )
+IGNORE_REPLY_STATUS = (
+    os.getenv("IGNORE_REPLY_STATUS", default="False").casefold() == "true".casefold()
+)
 
 IGNORE_LON_LAT = os.getenv("IGNORE_LON_LAT", default=None)
 IGNORE_LON_LAT = (
@@ -230,6 +233,7 @@ class MyStreamer(TwythonStreamer):
             ignore_lon_lat=IGNORE_LON_LAT,
             ignore_possibly_sensitive=IGNORE_POSSIBLY_SENSITIVE,
             ignore_quote_status=IGNORE_QUOTE_STATUS,
+            ignore_reply_status=IGNORE_REPLY_STATUS,
             min_friends_count=MIN_FRIENDS_COUNT,
             min_followers_count=MIN_FOLLOWERS_COUNT,
         )
@@ -571,6 +575,10 @@ if __name__ == "__main__":
         logger.info("Ignoring quote tweets")
     else:
         logger.info("Keeping quote tweets")
+    if IGNORE_REPLY_STATUS:
+        logger.info("Ignoring reply tweets")
+    else:
+        logger.info("Keeping reply tweets")
 
     while True:
         # Use try/except to avoid ChunkedEncodingError
