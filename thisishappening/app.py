@@ -211,7 +211,7 @@ QUERY_INCLUDE_QUOTE_STATUS = (
     == "true".casefold()
 )
 QUERY_INCLUDE_REPLY_STATUS = (
-    os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="True").casefold()
+    os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="False").casefold()
     == "true".casefold()
 )
 QUERY_INCLUDE_DELETED_STATUS = (
