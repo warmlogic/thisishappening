@@ -88,8 +88,7 @@ class Events(Base):
 
     @classmethod
     def get_recent_events(cls, session, timestamp: datetime = None, hours: float = 1):
-        if timestamp is None:
-            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -151,8 +150,7 @@ class Events(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            if timestamp is None:
-                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
@@ -258,8 +256,7 @@ class RecentTweets(Base):
         hours: float = 0,
         bounding_box: List[float] = None,
     ):
-        if timestamp is None:
-            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -293,8 +290,7 @@ class RecentTweets(Base):
         has_coords: bool = None,
         place_type_or_coords: bool = True,
     ):
-        if timestamp is None:
-            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -382,8 +378,7 @@ class RecentTweets(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            if timestamp is None:
-                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
