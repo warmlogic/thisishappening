@@ -35,7 +35,11 @@ if IS_PROD is None:
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
     else:
-        raise OSError(f"{env_path} not found. Did you set it up?")
+        env_path = Path.cwd() / ".env"
+        if env_path.exists():
+            load_dotenv(dotenv_path=env_path)
+        else:
+            raise OSError(".env file not found. Did you set it up?")
 
 DEBUG_RUN = os.getenv("DEBUG_RUN", default="False").casefold()
 if DEBUG_RUN not in ["true".casefold(), "false".casefold()]:
@@ -228,6 +232,8 @@ class MyStreamer(TwythonStreamer):
                 + f" (id: {status['user'].get('id_str')},"
                 + f" following: {status['user'].get('friends_count')},"
                 + f" followers: {status['user'].get('followers_count')}),"
+                + f" is quote status: {status.get('is_quote_status')}),"
+                + f" possibly sensitive: {status.get('possibly_sensitive')}),"
                 + f" coordinates: {status.get('coordinates')},"
                 + f" place type: {status['place'].get('place_type')},"
                 + f" place name: {status['place'].get('full_name')},"
