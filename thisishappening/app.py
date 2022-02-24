@@ -146,6 +146,9 @@ IGNORE_POSSIBLY_SENSITIVE = (
 IGNORE_QUOTE_STATUS = (
     os.getenv("IGNORE_QUOTE_STATUS", default="False").casefold() == "true".casefold()
 )
+IGNORE_REPLY_STATUS = (
+    os.getenv("IGNORE_REPLY_STATUS", default="False").casefold() == "true".casefold()
+)
 
 IGNORE_LON_LAT = os.getenv("IGNORE_LON_LAT", default=None)
 IGNORE_LON_LAT = (
@@ -197,6 +200,10 @@ QUERY_INCLUDE_QUOTE_STATUS = (
     os.getenv("QUERY_INCLUDE_QUOTE_STATUS", default="True").casefold()
     == "true".casefold()
 )
+QUERY_INCLUDE_REPLY_STATUS = (
+    os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="True").casefold()
+    == "true".casefold()
+)
 
 
 class MyStreamer(TwythonStreamer):
@@ -226,6 +233,7 @@ class MyStreamer(TwythonStreamer):
             ignore_lon_lat=IGNORE_LON_LAT,
             ignore_possibly_sensitive=IGNORE_POSSIBLY_SENSITIVE,
             ignore_quote_status=IGNORE_QUOTE_STATUS,
+            ignore_reply_status=IGNORE_REPLY_STATUS,
             min_friends_count=MIN_FRIENDS_COUNT,
             min_followers_count=MIN_FOLLOWERS_COUNT,
         )
@@ -234,11 +242,13 @@ class MyStreamer(TwythonStreamer):
             logger.debug(
                 f"Tweet {status.get('id_str')} failed check tweet:"
                 + f" screen name: {status['user'].get('screen_name')}"
-                + f" (id: {status['user'].get('id_str')},"
+                + f" (id: {status['user'].get('id_str')}),"
                 + f" following: {status['user'].get('friends_count')},"
-                + f" followers: {status['user'].get('followers_count')}),"
-                + f" is quote status: {status.get('is_quote_status')}),"
-                + f" possibly sensitive: {status.get('possibly_sensitive')}),"
+                + f" followers: {status['user'].get('followers_count')},"
+                + f" is quote status: {status.get('is_quote_status')},"
+                + " is reply status: "
+                + f"{status.get('in_reply_to_status_id_str') is not None},"
+                + f" possibly sensitive: {status.get('possibly_sensitive')},"
                 + f" coordinates: {status.get('coordinates')},"
                 + f" place type: {status['place'].get('place_type')},"
                 + f" place name: {status['place'].get('full_name')},"
@@ -282,6 +292,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
         activity_prev_day = RecentTweets.get_recent_tweets(
             session,
@@ -291,6 +302,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
 
         activity_curr_hour = RecentTweets.get_recent_tweets(
@@ -301,6 +313,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
         activity_prev_hour = RecentTweets.get_recent_tweets(
             session,
@@ -311,6 +324,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
 
         # Decide whether an event occurred
@@ -561,6 +575,10 @@ if __name__ == "__main__":
         logger.info("Ignoring quote tweets")
     else:
         logger.info("Keeping quote tweets")
+    if IGNORE_REPLY_STATUS:
+        logger.info("Ignoring reply tweets")
+    else:
+        logger.info("Keeping reply tweets")
 
     while True:
         # Use try/except to avoid ChunkedEncodingError

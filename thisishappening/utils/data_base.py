@@ -203,6 +203,7 @@ class RecentTweets(Base):
     tweet_body = Column(String, nullable=False)
     tweet_language = Column(String, nullable=True)
     is_quote_status = Column(Boolean, nullable=True)
+    is_reply_status = Column(Boolean, nullable=True)
     possibly_sensitive = Column(Boolean, nullable=True, default=False)
     has_coords = Column(Boolean, nullable=False, default=False)
     longitude = Column(Float(precision=8), nullable=False)
@@ -222,6 +223,7 @@ class RecentTweets(Base):
             tweet_body=tweet_info.tweet_body,
             tweet_language=tweet_info.tweet_language,
             is_quote_status=tweet_info.is_quote_status,
+            is_reply_status=tweet_info.is_reply_status,
             possibly_sensitive=tweet_info.possibly_sensitive,
             has_coords=tweet_info.has_coords,
             longitude=tweet_info.longitude,
@@ -290,6 +292,7 @@ class RecentTweets(Base):
         has_coords: bool = None,
         place_type_or_coords: bool = True,
         include_quote_status: bool = True,
+        include_reply_status: bool = True,
     ):
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -330,6 +333,10 @@ class RecentTweets(Base):
         # Exclude quote tweets
         if not include_quote_status:
             q = q.filter(cls.is_quote_status.isnot(True))
+
+        # Exclude replies
+        if not include_reply_status:
+            q = q.filter(cls.is_reply_status.isnot(True))
 
         return q.order_by(desc(cls.created_at)).all()
 
