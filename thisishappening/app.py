@@ -204,6 +204,10 @@ QUERY_INCLUDE_REPLY_STATUS = (
     os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="True").casefold()
     == "true".casefold()
 )
+QUERY_INCLUDE_DELETED_STATUS = (
+    os.getenv("QUERY_INCLUDE_DELETED_STATUS", default="False").casefold()
+    == "true".casefold()
+)
 
 
 class MyStreamer(TwythonStreamer):
@@ -284,6 +288,13 @@ class MyStreamer(TwythonStreamer):
             + " since an event occurred, comparing activity..."
         )
 
+        # Check on whether recent tweets have been deleted, and update if so.
+        # Assumption is that tweets are deleted quickly; then we don't need to spend
+        # time checking whether every recent tweet has been deleted.
+        self.update_deleted_tweets(
+            timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS
+        )
+
         activity_curr_day = RecentTweets.get_recent_tweets(
             session,
             timestamp=tweet_info.created_at,
@@ -293,6 +304,7 @@ class MyStreamer(TwythonStreamer):
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
             include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
+            include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
         )
         activity_prev_day = RecentTweets.get_recent_tweets(
             session,
@@ -303,6 +315,7 @@ class MyStreamer(TwythonStreamer):
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
             include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
+            include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
         )
 
         activity_curr_hour = RecentTweets.get_recent_tweets(
@@ -314,7 +327,9 @@ class MyStreamer(TwythonStreamer):
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
             include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
+            include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
         )
+
         activity_prev_hour = RecentTweets.get_recent_tweets(
             session,
             timestamp=tweet_info.created_at
@@ -325,6 +340,7 @@ class MyStreamer(TwythonStreamer):
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
             include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
+            include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
         )
 
         # Decide whether an event occurred
@@ -510,6 +526,30 @@ class MyStreamer(TwythonStreamer):
             )
             sleep(seconds)
             self.sleep_exponent += 1
+
+    def update_deleted_tweets(timestamp: datetime, hours: float):
+        tweets = RecentTweets.get_recent_tweets(
+            session,
+            timestamp=timestamp,
+            hours=hours,
+            place_type=VALID_PLACE_TYPES,
+            has_coords=QUERY_HAS_COORDS_ONLY,
+            place_type_or_coords=True,
+            include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
+            include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
+        )
+
+        for t in tweets:
+            try:
+                _ = twitter.show_status(id=t.status_id_str)
+            except TwythonError as e:
+                if "No status found with that ID" in e.msg:
+                    logger.info(
+                        f"Tweet {t.user_screen_name}/status/{t.status_id_str}"
+                        + " not found, marking as deleted"
+                    )
+                    RecentTweets.update_tweet_deleted(session, t.status_id_str)
 
 
 # Establish connection to Twitter

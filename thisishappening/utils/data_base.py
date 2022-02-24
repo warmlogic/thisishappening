@@ -293,6 +293,7 @@ class RecentTweets(Base):
         place_type_or_coords: bool = True,
         include_quote_status: bool = True,
         include_reply_status: bool = True,
+        include_deleted_status: bool = False,
     ):
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -338,6 +339,10 @@ class RecentTweets(Base):
         if not include_reply_status:
             q = q.filter(cls.is_reply_status.isnot(True))
 
+        # Exclude deleted tweets
+        if not include_deleted_status:
+            q = q.filter(cls.deleted_at == None)  # noqa: E711
+
         return q.order_by(desc(cls.created_at)).all()
 
     @classmethod
@@ -373,6 +378,18 @@ class RecentTweets(Base):
             )
 
         return q.order_by(desc(cls.created_at)).first()
+
+    @classmethod
+    def update_tweet_deleted(cls, session, status_id_str: str):
+        """Mark tweet as deleted"""
+        try:
+            session.query(cls).filter(cls.status_id_str == status_id_str).update(
+                {"deleted_at": datetime.utcnow().replace(tzinfo=pytz.UTC)}
+            )
+            session.commit()
+        except Exception as e:
+            logger.warning(f"Exception when updating tweet as deleted: {e}")
+            session.rollback()
 
     @classmethod
     def delete_tweets_older_than(
