@@ -371,7 +371,7 @@ class MyStreamer(TwythonStreamer):
             )
 
         if POST_DAILY_EVENTS:
-            # TODO: only post once per day
+            # TODO: only post once per day, at 11pm local time
             # datetime.utcnow().replace(tzinfo=pytz.UTC)
             self.find_and_tweet_events(
                 activity_curr_day_w,
