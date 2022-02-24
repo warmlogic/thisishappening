@@ -35,7 +35,11 @@ if IS_PROD is None:
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
     else:
-        raise OSError(f"{env_path} not found. Did you set it up?")
+        env_path = Path.cwd() / ".env"
+        if env_path.exists():
+            load_dotenv(dotenv_path=env_path)
+        else:
+            raise OSError(".env file not found. Did you set it up?")
 
 DEBUG_RUN = os.getenv("DEBUG_RUN", default="False").casefold()
 if DEBUG_RUN not in ["true".casefold(), "false".casefold()]:
@@ -189,6 +193,11 @@ QUERY_HAS_COORDS_ONLY = (
 )
 QUERY_HAS_COORDS_ONLY = QUERY_HAS_COORDS_ONLY if QUERY_HAS_COORDS_ONLY else None
 
+QUERY_INCLUDE_QUOTE_STATUS = (
+    os.getenv("QUERY_INCLUDE_QUOTE_STATUS", default="True").casefold()
+    == "true".casefold()
+)
+
 
 class MyStreamer(TwythonStreamer):
     def __init__(self, grid_coords, event_comparison_ts=None, *args, **kwargs):
@@ -228,6 +237,8 @@ class MyStreamer(TwythonStreamer):
                 + f" (id: {status['user'].get('id_str')},"
                 + f" following: {status['user'].get('friends_count')},"
                 + f" followers: {status['user'].get('followers_count')}),"
+                + f" is quote status: {status.get('is_quote_status')}),"
+                + f" possibly sensitive: {status.get('possibly_sensitive')}),"
                 + f" coordinates: {status.get('coordinates')},"
                 + f" place type: {status['place'].get('place_type')},"
                 + f" place name: {status['place'].get('full_name')},"
@@ -270,6 +281,7 @@ class MyStreamer(TwythonStreamer):
             place_type=VALID_PLACE_TYPES,
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
+            include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
         )
         activity_prev_day = RecentTweets.get_recent_tweets(
             session,
@@ -278,6 +290,7 @@ class MyStreamer(TwythonStreamer):
             place_type=VALID_PLACE_TYPES,
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
+            include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
         )
 
         activity_curr_hour = RecentTweets.get_recent_tweets(
@@ -287,6 +300,7 @@ class MyStreamer(TwythonStreamer):
             place_type=VALID_PLACE_TYPES,
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
+            include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
         )
         activity_prev_hour = RecentTweets.get_recent_tweets(
             session,
@@ -296,6 +310,7 @@ class MyStreamer(TwythonStreamer):
             place_type=VALID_PLACE_TYPES,
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
+            include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
         )
 
         # Decide whether an event occurred

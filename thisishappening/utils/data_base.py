@@ -88,8 +88,7 @@ class Events(Base):
 
     @classmethod
     def get_recent_events(cls, session, timestamp: datetime = None, hours: float = 1):
-        if timestamp is None:
-            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -151,8 +150,7 @@ class Events(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            if timestamp is None:
-                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
@@ -201,8 +199,11 @@ class RecentTweets(Base):
     user_screen_name = Column(String, nullable=False)
     user_id_str = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
     tweet_body = Column(String, nullable=False)
     tweet_language = Column(String, nullable=True)
+    is_quote_status = Column(Boolean, nullable=True)
+    possibly_sensitive = Column(Boolean, nullable=True, default=False)
     has_coords = Column(Boolean, nullable=False, default=False)
     longitude = Column(Float(precision=8), nullable=False)
     latitude = Column(Float(precision=8), nullable=False)
@@ -217,8 +218,11 @@ class RecentTweets(Base):
             user_screen_name=tweet_info.user_screen_name,
             user_id_str=tweet_info.user_id_str,
             created_at=tweet_info.created_at,
+            deleted_at=tweet_info.deleted_at,
             tweet_body=tweet_info.tweet_body,
             tweet_language=tweet_info.tweet_language,
+            is_quote_status=tweet_info.is_quote_status,
+            possibly_sensitive=tweet_info.possibly_sensitive,
             has_coords=tweet_info.has_coords,
             longitude=tweet_info.longitude,
             latitude=tweet_info.latitude,
@@ -252,8 +256,7 @@ class RecentTweets(Base):
         hours: float = 0,
         bounding_box: List[float] = None,
     ):
-        if timestamp is None:
-            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -286,9 +289,9 @@ class RecentTweets(Base):
         place_type: List[str] = None,
         has_coords: bool = None,
         place_type_or_coords: bool = True,
+        include_quote_status: bool = True,
     ):
-        if timestamp is None:
-            timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -323,6 +326,10 @@ class RecentTweets(Base):
 
             if has_coords is not None:
                 q = q.filter(cls.has_coords.is_(has_coords))
+
+        # Exclude quote tweets
+        if not include_quote_status:
+            q = q.filter(cls.is_quote_status.isnot(True))
 
         return q.order_by(desc(cls.created_at)).all()
 
@@ -376,8 +383,7 @@ class RecentTweets(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            if timestamp is None:
-                timestamp = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:

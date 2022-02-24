@@ -45,8 +45,11 @@ TweetInfo = namedtuple(
         "user_screen_name",
         "user_id_str",
         "created_at",
+        "deleted_at",
         "tweet_body",
         "tweet_language",
+        "is_quote_status",
+        "possibly_sensitive",
         "has_coords",
         "longitude",
         "latitude",
@@ -126,6 +129,8 @@ def get_tweet_info(status: Dict) -> Dict:
     created_at = date_string_to_datetime(status["created_at"])
     tweet_body = get_tweet_body(status)
     tweet_language = status["lang"]
+    is_quote_status = status.get("is_quote_status")
+    possibly_sensitive = status.get("possibly_sensitive")
     longitude, latitude, has_coords = get_lon_lat(status)
     place_id = status["place"].get("id")
     place_name = status["place"].get("name")
@@ -140,8 +145,11 @@ def get_tweet_info(status: Dict) -> Dict:
         user_screen_name=user_screen_name,
         user_id_str=user_id_str,
         created_at=created_at,
+        deleted_at=None,
         tweet_body=tweet_body,
         tweet_language=tweet_language,
+        is_quote_status=is_quote_status,
+        possibly_sensitive=possibly_sensitive,
         has_coords=has_coords,
         longitude=longitude,
         latitude=latitude,
