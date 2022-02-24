@@ -289,6 +289,7 @@ class RecentTweets(Base):
         place_type: List[str] = None,
         has_coords: bool = None,
         place_type_or_coords: bool = True,
+        include_quote_status: bool = True,
     ):
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -325,6 +326,10 @@ class RecentTweets(Base):
 
             if has_coords is not None:
                 q = q.filter(cls.has_coords.is_(has_coords))
+
+        # Exclude quote tweets
+        if not include_quote_status:
+            q = q.filter(cls.is_quote_status.isnot(True))
 
         return q.order_by(desc(cls.created_at)).all()
 
