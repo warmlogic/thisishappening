@@ -197,6 +197,10 @@ QUERY_INCLUDE_QUOTE_STATUS = (
     os.getenv("QUERY_INCLUDE_QUOTE_STATUS", default="True").casefold()
     == "true".casefold()
 )
+QUERY_INCLUDE_REPLY_STATUS = (
+    os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="True").casefold()
+    == "true".casefold()
+)
 
 
 class MyStreamer(TwythonStreamer):
@@ -238,6 +242,7 @@ class MyStreamer(TwythonStreamer):
                 + f" following: {status['user'].get('friends_count')},"
                 + f" followers: {status['user'].get('followers_count')}),"
                 + f" is quote status: {status.get('is_quote_status')}),"
+                + f" is reply status: {status.get('is_reply_status')}),"
                 + f" possibly sensitive: {status.get('possibly_sensitive')}),"
                 + f" coordinates: {status.get('coordinates')},"
                 + f" place type: {status['place'].get('place_type')},"
@@ -282,6 +287,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
         activity_prev_day = RecentTweets.get_recent_tweets(
             session,
@@ -291,6 +297,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
 
         activity_curr_hour = RecentTweets.get_recent_tweets(
@@ -301,6 +308,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
         activity_prev_hour = RecentTweets.get_recent_tweets(
             session,
@@ -311,6 +319,7 @@ class MyStreamer(TwythonStreamer):
             has_coords=QUERY_HAS_COORDS_ONLY,
             place_type_or_coords=True,
             include_quote_status=QUERY_INCLUDE_QUOTE_STATUS,
+            include_reply_status=QUERY_INCLUDE_REPLY_STATUS,
         )
 
         # Decide whether an event occurred
