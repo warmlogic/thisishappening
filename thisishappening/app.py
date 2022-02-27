@@ -99,7 +99,8 @@ BOUNDING_BOX = (
     [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
 )
 assert len(BOUNDING_BOX) == 4
-TEMPORAL_GRANULARITY_HOURS = int(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
+TEMPORAL_GRANULARITY_HOURS = float(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
+MIN_HOURS_BETWEEN_EVENTS = float(os.getenv("MIN_HOURS_BETWEEN_EVENTS", default="0.5"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
@@ -229,7 +230,7 @@ class MyStreamer(TwythonStreamer):
         if event_comparison_ts is None:
             event_comparison_ts = datetime.utcnow().replace(
                 tzinfo=pytz.UTC
-            ) - timedelta(hours=TEMPORAL_GRANULARITY_HOURS)
+            ) - timedelta(hours=MIN_HOURS_BETWEEN_EVENTS)
         self.event_comparison_ts = event_comparison_ts
         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.posted_daily_events = False
@@ -286,18 +287,18 @@ class MyStreamer(TwythonStreamer):
             )
 
         if tweet_info.created_at - self.event_comparison_ts < timedelta(
-            hours=TEMPORAL_GRANULARITY_HOURS
+            hours=MIN_HOURS_BETWEEN_EVENTS
         ):
             logger.info(
                 "Not looking for new event, recent event in the last"
-                + f" {timedelta(hours=TEMPORAL_GRANULARITY_HOURS)} hours"
+                + f" {MIN_HOURS_BETWEEN_EVENTS} hours"
                 + f" ({self.event_comparison_ts})"
             )
             return
 
         logger.info(
             f"{tweet_info.created_at} Been more than"
-            + f" {TEMPORAL_GRANULARITY_HOURS} hour(s)"
+            + f" {MIN_HOURS_BETWEEN_EVENTS} hour(s)"
             + " since an event occurred, comparing activity..."
         )
 
