@@ -89,7 +89,13 @@ class Events(Base):
         return event
 
     @classmethod
-    def get_recent_events(cls, session, timestamp: datetime = None, hours: float = 1):
+    def get_recent_events(
+        cls,
+        session,
+        timestamp: datetime = None,
+        hours: float = 1,
+        event_type: List[str] = None,
+    ):
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)
@@ -100,11 +106,27 @@ class Events(Base):
             .filter(cls.timestamp <= timestamp)
         )
 
+        if event_type is not None:
+            q = q.filter(
+                or_(
+                    cls.event_type.in_(event_type),
+                    cls.event_type == None,  # noqa: E711
+                )
+            )
+
         return q.order_by(desc(cls.timestamp)).all()
 
     @classmethod
-    def get_most_recent_event(cls, session):
+    def get_most_recent_event(cls, session, event_type: List[str] = None):
         q = session.query(cls)
+
+        if event_type is not None:
+            q = q.filter(
+                or_(
+                    cls.event_type.in_(event_type),
+                    cls.event_type == None,  # noqa: E711
+                )
+            )
 
         return q.order_by(desc(cls.timestamp)).first()
 
