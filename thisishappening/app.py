@@ -102,12 +102,13 @@ assert len(BOUNDING_BOX) == 4
 TEMPORAL_GRANULARITY_HOURS = float(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
 MIN_HOURS_BETWEEN_EVENTS = float(os.getenv("MIN_HOURS_BETWEEN_EVENTS", default="1"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
+MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
+DAILY_MIN_N_CLUSTERS = int(os.getenv("DAILY_MIN_N_CLUSTERS", default="2"))
 DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="23"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
 KM_STOP = float(os.getenv("KM_STOP", default="0.3"))
 KM_STEP = int(os.getenv("KM_STEP", default="9"))
-MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
 TWEET_LAT_LON = (
@@ -396,7 +397,7 @@ class MyStreamer(TwythonStreamer):
                     km_start=KM_START,
                     km_stop=KM_STOP,
                     km_step=KM_STEP,
-                    min_n_clusters=MIN_N_CLUSTERS,
+                    min_n_clusters=DAILY_MIN_N_CLUSTERS,
                     token_count_min=TOKEN_COUNT_MIN,
                     reduce_token_count_min=False,
                     event_type="daily",
