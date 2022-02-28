@@ -15,7 +15,7 @@ def cluster_activity(
     min_samples: int,
     km_start: float = 0.05,
     km_stop: float = 0.3,
-    km_step: int = 5,
+    km_step: int = 9,
     min_n_clusters: int = 1,
     sample_weight=None,
 ):
