@@ -100,7 +100,7 @@ BOUNDING_BOX = (
 )
 assert len(BOUNDING_BOX) == 4
 TEMPORAL_GRANULARITY_HOURS = float(os.getenv("TEMPORAL_GRANULARITY_HOURS", default="1"))
-MIN_HOURS_BETWEEN_EVENTS = float(os.getenv("MIN_HOURS_BETWEEN_EVENTS", default="0.5"))
+MIN_HOURS_BETWEEN_EVENTS = float(os.getenv("MIN_HOURS_BETWEEN_EVENTS", default="1"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
 DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="23"))
