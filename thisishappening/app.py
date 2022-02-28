@@ -371,6 +371,10 @@ class MyStreamer(TwythonStreamer):
             self.find_and_tweet_events(
                 activity_curr_hour_w,
                 min_samples=EVENT_MIN_TWEETS,
+                km_start=KM_START,
+                km_stop=KM_STOP,
+                km_step=KM_STEP,
+                min_n_clusters=MIN_N_CLUSTERS,
                 token_count_min=TOKEN_COUNT_MIN,
                 reduce_token_count_min=REDUCE_TOKEN_COUNT_MIN,
                 event_type="moment",
@@ -389,6 +393,10 @@ class MyStreamer(TwythonStreamer):
                 self.find_and_tweet_events(
                     activity_curr_day_w,
                     min_samples=DAILY_EVENT_MIN_TWEETS,
+                    km_start=KM_START,
+                    km_stop=KM_STOP,
+                    km_step=KM_STEP,
+                    min_n_clusters=MIN_N_CLUSTERS,
                     token_count_min=TOKEN_COUNT_MIN,
                     reduce_token_count_min=False,
                     event_type="daily",
@@ -517,6 +525,10 @@ class MyStreamer(TwythonStreamer):
         self,
         activity_curr_w,
         min_samples: int,
+        km_start: float,
+        km_stop: float,
+        km_step: int,
+        min_n_clusters: int,
         token_count_min: int,
         reduce_token_count_min: bool,
         event_str: str = None,
@@ -526,10 +538,10 @@ class MyStreamer(TwythonStreamer):
         clusters = cluster_activity(
             activity=activity_curr_w,
             min_samples=min_samples,
-            km_start=KM_START,
-            km_stop=KM_STOP,
-            km_step=KM_STEP,
-            min_n_clusters=MIN_N_CLUSTERS,
+            km_start=km_start,
+            km_stop=km_stop,
+            km_step=km_step,
+            min_n_clusters=min_n_clusters,
             sample_weight=[x["weight"] for x in activity_curr_w],
         )
 
