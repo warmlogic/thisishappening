@@ -29,7 +29,6 @@ logging.basicConfig(format="{asctime} : {levelname} : {message}", style="{")
 logger = logging.getLogger("happeninglogger")
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", default="development")
-DEBUG_MODE = os.getenv("DEBUG_MODE", default="False").casefold() == "true".casefold()
 
 # Read .env file for local development
 if ENVIRONMENT == "development":
@@ -42,6 +41,8 @@ if ENVIRONMENT == "development":
             load_dotenv(dotenv_path=env_path)
         else:
             raise OSError(".env file not found. Did you set it up?")
+
+DEBUG_MODE = os.getenv("DEBUG_MODE", default="False").casefold() == "true".casefold()
 
 if DEBUG_MODE:
     logger.setLevel(logging.DEBUG)
