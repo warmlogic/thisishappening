@@ -103,6 +103,7 @@ TEMPORAL_GRANULARITY_HOURS = float(os.getenv("TEMPORAL_GRANULARITY_HOURS", defau
 MIN_HOURS_BETWEEN_EVENTS = float(os.getenv("MIN_HOURS_BETWEEN_EVENTS", default="0.5"))
 EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
+DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="23"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
 KM_STOP = float(os.getenv("KM_STOP", default="0.3"))
 KM_STEP = int(os.getenv("KM_STEP", default="9"))
@@ -372,6 +373,7 @@ class MyStreamer(TwythonStreamer):
                 min_samples=EVENT_MIN_TWEETS,
                 token_count_min=TOKEN_COUNT_MIN,
                 reduce_token_count_min=REDUCE_TOKEN_COUNT_MIN,
+                event_type="moment",
             )
 
         # Only post once per day, at 11pm local time
@@ -383,12 +385,13 @@ class MyStreamer(TwythonStreamer):
                 logger.info(f"Could not find timezone {TIMEZONE}, defaulting to {tz}")
             current_time = datetime.now(tz)
 
-            if not self.posted_daily_events and current_time.hour == 23:
+            if not self.posted_daily_events and current_time.hour == DAILY_EVENT_HOUR:
                 self.find_and_tweet_events(
                     activity_curr_day_w,
                     min_samples=DAILY_EVENT_MIN_TWEETS,
                     token_count_min=TOKEN_COUNT_MIN,
                     reduce_token_count_min=False,
+                    event_type="daily",
                     event_str="Something happened today",
                     update_event_comparison_ts=False,
                 )
@@ -517,6 +520,7 @@ class MyStreamer(TwythonStreamer):
         token_count_min: int,
         reduce_token_count_min: bool,
         event_str: str = None,
+        event_type: str = None,
         update_event_comparison_ts: bool = True,
     ):
         clusters = cluster_activity(
@@ -537,6 +541,7 @@ class MyStreamer(TwythonStreamer):
                 tweet_url_length=TWEET_URL_LENGTH,
                 base_event_url=BASE_EVENT_URL,
                 event_str=event_str,
+                event_type=event_type,
                 token_count_min=token_count_min,
                 reduce_token_count_min=reduce_token_count_min,
                 remove_username_at=REMOVE_USERNAME_AT,

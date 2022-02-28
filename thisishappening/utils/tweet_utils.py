@@ -79,6 +79,7 @@ EventInfo = namedtuple(
         "place_name",
         "tokens_str",
         "status_ids",
+        "event_type",
     ],
 )
 
@@ -604,6 +605,7 @@ def get_event_info(
     tweet_max_length: int,
     tweet_url_length: int,
     base_event_url: str,
+    event_type: str = None,
     event_str: str = None,
     token_count_min: int = None,
     reduce_token_count_min: bool = None,
@@ -705,6 +707,7 @@ def get_event_info(
         place_name=place_name,
         tokens_str=tokens_str,
         status_ids=status_ids,
+        event_type=event_type,
     )
 
     return event_info
