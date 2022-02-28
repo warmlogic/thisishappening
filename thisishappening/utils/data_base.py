@@ -52,6 +52,7 @@ class Events(Base):
     place_name = Column(String, nullable=True)
     description = Column(String, nullable=False)
     status_ids = Column(ARRAY(String), nullable=True)
+    event_type = Column(String, nullable=True)
 
     @classmethod
     def log_event(cls, session, event_info: EventInfo):
@@ -68,6 +69,7 @@ class Events(Base):
             place_name=event_info.place_name,
             description=event_info.tokens_str,
             status_ids=event_info.status_ids,
+            event_type=event_info.event_type,
         )
         session.add(event)
         try:

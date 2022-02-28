@@ -79,6 +79,7 @@ EventInfo = namedtuple(
         "place_name",
         "tokens_str",
         "status_ids",
+        "event_type",
     ],
 )
 
@@ -604,6 +605,8 @@ def get_event_info(
     tweet_max_length: int,
     tweet_url_length: int,
     base_event_url: str,
+    event_type: str = None,
+    event_str: str = None,
     token_count_min: int = None,
     reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
@@ -655,7 +658,7 @@ def get_event_info(
     tokens_str = " ".join(tokens_to_tweet)
 
     # Construct the message to tweet
-    event_str = "Something's happening"
+    event_str = event_str or "Something's happening"
     event_str = f"{event_str} in {place_name}" if place_name else event_str
     event_str = f"{event_str}, {city_name}" if city_name else event_str
     event_str = (
@@ -704,6 +707,7 @@ def get_event_info(
         place_name=place_name,
         tokens_str=tokens_str,
         status_ids=status_ids,
+        event_type=event_type,
     )
 
     return event_info
