@@ -93,7 +93,7 @@ if DATABASE_URL.startswith("postgres://"):
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
-TIMEZONE = os.getenv("TIMEZONE", default="UTC")
+TIMEZONE = os.getenv("TIMEZONE", default="UTC")  # http://pytz.sourceforge.net/#helpers
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = (
     [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
