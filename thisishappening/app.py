@@ -486,6 +486,7 @@ class MyStreamer(TwythonStreamer):
         self, activity_prev, activity_curr, activity_threshold, time_str
     ):
         event = False
+        activity_curr_w = []
         if (len(activity_prev) > 1) and (len(activity_curr) > 1):
             z_diff, _, activity_curr_w = compare_activity_kde(
                 self.grid_coords,
