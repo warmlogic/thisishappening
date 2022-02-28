@@ -279,35 +279,19 @@ class MyStreamer(TwythonStreamer):
 
         if LOG_TWEETS:
             _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
+
+            # Check on whether recent tweets have been deleted, and update if so.
+            # Assumption is that tweets are deleted quickly; then we don't need to spend
+            # time checking whether every recent tweet has been deleted.
+            self.update_deleted_tweets(
+                timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS
+            )
         else:
             logger.debug(
                 "Not logging tweet due to environment variable settings:"
                 + f" {tweet_info.status_id_str},"
                 + f" {tweet_info.place_name} ({tweet_info.place_type})"
             )
-
-        if tweet_info.created_at - self.event_comparison_ts < timedelta(
-            hours=MIN_HOURS_BETWEEN_EVENTS
-        ):
-            logger.info(
-                "Not looking for new event, recent event in the last"
-                + f" {MIN_HOURS_BETWEEN_EVENTS} hours"
-                + f" ({self.event_comparison_ts})"
-            )
-            return
-
-        logger.info(
-            f"{tweet_info.created_at} Been more than"
-            + f" {MIN_HOURS_BETWEEN_EVENTS} hour(s)"
-            + " since an event occurred, comparing activity..."
-        )
-
-        # Check on whether recent tweets have been deleted, and update if so.
-        # Assumption is that tweets are deleted quickly; then we don't need to spend
-        # time checking whether every recent tweet has been deleted.
-        self.update_deleted_tweets(
-            timestamp=tweet_info.created_at, hours=TEMPORAL_GRANULARITY_HOURS
-        )
 
         activity_curr_day = RecentTweets.get_recent_tweets(
             session,
@@ -367,17 +351,32 @@ class MyStreamer(TwythonStreamer):
         )
 
         if event_day and event_hour:
-            self.find_and_tweet_events(
-                activity_curr_hour_w,
-                min_samples=EVENT_MIN_TWEETS,
-                km_start=KM_START,
-                km_stop=KM_STOP,
-                km_step=KM_STEP,
-                min_n_clusters=MIN_N_CLUSTERS,
-                token_count_min=TOKEN_COUNT_MIN,
-                reduce_token_count_min=REDUCE_TOKEN_COUNT_MIN,
-                event_type="moment",
-            )
+            if tweet_info.created_at - self.event_comparison_ts >= timedelta(
+                hours=MIN_HOURS_BETWEEN_EVENTS
+            ):
+                logger.info(
+                    f"{tweet_info.created_at}: Been more than"
+                    + f" {MIN_HOURS_BETWEEN_EVENTS} hour(s) since an event occurred"
+                    + f" ({self.event_comparison_ts}), clustering activity..."
+                )
+
+                self.find_and_tweet_events(
+                    activity_curr_hour_w,
+                    min_samples=EVENT_MIN_TWEETS,
+                    km_start=KM_START,
+                    km_stop=KM_STOP,
+                    km_step=KM_STEP,
+                    min_n_clusters=MIN_N_CLUSTERS,
+                    token_count_min=TOKEN_COUNT_MIN,
+                    reduce_token_count_min=REDUCE_TOKEN_COUNT_MIN,
+                    event_type="moment",
+                )
+            else:
+                logger.info(
+                    f"{tweet_info.created_at}: Not clustering activity to find event,"
+                    + f" there was an event in the last {MIN_HOURS_BETWEEN_EVENTS}"
+                    + f" hours ({self.event_comparison_ts})"
+                )
 
         # Only post once per day, at 11pm local time
         if POST_DAILY_EVENTS:
@@ -608,7 +607,7 @@ session = session_factory(DATABASE_URL, echo=ECHO)
 
 # Find out when the last event happened
 # First check the database
-most_recent_event = Events.get_most_recent_event(session)
+most_recent_event = Events.get_most_recent_event(session, event_type=["moment"])
 if most_recent_event is not None:
     event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
 else:
