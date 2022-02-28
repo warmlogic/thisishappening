@@ -28,9 +28,11 @@ from utils.tweet_utils import (
 logging.basicConfig(format="{asctime} : {levelname} : {message}", style="{")
 logger = logging.getLogger("happeninglogger")
 
-IS_PROD = os.getenv("IS_PROD", default=None)
+ENVIRONMENT = os.getenv("ENVIRONMENT", default="development")
+DEBUG_MODE = os.getenv("DEBUG_MODE", default="False").casefold() == "true".casefold()
 
-if IS_PROD is None:
+# Read .env file for local development
+if ENVIRONMENT == "development":
     env_path = Path.cwd().parent / ".env"
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
@@ -41,12 +43,7 @@ if IS_PROD is None:
         else:
             raise OSError(".env file not found. Did you set it up?")
 
-DEBUG_RUN = os.getenv("DEBUG_RUN", default="False").casefold()
-if DEBUG_RUN not in ["true".casefold(), "false".casefold()]:
-    raise ValueError(f"DEBUG_RUN must be True or False, current value: {DEBUG_RUN}")
-DEBUG_RUN = DEBUG_RUN == "true".casefold()
-
-if DEBUG_RUN:
+if DEBUG_MODE:
     logger.setLevel(logging.DEBUG)
     POST_EVENT = False
     POST_DAILY_EVENTS = False
