@@ -87,6 +87,8 @@ EventInfo = namedtuple(
 def get_tweet_body(status):
     if "extended_tweet" in status:
         tweet_body = status["extended_tweet"]["full_text"]
+    elif "full_text" in status:
+        tweet_body = status["full_text"]
     elif "text" in status:
         tweet_body = status["text"]
     else:
