@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
@@ -130,9 +131,16 @@ VALID_PLACE_TYPES = (
 VALID_PLACE_TYPES = list(set(VALID_PLACE_TYPES))
 IGNORE_WORDS = os.getenv("IGNORE_WORDS", default=None)
 IGNORE_WORDS = (
-    [rf"\b{x.strip()}\b" for x in IGNORE_WORDS.split(",")] if IGNORE_WORDS else []
+    [rf"\b{re.escape(x.strip())}\b" for x in IGNORE_WORDS.split(",")]
+    if IGNORE_WORDS
+    else []
 )
 IGNORE_WORDS = list(set(IGNORE_WORDS))
+# swap order of hashtag marker (#) and beginning of word marker (\b)
+IGNORE_WORDS = [
+    re.sub(r"(\\b)(\\#)(.*)", r"\2\1\3", w) if w.startswith("\\b\\#") else w
+    for w in IGNORE_WORDS
+]
 IGNORE_USER_SCREEN_NAMES = os.getenv("IGNORE_USER_SCREEN_NAMES", default=None)
 IGNORE_USER_SCREEN_NAMES = (
     [rf"{x.strip()}" for x in IGNORE_USER_SCREEN_NAMES.split(",")]
@@ -240,6 +248,20 @@ class MyStreamer(TwythonStreamer):
     def on_success(self, status):
         # Reset sleep seconds exponent
         self.sleep_exponent = 0
+
+        # If this tweet was truncated, get the full text
+        if "truncated" in status and status["truncated"]:
+            status_full = twitter.get_user_timeline(
+                user_id=status["user"]["id"],
+                tweet_mode="extended",
+                max_id=status["id"],
+                count=1,
+            )
+            if status_full and (status_full[0]["id"] == status["id"]):
+                logger.info(f"Retrieved full text for truncated tweet {status['id']}")
+                status = status_full[0]
+            else:
+                logger.info(f"Didn't get full text for truncated tweet {status['id']}")
 
         use_status = check_tweet(
             status=status,
