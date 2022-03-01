@@ -258,10 +258,10 @@ class MyStreamer(TwythonStreamer):
                 count=1,
             )
             if status_full and (status_full[0]["id"] == status["id"]):
-                logger.info(f"Retrieved full text for truncated tweet {status['id']}")
+                logger.debug(f"Retrieved full text for truncated tweet {status['id']}")
                 status = status_full[0]
             else:
-                logger.info(f"Didn't get full text for truncated tweet {status['id']}")
+                logger.debug(f"Didn't get full text for truncated tweet {status['id']}")
 
         use_status = check_tweet(
             status=status,
