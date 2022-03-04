@@ -409,22 +409,24 @@ class MyStreamer(TwythonStreamer):
                 logger.info(f"Could not find timezone {TIMEZONE}, defaulting to {tz}")
             current_time = datetime.now(tz)
 
-            if not self.posted_daily_events and current_time.hour == DAILY_EVENT_HOUR:
-                self.find_and_tweet_events(
-                    activity_curr_day_w,
-                    min_samples=DAILY_EVENT_MIN_TWEETS,
-                    km_start=KM_START,
-                    km_stop=KM_STOP,
-                    km_step=KM_STEP,
-                    min_n_clusters=DAILY_MIN_N_CLUSTERS,
-                    token_count_min=TOKEN_COUNT_MIN,
-                    reduce_token_count_min=False,
-                    event_type="daily",
-                    event_str="Something happened today",
-                    update_event_comparison_ts=False,
-                )
-                self.posted_daily_events = True
+            if current_time.hour == DAILY_EVENT_HOUR:
+                if not self.posted_daily_events:
+                    self.find_and_tweet_events(
+                        activity_curr_day_w,
+                        min_samples=DAILY_EVENT_MIN_TWEETS,
+                        km_start=KM_START,
+                        km_stop=KM_STOP,
+                        km_step=KM_STEP,
+                        min_n_clusters=DAILY_MIN_N_CLUSTERS,
+                        token_count_min=TOKEN_COUNT_MIN,
+                        reduce_token_count_min=False,
+                        event_type="daily",
+                        event_str="Something happened today",
+                        update_event_comparison_ts=False,
+                    )
+                    self.posted_daily_events = True
             else:
+                # reset
                 self.posted_daily_events = False
 
         # Purge old data every so often
