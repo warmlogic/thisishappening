@@ -28,3 +28,7 @@ lint:
 	make format
 	make sort
 	make stylecheck
+
+.PHONY: test
+test:
+	pytest ./tests/
