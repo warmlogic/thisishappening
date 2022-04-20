@@ -105,7 +105,7 @@ EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
 DAILY_MIN_N_CLUSTERS = int(os.getenv("DAILY_MIN_N_CLUSTERS", default="2"))
-DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="23"))
+DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="22"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
 KM_STOP = float(os.getenv("KM_STOP", default="0.25"))
 KM_STEP = int(os.getenv("KM_STEP", default="5"))
@@ -190,8 +190,8 @@ REMOVE_USERNAME_AT = (
 
 GRID_RESOLUTION_KM = float(os.getenv("GRID_RESOLUTION", default="0.25"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
-ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0"))
-ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="300.0"))
+ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="1.0"))
+ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="50.0"))
 
 WEIGHTED = os.getenv("WEIGHTED", default="False").casefold() == "true".casefold()
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
@@ -401,19 +401,26 @@ class MyStreamer(TwythonStreamer):
                     + f" hours ({self.event_comparison_ts})"
                 )
 
-        # Only post once per day, at 11pm local time
+        # Find events using today's tweets
         if POST_DAILY_EVENTS:
             try:
                 tz = pytz.timezone(TIMEZONE)
             except pytz.exceptions.UnknownTimeZoneError:
-                tz = "UTC"
-                logger.info(f"Could not find timezone {TIMEZONE}, defaulting to {tz}")
+                logger.info(f"Could not find timezone {TIMEZONE}, using UTC")
+                tz = pytz.UTC
             current_time = datetime.now(tz)
 
             if current_time.hour == DAILY_EVENT_HOUR:
                 if not self.posted_daily_events:
+                    # Get tweets that occurred today, after midnight local time
+                    activity_today_w = [
+                        a
+                        for a in activity_curr_day_w
+                        if a["created_at"].replace(tzinfo=pytz.UTC).astimezone(tz).day
+                        == current_time.day
+                    ]
                     self.find_and_tweet_events(
-                        activity_curr_day_w,
+                        activity_today_w,
                         min_samples=DAILY_EVENT_MIN_TWEETS,
                         km_start=KM_START,
                         km_stop=KM_STOP,
@@ -507,8 +514,14 @@ class MyStreamer(TwythonStreamer):
                     RecentTweets.update_tweet_deleted(session, t.status_id_str)
 
     def determine_if_event_occurred(
-        self, activity_prev, activity_curr, activity_threshold, time_str
+        self,
+        activity_prev,
+        activity_curr,
+        activity_threshold: float = None,
+        time_str: str = None,
     ):
+        activity_threshold = activity_threshold or 1.0
+        time_str = time_str or "Time window"
         event = False
         activity_curr_w = []
         if (len(activity_prev) > 1) and (len(activity_curr) > 1):
