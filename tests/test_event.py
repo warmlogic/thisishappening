@@ -14,9 +14,15 @@ REMOVE_USERNAME_AT = True
 TWEET_LAT_LON = False
 SHOW_TWEETS_ON_EVENT = False
 
+CLUSTER_IDX = 1
+CLUSTER_1_TOKENS = (
+    "bostonmarathon boston marathon running amazing meet great coverage"
+    + " congratulations 26.2 today day nice brutal #marathon #running #bostonmarathon"
+)
+
 
 def test_get_event_info():
-    event_tweets = clusters[1]["event_tweets"]
+    event_tweets = clusters[CLUSTER_IDX]["event_tweets"]
 
     event_info = get_event_info(
         twitter,
@@ -33,9 +39,7 @@ def test_get_event_info():
         show_tweets_on_event=SHOW_TWEETS_ON_EVENT,
     )
 
-    assert (
-        event_info.tokens_str
-        == "bostonmarathon boston marathon running amazing meet great coverage"
-        + " congratulations 26.2 today day nice brutal"
-        + " #marathon #running #bostonmarathon"
+    assert event_info.tokens_str == CLUSTER_1_TOKENS, (
+        "Tokens are not as expected."
+        + f" Expected: {CLUSTER_1_TOKENS}, produced: {event_info.tokens_str}"
     )
