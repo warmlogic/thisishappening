@@ -1,13 +1,12 @@
 import logging
 
 import numpy as np
+from geopy.distance import EARTH_RADIUS as KMS_PER_RADIAN
 from sklearn.cluster import DBSCAN
 
 from .tweet_utils import get_coords
 
 logger = logging.getLogger("happeninglogger")
-
-KMS_PER_RADIAN = 6371.0088
 
 
 def cluster_activity(

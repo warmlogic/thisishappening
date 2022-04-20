@@ -11,6 +11,7 @@ authors = ["Matt Mollison <matt.mollison@gmail.com>"]
 [tool.poetry.dependencies]
 emoji = "~1.7.0"
 ftfy = "~6.1.1"
+geopy = "~2.2.0"
 numpy = "~1.22.3"
 pandas = "~1.4.2"
 psycopg2-binary = "~2.9.3"
