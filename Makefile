@@ -9,7 +9,7 @@ list:
 
 .PHONY: format
 format:
-	black .
+	black --experimental-string-processing .
 
 .PHONY: sort
 sort:
@@ -28,3 +28,7 @@ lint:
 	make format
 	make sort
 	make stylecheck
+
+.PHONY: test
+test:
+	pytest ./tests/

@@ -1,4 +1,3 @@
-import functools
 import logging
 import operator
 import re
@@ -298,10 +297,12 @@ def date_string_to_datetime(
 
 def split_text(text: str) -> List[str]:
     # Put whitespace between all words and emojis
-    # https://stackoverflow.com/a/49930688/2592858
-    text_split_emoji = emoji.get_emoji_regexp().split(text)
-    text_split_whitespace = [substr.split() for substr in text_split_emoji]
-    tokens = functools.reduce(operator.concat, text_split_whitespace)
+    # originally used https://stackoverflow.com/a/49930688/2592858
+    emoji_list = emoji.distinct_emoji_list(text)
+    _text = text
+    for em in emoji_list:
+        _text = _text.replace(em, f" {em}")
+    tokens = _text.split()
     return tokens
 
 
@@ -327,14 +328,14 @@ def clean_token(token: str) -> str:
         return token
 
     # Replace some punctuation with space;
-    # everything in string.punctuation except: # ' . @
-    punct_to_remove = '!"$%&()*+,-/:;<=>?[\\]^_`{|}~'
+    # everything in string.punctuation except: # ' . @ _ :
+    punct_to_remove = '!"$%&()*+,-/;<=>?[\\]^`{|}~'
     punct_to_remove = f"[{re.escape(punct_to_remove)}]"
     token = re.sub(punct_to_remove, " ", token).strip()
 
-    # Remove all periods
-    # TODO: why not replace with space?
-    token = re.sub(re.escape("."), "", token)
+    # # Remove all periods
+    # # TODO: why not replace with space?
+    # token = re.sub(re.escape("."), "", token)
 
     # Remove possessive "apostrophe s" from usernames and hashtags so they are tweetable
     if is_username_or_hashtag(token):
@@ -384,9 +385,7 @@ def clean_text(text: str) -> str:
         [
             "".join(
                 [
-                    unidecode(letter)
-                    if (str(letter.encode("unicode-escape"))[2] != "\\")
-                    else letter
+                    unidecode(letter) if not emoji.is_emoji(letter) else letter
                     for letter in word
                 ]
             )
@@ -483,8 +482,8 @@ def get_tokens_to_tweet(
     # Lowercase and split each tweet into a list
     tweets = [tweet.lower().split() for tweet in tweets]
 
-    # Keep alphanumeric tokens
-    tweets = [[token for token in tweet if token.isalnum()] for tweet in tweets]
+    # # Keep alphanumeric tokens
+    # tweets = [[token for token in tweet if token.isalnum()] for tweet in tweets]
 
     # Optionally remove @ from username so user won't be tagged when event is posted
     if remove_username_at:
