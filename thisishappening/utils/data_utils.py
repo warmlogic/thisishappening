@@ -194,8 +194,8 @@ def get_kde(
 
 def compare_activity_kde(
     grid_coords,
-    activity_prev,
     activity_curr,
+    activity_prev,
     bw_method: float,
     weighted: bool,
     weight_factor_user: float,
@@ -203,16 +203,6 @@ def compare_activity_kde(
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
 ):
-    z_prev, _, activity_prev_weighted = get_kde(
-        grid_coords,
-        activity_prev,
-        bw_method=bw_method,
-        weighted=weighted,
-        weight_factor_user=weight_factor_user,
-        reduce_weight_lon_lat=reduce_weight_lon_lat,
-        weight_factor_lon_lat=weight_factor_lon_lat,
-        weight_factor_no_coords=weight_factor_no_coords,
-    )
     z_curr, _, activity_curr_weighted = get_kde(
         grid_coords,
         activity_curr,
@@ -223,6 +213,16 @@ def compare_activity_kde(
         weight_factor_lon_lat=weight_factor_lon_lat,
         weight_factor_no_coords=weight_factor_no_coords,
     )
+    z_prev, _, activity_prev_weighted = get_kde(
+        grid_coords,
+        activity_prev,
+        bw_method=bw_method,
+        weighted=weighted,
+        weight_factor_user=weight_factor_user,
+        reduce_weight_lon_lat=reduce_weight_lon_lat,
+        weight_factor_lon_lat=weight_factor_lon_lat,
+        weight_factor_no_coords=weight_factor_no_coords,
+    )
     z_diff = z_curr - z_prev
 
-    return z_diff, activity_prev_weighted, activity_curr_weighted
+    return z_diff, activity_curr_weighted, activity_prev_weighted

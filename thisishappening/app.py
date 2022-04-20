@@ -366,11 +366,11 @@ class MyStreamer(TwythonStreamer):
 
         # Decide whether an event occurred
         event_day, activity_curr_day_w = self.determine_if_event_occurred(
-            activity_prev_day, activity_curr_day, ACTIVITY_THRESHOLD_DAY, "Day"
+            activity_curr_day, activity_prev_day, ACTIVITY_THRESHOLD_DAY, "Day"
         )
 
         event_hour, activity_curr_hour_w = self.determine_if_event_occurred(
-            activity_prev_hour, activity_curr_hour, ACTIVITY_THRESHOLD_HOUR, "Hour"
+            activity_curr_hour, activity_prev_hour, ACTIVITY_THRESHOLD_HOUR, "Hour"
         )
 
         if event_day and event_hour:
@@ -515,8 +515,8 @@ class MyStreamer(TwythonStreamer):
 
     def determine_if_event_occurred(
         self,
-        activity_prev,
         activity_curr,
+        activity_prev,
         activity_threshold: float = None,
         time_str: str = None,
     ):
@@ -524,11 +524,11 @@ class MyStreamer(TwythonStreamer):
         time_str = time_str or "Time window"
         event = False
         activity_curr_w = []
-        if (len(activity_prev) > 1) and (len(activity_curr) > 1):
-            z_diff, _, activity_curr_w = compare_activity_kde(
+        if (len(activity_curr) > 1) and (len(activity_prev) > 1):
+            z_diff, activity_curr_w, _ = compare_activity_kde(
                 self.grid_coords,
-                activity_prev,
                 activity_curr,
+                activity_prev,
                 bw_method=BW_METHOD,
                 weighted=WEIGHTED,
                 weight_factor_user=WEIGHT_FACTOR_USER,
@@ -560,7 +560,7 @@ class MyStreamer(TwythonStreamer):
 
     def find_and_tweet_events(
         self,
-        activity_curr_w,
+        activity_w,
         min_samples: int,
         km_start: float,
         km_stop: float,
@@ -573,13 +573,13 @@ class MyStreamer(TwythonStreamer):
         update_event_comparison_ts: bool = True,
     ):
         clusters = cluster_activity(
-            activity=activity_curr_w,
+            activity=activity_w,
             min_samples=min_samples,
             km_start=km_start,
             km_stop=km_stop,
             km_step=km_step,
             min_n_clusters=min_n_clusters,
-            sample_weight=[x["weight"] for x in activity_curr_w],
+            sample_weight=[x["weight"] for x in activity_w],
         )
 
         for cluster in clusters.values():
