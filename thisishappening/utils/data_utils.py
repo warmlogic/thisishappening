@@ -156,7 +156,6 @@ def get_kde(
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
 ):
-    # gc_shape = int(np.sqrt(grid_coords.shape[0]))
     gc_shape_x = grid_coords.x.shape[0]
     gc_shape_y = grid_coords.y.shape[0]
 
