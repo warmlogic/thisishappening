@@ -16,7 +16,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 23, 33, 22),
                 "user_screen_name": "user12301",
-                "tweet_body": "Time in a ballpark does not count against your natural lifespan. #RedSox https://url.co/123",
+                "tweet_body": (
+                    "Time in a ballpark does not count against your natural lifespan."
+                    " #RedSox https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -36,7 +39,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 21, 13, 19),
                 "user_screen_name": "user12302_2_tweets",
-                "tweet_body": "今日はボストンでレッドソックス対ブルージェイズ戦。菊池雄星投手が今季2度目の先発。And a legendary @DavidLaurilaQA is interviewing @GosukeKatoh. #bluejays https://url.co/123",
+                "tweet_body": (
+                    "今日はボストンでレッドソックス対ブルージェイズ戦。菊池雄星投手が今季2度目の先発。And a legendary"
+                    " @DavidLaurilaQA is interviewing @GosukeKatoh. #bluejays"
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -56,7 +63,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 23, 12, 11),
                 "user_screen_name": "user12302_2_tweets",
-                "tweet_body": "ブルージェイズ対レッドソックス戦始まります。菊池雄星投手、新天地での初勝利なるか。加藤豪将選手、沢村拓一投手の出番はあるかどうか。 https://url.co/123",
+                "tweet_body": (
+                    "ブルージェイズ対レッドソックス戦始まります。菊池雄星投手、新天地での初勝利なるか。加藤豪将選手、沢村拓一投手の出番はあるかどうか。"
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -96,7 +106,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 19, 57, 45),
                 "user_screen_name": "user12303_2_tweets",
-                "tweet_body": "Toronto\nBoston\nNew York\nTampa Bay\nBaltimore\n\nBig if true. https://url.co/123",
+                "tweet_body": (
+                    "Toronto\nBoston\nNew York\nTampa Bay\nBaltimore\n\nBig if true."
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -116,7 +129,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 22, 40, 23),
                 "user_screen_name": "user12304",
-                "tweet_body": "At Fenway Park for my first MLB game since before the pandemic getting ready to watch the @RedSox take on the Blue Jays #RedSox #MLB https://url.co/123",
+                "tweet_body": (
+                    "At Fenway Park for my first MLB game since before the pandemic"
+                    " getting ready to watch the @RedSox take on the Blue Jays #RedSox"
+                    " #MLB https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -216,7 +233,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 20, 38, 35),
                 "user_screen_name": "user12308_2_tweets",
-                "tweet_body": "Skies are looking a bit threatening, but we are very much ready to see the Blue Jays irl for the first time since 2019 🤩 https://url.co/123",
+                "tweet_body": (
+                    "Skies are looking a bit threatening, but we are very much ready to"
+                    " see the Blue Jays irl for the first time since 2019 🤩"
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -256,7 +277,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 23, 37, 30),
                 "user_screen_name": "user12310",
-                "tweet_body": "My first conference talk I'm person in two years, coupled with my first @RedSox and bumping into @Leonora_Abd! Been a great conference so far! https://url.co/123",
+                "tweet_body": (
+                    "My first conference talk I'm person in two years, coupled with my"
+                    " first @RedSox and bumping into @Leonora_Abd! Been a great"
+                    " conference so far! https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -296,7 +321,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 23, 34, 23),
                 "user_screen_name": "user12312",
-                "tweet_body": "Obviously in the house for former Seibu Lions starter Yusei Kikuchi vs the Red Sox tonight 🤩 https://url.co/123",
+                "tweet_body": (
+                    "Obviously in the house for former Seibu Lions starter Yusei"
+                    " Kikuchi vs the Red Sox tonight 🤩 https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -316,7 +344,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 20, 47, 4),
                 "user_screen_name": "user12313",
-                "tweet_body": "Got laughed at when I compared baseball to rounders ⚾️⚾️⚾️ #RedSox #fenwaypark #Boston https://url.co/123",
+                "tweet_body": (
+                    "Got laughed at when I compared baseball to rounders ⚾️⚾️⚾️ #RedSox"
+                    " #fenwaypark #Boston https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -336,7 +367,9 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 20, 34, 56),
                 "user_screen_name": "user12314_2_tweets",
-                "tweet_body": "マラソンから #fenwaypark に流れてきました🏃\u200d♂️⚾️ https://url.co/123",
+                "tweet_body": (
+                    "マラソンから #fenwaypark に流れてきました🏃\u200d♂️⚾️ https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": True,
                 "longitude": -71.09816,
@@ -440,7 +473,12 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 0, 0, 54),
                 "user_screen_name": "user123102",
-                "tweet_body": "Two years in a row! 🎉\n\nMarathon Coverage? \nHere for it.\n\nRunning?\nNot so much.😉\n\nCongratulations to all of the incredible people that reached 26.2 today. You’re all amazing!\n\n#Boston25 https://url.co/123",
+                "tweet_body": (
+                    "Two years in a row! 🎉\n\nMarathon Coverage? \nHere for"
+                    " it.\n\nRunning?\nNot so much.😉\n\nCongratulations to all of the"
+                    " incredible people that reached 26.2 today. You’re all"
+                    " amazing!\n\n#Boston25 https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -460,7 +498,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 12, 40, 55),
                 "user_screen_name": "user123102_2_tweets",
-                "tweet_body": "Two more of my favorites from yesterday’s @bostonmarathon coverage. 💛💙\n\nWhat an inspiring &amp; uplifting day! https://url.co/123",
+                "tweet_body": (
+                    "Two more of my favorites from yesterday’s @bostonmarathon"
+                    " coverage. 💛💙\n\nWhat an inspiring &amp; uplifting day!"
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -480,7 +522,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 14, 9, 4),
                 "user_screen_name": "user123103",
-                "tweet_body": "@bostonmarathon it was nice to meet you! You were brutal but amazing! #marathon #running https://url.co/123",
+                "tweet_body": (
+                    "@bostonmarathon it was nice to meet you! You were brutal but"
+                    " amazing! #marathon #running https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -500,7 +545,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 15, 57, 22),
                 "user_screen_name": "user123103",
-                "tweet_body": "Dear Boston Marathon, it was nice to meet you! Your hills were brutal but the crowd was amazing! #BostonMarathon #marathon #running @bostonmarathon https://url.co/123",
+                "tweet_body": (
+                    "Dear Boston Marathon, it was nice to meet you! Your hills were"
+                    " brutal but the crowd was amazing! #BostonMarathon #marathon"
+                    " #running @bostonmarathon https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -520,7 +569,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 0, 10, 40),
                 "user_screen_name": "user123105",
-                "tweet_body": "A great day with my forever running buddy and our little champ! #BostonMarathon https://url.co/123",
+                "tweet_body": (
+                    "A great day with my forever running buddy and our little champ!"
+                    " #BostonMarathon https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -560,7 +612,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 11, 42, 20),
                 "user_screen_name": "user123107",
-                "tweet_body": "Congratulations @coryresnick for running @bostonmarathon great work! @PlasticOralSurg @harvardmed https://url.co/123",
+                "tweet_body": (
+                    "Congratulations @coryresnick for running @bostonmarathon great"
+                    " work! @PlasticOralSurg @harvardmed https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -580,7 +635,11 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 2, 1, 10),
                 "user_screen_name": "user123108",
-                "tweet_body": "The most inspirational of days spent cheering on all of the runners at the Boston Marathon and one in particular, Alex. #bostonmarathon2022 #inspirational https://url.co/123",
+                "tweet_body": (
+                    "The most inspirational of days spent cheering on all of the"
+                    " runners at the Boston Marathon and one in particular, Alex."
+                    " #bostonmarathon2022 #inspirational https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -600,7 +659,13 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 0, 9, 33),
                 "user_screen_name": "user123109",
-                "tweet_body": "26.2 miles of smiles today at the @bostonmarathon! The weather, the course &amp; the crowds..my ears are still ringing. \nI hoped for a 4:30 race but managed a 3:58, something I never dreamt was possible. I’ll be smiling about that for awhile. Thx for the cheers &amp; THANK YOU BOSTON!🦄 https://url.co/123",
+                "tweet_body": (
+                    "26.2 miles of smiles today at the @bostonmarathon! The weather,"
+                    " the course &amp; the crowds..my ears are still ringing. \nI hoped"
+                    " for a 4:30 race but managed a 3:58, something I never dreamt was"
+                    " possible. I’ll be smiling about that for awhile. Thx for the"
+                    " cheers &amp; THANK YOU BOSTON!🦄 https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
@@ -620,7 +685,9 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 18, 23, 53, 29),
                 "user_screen_name": "user123110",
-                "tweet_body": "Great to meet you in person @davidwade !!! https://url.co/123",
+                "tweet_body": (
+                    "Great to meet you in person @davidwade !!! https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.07869,
