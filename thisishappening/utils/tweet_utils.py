@@ -327,14 +327,14 @@ def clean_token(token: str) -> str:
         return token
 
     # Replace some punctuation with space;
-    # everything in string.punctuation except: # ' . @
-    punct_to_remove = '!"$%&()*+,-/:;<=>?[\\]^_`{|}~'
+    # everything in string.punctuation except: # ' . @ _ :
+    punct_to_remove = '!"$%&()*+,-/;<=>?[\\]^`{|}~'
     punct_to_remove = f"[{re.escape(punct_to_remove)}]"
     token = re.sub(punct_to_remove, " ", token).strip()
 
-    # Remove all periods
-    # TODO: why not replace with space?
-    token = re.sub(re.escape("."), "", token)
+    # # Remove all periods
+    # # TODO: why not replace with space?
+    # token = re.sub(re.escape("."), "", token)
 
     # Remove possessive "apostrophe s" from usernames and hashtags so they are tweetable
     if is_username_or_hashtag(token):
@@ -384,9 +384,7 @@ def clean_text(text: str) -> str:
         [
             "".join(
                 [
-                    unidecode(letter)
-                    if (str(letter.encode("unicode-escape"))[2] != "\\")
-                    else letter
+                    unidecode(letter) if not emoji.is_emoji(letter) else letter
                     for letter in word
                 ]
             )
@@ -483,8 +481,8 @@ def get_tokens_to_tweet(
     # Lowercase and split each tweet into a list
     tweets = [tweet.lower().split() for tweet in tweets]
 
-    # Keep alphanumeric tokens
-    tweets = [[token for token in tweet if token.isalnum()] for tweet in tweets]
+    # # Keep alphanumeric tokens
+    # tweets = [[token for token in tweet if token.isalnum()] for tweet in tweets]
 
     # Optionally remove @ from username so user won't be tagged when event is posted
     if remove_username_at:
