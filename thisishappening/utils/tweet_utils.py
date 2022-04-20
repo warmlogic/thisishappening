@@ -1,4 +1,3 @@
-import functools
 import logging
 import operator
 import re
