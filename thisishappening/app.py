@@ -105,7 +105,7 @@ EVENT_MIN_TWEETS = int(os.getenv("EVENT_MIN_TWEETS", default="5"))
 MIN_N_CLUSTERS = int(os.getenv("MIN_N_CLUSTERS", default="1"))
 DAILY_EVENT_MIN_TWEETS = int(os.getenv("DAILY_EVENT_MIN_TWEETS", default="8"))
 DAILY_MIN_N_CLUSTERS = int(os.getenv("DAILY_MIN_N_CLUSTERS", default="2"))
-DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="23"))
+DAILY_EVENT_HOUR = int(os.getenv("DAILY_EVENT_HOUR", default="22"))
 KM_START = float(os.getenv("KM_START", default="0.05"))
 KM_STOP = float(os.getenv("KM_STOP", default="0.25"))
 KM_STEP = int(os.getenv("KM_STEP", default="5"))
@@ -190,8 +190,8 @@ REMOVE_USERNAME_AT = (
 
 GRID_RESOLUTION_KM = float(os.getenv("GRID_RESOLUTION", default="0.25"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
-ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0"))
-ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="300.0"))
+ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="1.0"))
+ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="50.0"))
 
 WEIGHTED = os.getenv("WEIGHTED", default="False").casefold() == "true".casefold()
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
@@ -366,11 +366,11 @@ class MyStreamer(TwythonStreamer):
 
         # Decide whether an event occurred
         event_day, activity_curr_day_w = self.determine_if_event_occurred(
-            activity_prev_day, activity_curr_day, ACTIVITY_THRESHOLD_DAY, "Day"
+            activity_curr_day, activity_prev_day, ACTIVITY_THRESHOLD_DAY, "Day"
         )
 
         event_hour, activity_curr_hour_w = self.determine_if_event_occurred(
-            activity_prev_hour, activity_curr_hour, ACTIVITY_THRESHOLD_HOUR, "Hour"
+            activity_curr_hour, activity_prev_hour, ACTIVITY_THRESHOLD_HOUR, "Hour"
         )
 
         if event_day and event_hour:
@@ -401,19 +401,26 @@ class MyStreamer(TwythonStreamer):
                     + f" hours ({self.event_comparison_ts})"
                 )
 
-        # Only post once per day, at 11pm local time
+        # Find events using today's tweets
         if POST_DAILY_EVENTS:
             try:
                 tz = pytz.timezone(TIMEZONE)
             except pytz.exceptions.UnknownTimeZoneError:
-                tz = "UTC"
-                logger.info(f"Could not find timezone {TIMEZONE}, defaulting to {tz}")
+                logger.info(f"Could not find timezone {TIMEZONE}, using UTC")
+                tz = pytz.UTC
             current_time = datetime.now(tz)
 
             if current_time.hour == DAILY_EVENT_HOUR:
                 if not self.posted_daily_events:
+                    # Get tweets that occurred today, after midnight local time
+                    activity_today_w = [
+                        a
+                        for a in activity_curr_day_w
+                        if a["created_at"].replace(tzinfo=pytz.UTC).astimezone(tz).day
+                        == current_time.day
+                    ]
                     self.find_and_tweet_events(
-                        activity_curr_day_w,
+                        activity_today_w,
                         min_samples=DAILY_EVENT_MIN_TWEETS,
                         km_start=KM_START,
                         km_stop=KM_STOP,
@@ -507,15 +514,21 @@ class MyStreamer(TwythonStreamer):
                     RecentTweets.update_tweet_deleted(session, t.status_id_str)
 
     def determine_if_event_occurred(
-        self, activity_prev, activity_curr, activity_threshold, time_str
+        self,
+        activity_curr,
+        activity_prev,
+        activity_threshold: float = None,
+        time_str: str = None,
     ):
+        activity_threshold = activity_threshold or 1.0
+        time_str = time_str or "Time window"
         event = False
         activity_curr_w = []
-        if (len(activity_prev) > 1) and (len(activity_curr) > 1):
-            z_diff, _, activity_curr_w = compare_activity_kde(
+        if (len(activity_curr) > 1) and (len(activity_prev) > 1):
+            z_diff, activity_curr_w, _ = compare_activity_kde(
                 self.grid_coords,
-                activity_prev,
                 activity_curr,
+                activity_prev,
                 bw_method=BW_METHOD,
                 weighted=WEIGHTED,
                 weight_factor_user=WEIGHT_FACTOR_USER,
@@ -547,7 +560,7 @@ class MyStreamer(TwythonStreamer):
 
     def find_and_tweet_events(
         self,
-        activity_curr_w,
+        activity_w,
         min_samples: int,
         km_start: float,
         km_stop: float,
@@ -560,13 +573,13 @@ class MyStreamer(TwythonStreamer):
         update_event_comparison_ts: bool = True,
     ):
         clusters = cluster_activity(
-            activity=activity_curr_w,
+            activity=activity_w,
             min_samples=min_samples,
             km_start=km_start,
             km_stop=km_stop,
             km_step=km_step,
             min_n_clusters=min_n_clusters,
-            sample_weight=[x["weight"] for x in activity_curr_w],
+            sample_weight=[x["weight"] for x in activity_w],
         )
 
         for cluster in clusters.values():
