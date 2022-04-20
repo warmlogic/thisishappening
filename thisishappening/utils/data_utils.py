@@ -1,5 +1,6 @@
 import itertools
 import logging
+from collections import namedtuple
 from operator import itemgetter
 from typing import Dict, List, Tuple
 
@@ -8,6 +9,15 @@ from geopy.distance import geodesic
 from scipy import stats
 
 logger = logging.getLogger("happeninglogger")
+
+GridCoords = namedtuple(
+    "GridCoords",
+    [
+        "grid",
+        "x",
+        "y",
+    ],
+)
 
 
 def n_wise(iterable: List, n: int) -> zip(Tuple):
@@ -54,17 +64,23 @@ def compute_bounding_box_dims_km(bounding_box: List[float]) -> float:
 def get_grid_coords(bounding_box: List[float], grid_resolution_km: float):
     height, width = compute_bounding_box_dims_km(bounding_box)
     n_parcels = (height * width) / grid_resolution_km
-    n_parcels_x = int(n_parcels / width)
-    n_parcels_y = int(n_parcels / height)
+    n_parcels_x = int(n_parcels / height)
+    n_parcels_y = int(n_parcels / width)
 
     xmin, xmax, ymin, ymax = get_coords_min_max(bounding_box)
-    x_flat = np.linspace(xmin, xmax, n_parcels_x)
+    x = np.linspace(xmin, xmax, n_parcels_x)
     # y is reversed
-    y_flat = np.linspace(ymax, ymin, n_parcels_y)
-    x, y = np.meshgrid(x_flat, y_flat)
-    grid_coords = np.append(x.reshape(-1, 1), y.reshape(-1, 1), axis=1)
+    y = np.linspace(ymax, ymin, n_parcels_y)
+    xx, yy = np.meshgrid(x, y)
+    grid = np.append(xx.reshape(-1, 1), yy.reshape(-1, 1), axis=1)
 
-    return grid_coords, x_flat, y_flat
+    grid_coords = GridCoords(
+        grid=grid,
+        x=x,
+        y=y,
+    )
+
+    return grid_coords
 
 
 def compute_weight(weight: float, x: int, factor: float = None) -> float:
@@ -140,7 +156,9 @@ def get_kde(
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
 ):
-    gc_shape = int(np.sqrt(grid_coords.shape[0]))
+    # gc_shape = int(np.sqrt(grid_coords.shape[0]))
+    gc_shape_x = grid_coords.x.shape[0]
+    gc_shape_y = grid_coords.y.shape[0]
 
     activity_weighted = set_activity_weight(
         activity,
@@ -164,13 +182,13 @@ def get_kde(
 
     if kernel is not None:
         try:
-            z = kernel(grid_coords.T)
-            z = z.reshape(gc_shape, gc_shape)
+            z = kernel(grid_coords.grid.T)
+            z = z.reshape(gc_shape_y, gc_shape_x)
         except np.linalg.LinAlgError as e:
             logger.info(f"Could not use kernel, {e}")
-            z = np.zeros([gc_shape, gc_shape])
+            z = np.zeros([gc_shape_y, gc_shape_x])
     else:
-        z = np.zeros([gc_shape, gc_shape])
+        z = np.zeros([gc_shape_y, gc_shape_x])
 
     return z, kernel, activity_weighted
 
