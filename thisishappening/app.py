@@ -93,6 +93,7 @@ MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
 TIMEZONE = os.getenv("TIMEZONE", default="UTC")  # http://pytz.sourceforge.net/#helpers
+# Longitude and latitude pairs for SW and NE corner (in that order)
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = (
     [float(coord) for coord in BOUNDING_BOX.split(",")] if BOUNDING_BOX else []
@@ -187,7 +188,7 @@ REMOVE_USERNAME_AT = (
     os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
 )
 
-GRID_RESOLUTION = int(os.getenv("GRID_RESOLUTION", default="128"))
+GRID_RESOLUTION_KM = int(os.getenv("GRID_RESOLUTION", default="0.25"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
 ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="30.0"))
 ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="300.0"))
@@ -649,7 +650,7 @@ else:
 if __name__ == "__main__":
     logger.info("Initializing tweet streamer...")
     grid_coords, _, _ = get_grid_coords(
-        bounding_box=BOUNDING_BOX, grid_resolution=GRID_RESOLUTION
+        bounding_box=BOUNDING_BOX, grid_resolution_km=GRID_RESOLUTION_KM
     )
     stream = MyStreamer(
         grid_coords=grid_coords,
