@@ -5,7 +5,7 @@ from .data_event import clusters
 twitter = None
 TWEET_MAX_LENGTH = 280
 TWEET_URL_LENGTH = 23
-BASE_EVENT_URL = "https://USERNAME.github.io/thisishappening/?"
+BASE_EVENT_URL = "https://mypage/thisishappening/?"
 EVENT_TYPE = "moment"
 EVENT_STR = None
 TOKEN_COUNT_MIN = 2
