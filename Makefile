@@ -9,7 +9,7 @@ list:
 
 .PHONY: format
 format:
-	black .
+	black --experimental-string-processing .
 
 .PHONY: sort
 sort:
