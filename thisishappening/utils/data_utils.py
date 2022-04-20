@@ -4,6 +4,7 @@ from operator import itemgetter
 from typing import Dict, List, Tuple
 
 import numpy as np
+from geopy.distance import geodesic
 from scipy import stats
 
 logger = logging.getLogger("happeninglogger")
@@ -43,11 +44,23 @@ def get_coords_min_max(bounding_box: List[float]):
     return xmin, xmax, ymin, ymax
 
 
-def get_grid_coords(bounding_box: List[float], grid_resolution: int):
+def compute_bounding_box_dims_km(bounding_box: List[float]) -> float:
     xmin, xmax, ymin, ymax = get_coords_min_max(bounding_box)
-    x_flat = np.linspace(xmin, xmax, grid_resolution)
+    height = geodesic((ymin, xmin), (ymax, xmin)).km
+    width = geodesic((ymin, xmin), (ymin, xmax)).km
+    return height, width
+
+
+def get_grid_coords(bounding_box: List[float], grid_resolution_km: float):
+    height, width = compute_bounding_box_dims_km(bounding_box)
+    n_parcels = (height * width) / grid_resolution_km
+    n_parcels_x = int(n_parcels / width)
+    n_parcels_y = int(n_parcels / height)
+
+    xmin, xmax, ymin, ymax = get_coords_min_max(bounding_box)
+    x_flat = np.linspace(xmin, xmax, n_parcels_x)
     # y is reversed
-    y_flat = np.linspace(ymax, ymin, grid_resolution)
+    y_flat = np.linspace(ymax, ymin, n_parcels_y)
     x, y = np.meshgrid(x_flat, y_flat)
     grid_coords = np.append(x.reshape(-1, 1), y.reshape(-1, 1), axis=1)
 
