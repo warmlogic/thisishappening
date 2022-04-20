@@ -298,10 +298,12 @@ def date_string_to_datetime(
 
 def split_text(text: str) -> List[str]:
     # Put whitespace between all words and emojis
-    # https://stackoverflow.com/a/49930688/2592858
-    text_split_emoji = emoji.get_emoji_regexp().split(text)
-    text_split_whitespace = [substr.split() for substr in text_split_emoji]
-    tokens = functools.reduce(operator.concat, text_split_whitespace)
+    # originally used https://stackoverflow.com/a/49930688/2592858
+    emoji_list = emoji.distinct_emoji_list(text)
+    _text = text
+    for em in emoji_list:
+        _text = _text.replace(em, f" {em}")
+    tokens = _text.split()
     return tokens
 
 
