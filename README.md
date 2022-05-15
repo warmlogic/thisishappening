@@ -60,6 +60,11 @@ These instructions use the Heroku CLI
 
 ## TODO
 
+### App
+
+- Try using [tweepy](https://github.com/tweepy/tweepy) or [twint](https://github.com/twintproject/twint) instead of [twython](https://github.com/ryanmcgrath/twython)
+- Try running on fly.io instead of Heroku
+
 ### Data
 
 - Tweets
