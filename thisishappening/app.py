@@ -43,7 +43,7 @@ if ENVIRONMENT == "development":
         else:
             raise OSError(".env file not found. Did you set it up?")
 
-DEBUG_MODE = os.getenv("DEBUG_MODE", default="False").casefold() == "true".casefold()
+DEBUG_MODE = os.getenv("DEBUG_MODE", default="false").lower() == "true"
 
 if DEBUG_MODE:
     logger.setLevel(logging.DEBUG)
@@ -59,11 +59,9 @@ if DEBUG_MODE:
     ECHO = False
 else:
     logger.setLevel(logging.INFO)
-    POST_EVENT = (
-        os.getenv("POST_EVENT", default="False").casefold() == "true".casefold()
-    )
+    POST_EVENT = os.getenv("POST_EVENT", default="false").lower() == "true"
     POST_DAILY_EVENTS = (
-        os.getenv("POST_DAILY_EVENTS", default="False").casefold() == "true".casefold()
+        os.getenv("POST_DAILY_EVENTS", default="false").lower() == "true"
     )
     LOG_TWEETS = True
     LOG_EVENTS = True
@@ -111,13 +109,11 @@ KM_STOP = float(os.getenv("KM_STOP", default="0.25"))
 KM_STEP = int(os.getenv("KM_STEP", default="5"))
 TWEET_MAX_LENGTH = int(os.getenv("TWEET_MAX_LENGTH", default="280"))
 TWEET_URL_LENGTH = int(os.getenv("TWEET_URL_LENGTH", default="23"))
-TWEET_LAT_LON = (
-    os.getenv("TWEET_LAT_LON", default="False").casefold() == "true".casefold()
-)
+TWEET_LAT_LON = os.getenv("TWEET_LAT_LON", default="false").lower() == "true"
 SHOW_TWEETS_ON_EVENT = (
-    os.getenv("SHOW_TWEETS_ON_EVENT", default="True").casefold() == "true".casefold()
+    os.getenv("SHOW_TWEETS_ON_EVENT", default="true").lower() == "true"
 )
-TWEET_GEOTAG = os.getenv("TWEET_GEOTAG", default="True").casefold() == "true".casefold()
+TWEET_GEOTAG = os.getenv("TWEET_GEOTAG", default="true").lower() == "true"
 # Use docs/index.html to render words and map of tweets
 BASE_EVENT_URL = os.getenv(
     "BASE_EVENT_URL", default="https://USERNAME.github.io/thisishappening/?"
@@ -159,14 +155,13 @@ IGNORE_USER_ID_STR = list(set(IGNORE_USER_ID_STR))
 MIN_FRIENDS_COUNT = int(os.getenv("MIN_FRIENDS_COUNT", default="1"))
 MIN_FOLLOWERS_COUNT = int(os.getenv("MIN_FOLLOWERS_COUNT", default="1"))
 IGNORE_POSSIBLY_SENSITIVE = (
-    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="False").casefold()
-    == "true".casefold()
+    os.getenv("IGNORE_POSSIBLY_SENSITIVE", default="false").lower() == "true"
 )
 IGNORE_QUOTE_STATUS = (
-    os.getenv("IGNORE_QUOTE_STATUS", default="False").casefold() == "true".casefold()
+    os.getenv("IGNORE_QUOTE_STATUS", default="false").lower() == "true"
 )
 IGNORE_REPLY_STATUS = (
-    os.getenv("IGNORE_REPLY_STATUS", default="False").casefold() == "true".casefold()
+    os.getenv("IGNORE_REPLY_STATUS", default="false").lower() == "true"
 )
 
 IGNORE_LON_LAT = os.getenv("IGNORE_LON_LAT", default=None)
@@ -182,18 +177,16 @@ IGNORE_LON_LAT = list(set(IGNORE_LON_LAT))
 
 TOKEN_COUNT_MIN = int(os.getenv("TOKEN_COUNT_MIN", default="2"))
 REDUCE_TOKEN_COUNT_MIN = (
-    os.getenv("REDUCE_TOKEN_COUNT_MIN", default="True").casefold() == "true".casefold()
+    os.getenv("REDUCE_TOKEN_COUNT_MIN", default="true").lower() == "true"
 )
-REMOVE_USERNAME_AT = (
-    os.getenv("REMOVE_USERNAME_AT", default="True").casefold() == "true".casefold()
-)
+REMOVE_USERNAME_AT = os.getenv("REMOVE_USERNAME_AT", default="true").lower() == "true"
 
 GRID_RESOLUTION_KM = float(os.getenv("GRID_RESOLUTION", default="0.25"))
 BW_METHOD = float(os.getenv("BW_METHOD", default="0.3"))
 ACTIVITY_THRESHOLD_DAY = float(os.getenv("ACTIVITY_THRESHOLD_DAY", default="1.0"))
 ACTIVITY_THRESHOLD_HOUR = float(os.getenv("ACTIVITY_THRESHOLD_HOUR", default="50.0"))
 
-WEIGHTED = os.getenv("WEIGHTED", default="False").casefold() == "true".casefold()
+WEIGHTED = os.getenv("WEIGHTED", default="false").lower() == "true"
 REDUCE_WEIGHT_LON_LAT = os.getenv("REDUCE_WEIGHT_LON_LAT", default=None)
 REDUCE_WEIGHT_LON_LAT = (
     [
@@ -214,21 +207,18 @@ WEIGHT_FACTOR_NO_COORDS = (
 )
 
 QUERY_HAS_COORDS_ONLY = (
-    os.getenv("QUERY_HAS_COORDS_ONLY", default="False").casefold() == "true".casefold()
+    os.getenv("QUERY_HAS_COORDS_ONLY", default="false").lower() == "true"
 )
 QUERY_HAS_COORDS_ONLY = QUERY_HAS_COORDS_ONLY if QUERY_HAS_COORDS_ONLY else None
 
 QUERY_INCLUDE_QUOTE_STATUS = (
-    os.getenv("QUERY_INCLUDE_QUOTE_STATUS", default="True").casefold()
-    == "true".casefold()
+    os.getenv("QUERY_INCLUDE_QUOTE_STATUS", default="true").lower() == "true"
 )
 QUERY_INCLUDE_REPLY_STATUS = (
-    os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="False").casefold()
-    == "true".casefold()
+    os.getenv("QUERY_INCLUDE_REPLY_STATUS", default="false").lower() == "true"
 )
 QUERY_INCLUDE_DELETED_STATUS = (
-    os.getenv("QUERY_INCLUDE_DELETED_STATUS", default="False").casefold()
-    == "true".casefold()
+    os.getenv("QUERY_INCLUDE_DELETED_STATUS", default="false").lower() == "true"
 )
 
 
