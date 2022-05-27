@@ -33,6 +33,10 @@ SLEEP_SECONDS_BASE = 2
 DEFAULT_SLEEP_EXPONENT = 3
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", default="development").lower()
+assert ENVIRONMENT in [
+    "development",
+    "production",
+], f"Invalid ENVIRONMENT: {ENVIRONMENT}"
 
 # Read .env file for local development
 if ENVIRONMENT == "development":
@@ -46,7 +50,7 @@ if ENVIRONMENT == "development":
         else:
             raise OSError(".env file not found. Did you set it up?")
 
-DEBUG_MODE = os.getenv("DEBUG_MODE", default="false").lower() == "true"
+DEBUG_MODE = os.getenv("DEBUG_MODE", default="true").lower() == "true"
 
 if DEBUG_MODE:
     logger.setLevel(logging.DEBUG)
