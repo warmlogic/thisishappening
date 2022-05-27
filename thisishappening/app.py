@@ -29,7 +29,10 @@ from utils.tweet_utils import (
 logging.basicConfig(format="{asctime} : {levelname} : {message}", style="{")
 logger = logging.getLogger("happeninglogger")
 
-ENVIRONMENT = os.getenv("ENVIRONMENT", default="development")
+SLEEP_SECONDS_BASE = 2
+DEFAULT_SLEEP_EXPONENT = 3
+
+ENVIRONMENT = os.getenv("ENVIRONMENT", default="development").lower()
 
 # Read .env file for local development
 if ENVIRONMENT == "development":
@@ -233,12 +236,11 @@ class MyStreamer(TwythonStreamer):
         self.event_comparison_ts = event_comparison_ts
         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.posted_daily_events = False
-        self.sleep_seconds = 2
-        self.sleep_exponent = 0
+        self.sleep_exponent = DEFAULT_SLEEP_EXPONENT
 
     def on_success(self, status):
         # Reset sleep seconds exponent
-        self.sleep_exponent = 0
+        self.sleep_exponent = DEFAULT_SLEEP_EXPONENT
 
         # If this tweet was truncated, get the full text
         if "truncated" in status and status["truncated"]:
@@ -460,19 +462,19 @@ class MyStreamer(TwythonStreamer):
             content.decode().strip() if isinstance(content, bytes) else content.strip()
         )
         if "Server overloaded, try again in a few seconds".lower() in content.lower():
-            seconds = self.sleep_seconds**self.sleep_exponent
+            seconds = SLEEP_SECONDS_BASE**self.sleep_exponent
             logger.warning(f"Server overloaded. Sleeping for {seconds} seconds.")
             sleep(seconds)
             self.sleep_exponent += 1
         elif "Exceeded connection limit for user".lower() in content.lower():
-            seconds = self.sleep_seconds**self.sleep_exponent
+            seconds = SLEEP_SECONDS_BASE**self.sleep_exponent
             logger.warning(
                 f"Exceeded connection limit. Sleeping for {seconds} seconds."
             )
             sleep(seconds)
             self.sleep_exponent += 1
         else:
-            seconds = self.sleep_seconds**self.sleep_exponent
+            seconds = SLEEP_SECONDS_BASE**self.sleep_exponent
             logger.warning(
                 f"Some other error occurred. Sleeping for {seconds} seconds."
             )
@@ -694,6 +696,15 @@ if __name__ == "__main__":
         # https://github.com/ryanmcgrath/twython/issues/288
         try:
             stream.statuses.filter(locations=bounding_box_str)
+        except TwythonRateLimitError:
+            seconds = SLEEP_SECONDS_BASE**stream.sleep_exponent
+            logger.info(
+                "Rate limit exceeded when streaming tweets. Sleeping for"
+                f" {seconds} seconds."
+            )
+            sleep(seconds)
+            stream.sleep_exponent += 1
+            continue
         except Exception as e:
             logger.info(f"Exception when streaming tweets: {e}")
             continue
