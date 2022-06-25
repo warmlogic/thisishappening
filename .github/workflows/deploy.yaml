@@ -2,8 +2,6 @@ name: Build and deploy
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   build:
@@ -14,9 +12,11 @@ jobs:
       HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
       HEROKU_APP_NAME_2: ${{ secrets.HEROKU_APP_NAME_2 }}
       HEROKU_PROCESS_TYPE: worker
+
+    if: ${{ github.ref_name == 'main' || contains(github.event.head_commit.message, '#deploy') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
 

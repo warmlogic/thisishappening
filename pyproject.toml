@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry>=1.1"]
+requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
@@ -9,35 +9,35 @@ description = "Locate, summarize, and visualize geotagged social media activity"
 authors = ["Matt Mollison <matt.mollison@gmail.com>"]
 
 [tool.poetry.dependencies]
-emoji = "~1.7.0"
-ftfy = "~6.1.1"
-geopy = "~2.2.0"
-numpy = "~1.22.4"
-pandas = "~1.4.2"
-psycopg2-binary = "~2.9.3"
-python-dotenv = "~0.20.0"
-pytz = "~2022.1"
-python = ">=3.9,<3.10"
-scikit-learn = "~1.1.1"
-scipy = "~1.8.1"
-spacy = "~3.3.0"
-sqlalchemy = "~1.4.36"
-twython = "~3.9.1"
-unidecode = "~1.3.4"
+emoji = "^1.7.0"
+ftfy = "^6.1.1"
+geopy = "^2.2.0"
+numpy = "^1.23.0"
+pandas = "^1.4.3"
+psycopg2-binary = "^2.9.3"
+python-dotenv = "^0.20.0"
+pytz = "^2022.1"
+python = ">=3.10,<3.11"
+scikit-learn = "^1.1.1"
+scipy = "^1.8.1"
+spacy = "^3.3.1"
+sqlalchemy = "^1.4.39"
+twython = "^3.9.1"
+unidecode = "^1.3.4"
 
 [tool.poetry.dependencies.en_core_web_sm]
 url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.3.0/en_core_web_sm-3.3.0.tar.gz"
 
 [tool.poetry.dev-dependencies]
-black = "~22.3.0"
-flake8 = "~4.0.1"
-isort = "~5.10.1"
-mypy = "~0.960"
-pytest = "~7.1.2"
-folium = "~0.12.1.post1"
-jupyterlab = "~3.3.4"
-matplotlib = "~3.5.1"
-seaborn = "~0.11.2"
+black = "^22.3.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+mypy = "^0.961"
+pytest = "^7.1.2"
+folium = "^0.12.1.post1"
+jupyterlab = "^3.4.3"
+matplotlib = "^3.5.2"
+seaborn = "^0.11.2"
 
 [tool.black]
 line-length = 88
@@ -45,10 +45,3 @@ preview = true
 
 [tool.isort]
 profile = "black"
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-line_length = 88
