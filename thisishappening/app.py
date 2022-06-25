@@ -30,7 +30,7 @@ logging.basicConfig(format="{asctime} : {levelname} : {message}", style="{")
 logger = logging.getLogger("happeninglogger")
 
 SLEEP_SECONDS_BASE = 2
-DEFAULT_SLEEP_EXPONENT = 3
+DEFAULT_SLEEP_EXPONENT = 4
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", default="development").lower()
 assert ENVIRONMENT in [
@@ -708,7 +708,5 @@ if __name__ == "__main__":
             )
             sleep(seconds)
             stream.sleep_exponent += 1
-            continue
         except Exception as e:
             logger.info(f"Exception when streaming tweets: {e}")
-            continue
