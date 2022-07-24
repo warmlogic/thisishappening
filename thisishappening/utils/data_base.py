@@ -76,13 +76,13 @@ class Events(Base):
             session.commit()
             logger.info(
                 f"Logged event: {event_info.timestamp} {event_info.place_name}:"
-                + f" {event_info.tokens_str}"
+                f" {event_info.tokens_str}"
             )
         except Exception as e:
             logger.warning(
                 "Exception when logging event:"
-                + f" {event_info.timestamp} {event_info.place_name}:"
-                + f" {event_info.tokens_str}: {e}"
+                f" {event_info.timestamp} {event_info.place_name}:"
+                f" {event_info.tokens_str}: {e}"
             )
             session.rollback()
 
@@ -180,7 +180,7 @@ class Events(Base):
             try:
                 logger.info(
                     f"Deleting events older than {ts_end}:"
-                    + f" {hours} hours {days} days {weeks} weeks"
+                    f" {hours} hours {days} days {weeks} weeks"
                 )
                 delete_q = cls.__table__.delete().where(cls.timestamp < ts_end)
                 session.execute(delete_q)
@@ -188,7 +188,7 @@ class Events(Base):
             except Exception as e:
                 logger.warning(
                     f"Exception when deleting events older than {ts_end}:"
-                    + f" {hours} hours {days} days {weeks} weeks: {e}"
+                    f" {hours} hours {days} days {weeks} weeks: {e}"
                 )
                 session.rollback()
 
@@ -261,14 +261,14 @@ class RecentTweets(Base):
             session.commit()
             logger.info(
                 f"Logged tweet: {tweet_info.status_id_str},"
-                + f" coordinates: ({tweet_info.latitude}, {tweet_info.longitude}),"
-                + f" {tweet_info.place_name} ({tweet_info.place_type})"
+                f" coordinates: ({tweet_info.latitude}, {tweet_info.longitude}),"
+                f" {tweet_info.place_name} ({tweet_info.place_type})"
             )
         except Exception as e:
             logger.warning(
                 f"Exception when logging tweet: {tweet_info.status_id_str},"
-                + f" coordinates: ({tweet_info.latitude}, {tweet_info.longitude}),"
-                + f" {tweet_info.place_name} ({tweet_info.place_type}): {e}"
+                f" coordinates: ({tweet_info.latitude}, {tweet_info.longitude}),"
+                f" {tweet_info.place_name} ({tweet_info.place_type}): {e}"
             )
             session.rollback()
 
@@ -437,7 +437,7 @@ class RecentTweets(Base):
             try:
                 logger.info(
                     f"Deleting tweets older than {ts_end}:"
-                    + f" {hours} hours {days} days {weeks} weeks"
+                    f" {hours} hours {days} days {weeks} weeks"
                 )
                 delete_q = cls.__table__.delete().where(cls.created_at < ts_end)
                 session.execute(delete_q)
@@ -445,7 +445,7 @@ class RecentTweets(Base):
             except Exception as e:
                 logger.warning(
                     f"Exception when deleting tweets older than {ts_end}:"
-                    + f" {hours} hours {days} days {weeks} weeks: {e}"
+                    f" {hours} hours {days} days {weeks} weeks: {e}"
                 )
                 session.rollback()
 

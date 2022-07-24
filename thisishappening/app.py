@@ -278,19 +278,19 @@ class MyStreamer(TwythonStreamer):
         if not use_status:
             logger.debug(
                 f"Tweet {status.get('id_str')} failed check tweet:"
-                + f" screen name: {status['user'].get('screen_name')}"
-                + f" (id: {status['user'].get('id_str')}),"
-                + f" following: {status['user'].get('friends_count')},"
-                + f" followers: {status['user'].get('followers_count')},"
-                + f" is quote status: {status.get('is_quote_status')},"
-                + " is reply status: "
-                + f"{status.get('in_reply_to_status_id_str') is not None},"
-                + f" possibly sensitive: {status.get('possibly_sensitive')},"
-                + f" coordinates: {status.get('coordinates')},"
-                + f" place type: {status['place'].get('place_type')},"
-                + f" place name: {status['place'].get('full_name')},"
-                + f" place bounding box: {get_place_bounding_box(status)},"
-                + f" text: {status.get('text')}"
+                f" screen name: {status['user'].get('screen_name')}"
+                f" (id: {status['user'].get('id_str')}),"
+                f" following: {status['user'].get('friends_count')},"
+                f" followers: {status['user'].get('followers_count')},"
+                f" is quote status: {status.get('is_quote_status')},"
+                " is reply status: "
+                f"{status.get('in_reply_to_status_id_str') is not None},"
+                f" possibly sensitive: {status.get('possibly_sensitive')},"
+                f" coordinates: {status.get('coordinates')},"
+                f" place type: {status['place'].get('place_type')},"
+                f" place name: {status['place'].get('full_name')},"
+                f" place bounding box: {get_place_bounding_box(status)},"
+                f" text: {status.get('text')}"
             )
             return
 
@@ -308,8 +308,8 @@ class MyStreamer(TwythonStreamer):
         else:
             logger.debug(
                 "Not logging tweet due to environment variable settings:"
-                + f" {tweet_info.status_id_str},"
-                + f" {tweet_info.place_name} ({tweet_info.place_type})"
+                f" {tweet_info.status_id_str},"
+                f" {tweet_info.place_name} ({tweet_info.place_type})"
             )
 
         activity_curr_day = RecentTweets.get_recent_tweets(
@@ -375,8 +375,8 @@ class MyStreamer(TwythonStreamer):
             ):
                 logger.info(
                     f"{tweet_info.created_at}: Been more than"
-                    + f" {MIN_HOURS_BETWEEN_EVENTS} hour(s) since an event occurred"
-                    + f" ({self.event_comparison_ts}), clustering activity..."
+                    f" {MIN_HOURS_BETWEEN_EVENTS} hour(s) since an event occurred"
+                    f" ({self.event_comparison_ts}), clustering activity..."
                 )
 
                 self.find_and_tweet_events(
@@ -393,8 +393,8 @@ class MyStreamer(TwythonStreamer):
             else:
                 logger.info(
                     f"{tweet_info.created_at}: Not clustering activity to find event,"
-                    + f" there was an event in the last {MIN_HOURS_BETWEEN_EVENTS}"
-                    + f" hours ({self.event_comparison_ts})"
+                    f" there was an event in the last {MIN_HOURS_BETWEEN_EVENTS}"
+                    f" hours ({self.event_comparison_ts})"
                 )
 
         # Find events using today's tweets
@@ -505,7 +505,7 @@ class MyStreamer(TwythonStreamer):
                 if "No status found with that ID" in e.msg:
                     logger.info(
                         f"Tweet {t.user_screen_name}/status/{t.status_id_str}"
-                        + " not found, marking as deleted"
+                        " not found, marking as deleted"
                     )
                     RecentTweets.update_tweet_deleted(session, t.status_id_str)
 
@@ -540,16 +540,16 @@ class MyStreamer(TwythonStreamer):
 
             logger.info(
                 f"{time_str} event: {event}, current: {len(activity_curr)},"
-                + f" previous: {len(activity_prev)},"
-                + f" max diff: {z_diff.max():.2f},"
-                + f" threshold: {activity_threshold}"
+                f" previous: {len(activity_prev)},"
+                f" max diff: {z_diff.max():.2f},"
+                f" threshold: {activity_threshold}"
             )
         else:
             logger.info(
                 f"{time_str} event: {event}, current: {len(activity_curr)},"
-                + f" previous: {len(activity_prev)},"
-                + " not enough activity,"
-                + f" threshold: {activity_threshold}"
+                f" previous: {len(activity_prev)},"
+                " not enough activity,"
+                f" threshold: {activity_threshold}"
             )
 
         return event, activity_curr_w
@@ -599,8 +599,8 @@ class MyStreamer(TwythonStreamer):
             else:
                 logger.info(
                     "Not logging event due to environment variable settings:"
-                    + f" {event_info.timestamp} {event_info.place_name}:"
-                    + f" {event_info.tokens_str}"
+                    f" {event_info.timestamp} {event_info.place_name}:"
+                    f" {event_info.tokens_str}"
                 )
 
             if POST_EVENT:
@@ -674,8 +674,7 @@ if __name__ == "__main__":
     logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
 
     logger.info(
-        "Keeping tweets with coordinates,"
-        + f" or that have place type: {VALID_PLACE_TYPES}"
+        f"Keeping tweets with coordinates, or that have place type: {VALID_PLACE_TYPES}"
     )
 
     logger.info(f"Ignoring tweets containing these words: {IGNORE_WORDS}")
