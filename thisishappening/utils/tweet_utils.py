@@ -681,7 +681,7 @@ def get_event_info(
         else f"{event_str}:"
     )
     remaining_chars = tweet_max_length - len(event_str) - 2 - tweet_url_length
-    # Find the largest set of tokens to fill out the remaining charaters
+    # Find the largest set of tokens to fill out the remaining characters
     possible_token_sets = [
         " ".join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]
     ]
@@ -693,13 +693,13 @@ def get_event_info(
     status_ids = get_status_ids(event_tweets)
     tweet_ids = ",".join(sorted(status_ids)[::-1])
 
-    urlparams = {
+    url_params = {
         "words": tokens,
         "coords": coords,
     }
     if show_tweets_on_event:
-        urlparams["tweets"] = tweet_ids
-    event_url = base_event_url + urllib.parse.urlencode(urlparams)
+        url_params["tweets"] = tweet_ids
+    event_url = base_event_url + urllib.parse.urlencode(url_params)
     event_str = f"{event_str} {tokens} {event_url}"
 
     logger.info(
