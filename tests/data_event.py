@@ -523,7 +523,7 @@ clusters = {
                 "created_at": datetime(2022, 4, 19, 14, 9, 4),
                 "user_screen_name": "user123103",
                 "tweet_body": (
-                    "@bostonmarathon it was nice to meet you! You were brutal but"
+                    "@bostonmarathon it was nice to meet you! 👩🏽‍🚀 You were brutal but"
                     " amazing! #marathon #running https://url.co/123"
                 ),
                 "is_quote_status": False,
@@ -546,8 +546,8 @@ clusters = {
                 "created_at": datetime(2022, 4, 19, 15, 57, 22),
                 "user_screen_name": "user123103",
                 "tweet_body": (
-                    "Dear Boston Marathon, it was nice to meet you! Your hills were"
-                    " brutal but the crowd was amazing! #BostonMarathon #marathon"
+                    "Dear Boston Marathon, it was nice to meet you! 👩🏽‍🚀 Your hills"
+                    " were brutal but the crowd was amazing! #BostonMarathon #marathon"
                     " #running @bostonmarathon https://url.co/123"
                 ),
                 "is_quote_status": False,
@@ -570,7 +570,7 @@ clusters = {
                 "created_at": datetime(2022, 4, 19, 0, 10, 40),
                 "user_screen_name": "user123105",
                 "tweet_body": (
-                    "A great day with my forever running buddy and our little champ!"
+                    "A great day 🤘🏽 with my forever running buddy and our little champ!"
                     " #BostonMarathon https://url.co/123"
                 ),
                 "is_quote_status": False,
