@@ -6,7 +6,7 @@ from sklearn.cluster import DBSCAN
 
 from .tweet_utils import get_coords
 
-logger = logging.getLogger("happeninglogger")
+logger = logging.getLogger("happening_logger")
 
 
 def cluster_activity(

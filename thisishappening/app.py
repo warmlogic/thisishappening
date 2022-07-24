@@ -27,7 +27,7 @@ from utils.tweet_utils import (
 )
 
 logging.basicConfig(format="{asctime} : {levelname} : {message}", style="{")
-logger = logging.getLogger("happeninglogger")
+logger = logging.getLogger("happening_logger")
 
 SLEEP_SECONDS_BASE = 2
 DEFAULT_SLEEP_EXPONENT = 5

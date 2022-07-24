@@ -17,7 +17,7 @@ from unidecode import unidecode
 
 from .data_utils import inbounds
 
-logger = logging.getLogger("happeninglogger")
+logger = logging.getLogger("happening_logger")
 
 # Regex to look for all URLs (mailto:, x-whatever://, etc.)
 # https://gist.github.com/gruber/249502

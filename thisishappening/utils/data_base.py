@@ -23,7 +23,7 @@ from sqlalchemy.pool import NullPool
 from .data_utils import get_coords_min_max
 from .tweet_utils import EventInfo, TweetInfo
 
-logger = logging.getLogger("happeninglogger")
+logger = logging.getLogger("happening_logger")
 
 Base = declarative_base()
 
