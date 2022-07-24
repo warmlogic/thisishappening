@@ -8,7 +8,7 @@ import numpy as np
 from geopy.distance import geodesic
 from scipy import stats
 
-logger = logging.getLogger("happeninglogger")
+logger = logging.getLogger("happening_logger")
 
 GridCoords = namedtuple(
     "GridCoords",
@@ -96,7 +96,6 @@ def set_activity_weight(
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
 ) -> List[Dict]:
-
     # Create a list of dictionaries and remove the sqlalchemy instance state key
     activity_dict = [
         {k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"}

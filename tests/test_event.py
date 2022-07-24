@@ -16,8 +16,9 @@ SHOW_TWEETS_ON_EVENT = False
 
 CLUSTER_IDX = 1
 CLUSTER_1_TOKENS = (
-    "bostonmarathon boston marathon running amazing meet great coverage"
-    + " congratulations 26.2 today day nice brutal #marathon #running #bostonmarathon"
+    "bostonmarathon boston marathon running amazing meet great 🤘🏽 coverage"
+    " congratulations 26.2 today day nice brutal 👩🏽‍🚀 #marathon #running"
+    " #bostonmarathon"
 )
 
 
@@ -41,5 +42,5 @@ def test_get_event_info():
 
     assert event_info.tokens_str == CLUSTER_1_TOKENS, (
         "Tokens are not as expected."
-        + f" Expected: {CLUSTER_1_TOKENS}, produced: {event_info.tokens_str}"
+        f" Expected: {CLUSTER_1_TOKENS}, produced: {event_info.tokens_str}"
     )

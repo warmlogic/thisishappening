@@ -17,7 +17,7 @@ from unidecode import unidecode
 
 from .data_utils import inbounds
 
-logger = logging.getLogger("happeninglogger")
+logger = logging.getLogger("happening_logger")
 
 # Regex to look for all URLs (mailto:, x-whatever://, etc.)
 # https://gist.github.com/gruber/249502
@@ -29,11 +29,22 @@ url_all_re = (
 )
 url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
-UNICODE_ELLIPSIS = "\\u2026"  # Ellipsis
+# Escape backslash because they are compared with "unicode-escape"
+UNICODE_ELLIPSIS = "\\u2026"  # Horizontal Ellipsis https://codepoints.net/U+2026
 UNICODE_IGNORE = [
     UNICODE_ELLIPSIS,
-    "\\u3164",  # Hangul Filler
+    "\\u3164",  # Hangul Filler https://codepoints.net/U+3164
+    "\\uffa0",  # Halfwidth Hangul Filler https://codepoints.net/U+FFA0
 ]
+
+# Do not need to escape backslash
+UNICODE_KEEP = [
+    "\u200d",  # Zero Width Joiner https://codepoints.net/U+200D
+    "\u2642",  # Male Sign  https://codepoints.net/U+2642
+    "\u2640",  # Female Sign  https://codepoints.net/U+2640
+    "\ufe0f",  # Variation Selector-16 for emoji https://codepoints.net/U+FE0F
+]
+
 
 nlp = en_core_web_sm.load(exclude=["parser", "ner"])
 
@@ -358,7 +369,7 @@ def remove_urls(text: str) -> str:
 
 def clean_text(text: str) -> str:
     # Remove token if it contains an ellipsis; assume it is a truncated word
-    text_cleaned = " ".join(
+    text_no_ellipsis = " ".join(
         [
             token
             for token in text.split()
@@ -376,16 +387,18 @@ def clean_text(text: str) -> str:
                     if letter.encode("unicode-escape").decode() not in UNICODE_IGNORE
                 ]
             )
-            for word in fix_text(text_cleaned).split()
+            for word in fix_text(text_no_ellipsis).split()
         ]
     )
 
     # Decode unicode letters and keep emojis
-    text_cleaned = " ".join(
+    text_decoded = " ".join(
         [
             "".join(
                 [
-                    unidecode(letter) if not emoji.is_emoji(letter) else letter
+                    unidecode(letter)
+                    if (not emoji.is_emoji(letter) and letter not in UNICODE_KEEP)
+                    else letter
                     for letter in word
                 ]
             )
@@ -395,10 +408,10 @@ def clean_text(text: str) -> str:
 
     # Normalize unicode letters
     # NFKD: decomposes, NFKC: composes pre-combined characters again
-    text_cleaned = unicodedata.normalize("NFKC", text_cleaned)
+    text_normalized = unicodedata.normalize("NFKC", text_decoded)
 
     # Ensure emojis are surrounded by whitespace
-    tokens = split_text(text_cleaned)
+    tokens = split_text(text_normalized)
 
     # Clean up punctuation
     tokens = [clean_token(token) for token in tokens]
@@ -668,7 +681,7 @@ def get_event_info(
         else f"{event_str}:"
     )
     remaining_chars = tweet_max_length - len(event_str) - 2 - tweet_url_length
-    # Find the largest set of tokens to fill out the remaining charaters
+    # Find the largest set of tokens to fill out the remaining characters
     possible_token_sets = [
         " ".join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]
     ]
@@ -680,13 +693,13 @@ def get_event_info(
     status_ids = get_status_ids(event_tweets)
     tweet_ids = ",".join(sorted(status_ids)[::-1])
 
-    urlparams = {
+    url_params = {
         "words": tokens,
         "coords": coords,
     }
     if show_tweets_on_event:
-        urlparams["tweets"] = tweet_ids
-    event_url = base_event_url + urllib.parse.urlencode(urlparams)
+        url_params["tweets"] = tweet_ids
+    event_url = base_event_url + urllib.parse.urlencode(url_params)
     event_str = f"{event_str} {tokens} {event_url}"
 
     logger.info(
