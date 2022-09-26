@@ -1,4 +1,4 @@
-name: Code Quality
+name: Code Quality Checks
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 
 env:
   PYTHON_VERSION: "3.10"
-  POETRY_VERSION: "1.2.0b3"
+  POETRY_VERSION: "1.2.0"
 
 jobs:
   lint:
@@ -50,7 +50,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
       # install project if cache does not exist
       #----------------------------------------------
@@ -115,7 +115,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
       # install project if cache does not exist
       #----------------------------------------------
