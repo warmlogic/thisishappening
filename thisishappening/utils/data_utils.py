@@ -2,7 +2,6 @@ import itertools
 import logging
 from collections import namedtuple
 from operator import itemgetter
-from typing import Dict, List, Tuple
 
 import numpy as np
 from geopy.distance import geodesic
@@ -20,14 +19,14 @@ GridCoords = namedtuple(
 )
 
 
-def n_wise(iterable: List, n: int) -> zip(Tuple):
+def n_wise(iterable: list, n: int) -> zip(tuple):
     """n_wise - Given an iterable, create a generator of successive groups of size n
 
     list(n_wise([1, 2, 3, 4, 5], 3)) -> [(1, 2, 3), (2, 3, 4), (3, 4, 5)]
 
     Parameters
     ----------
-    iterable : List (or any iterable)
+    iterable : list (or any iterable)
         Items to include in groups
     n : int
         Group size
@@ -40,13 +39,13 @@ def n_wise(iterable: List, n: int) -> zip(Tuple):
     return zip(*(itertools.islice(iterable, i, None) for i in range(n)))
 
 
-def inbounds(longitude: float, latitude: float, bounding_box: List[float]) -> bool:
+def inbounds(longitude: float, latitude: float, bounding_box: list[float]) -> bool:
     lon = (longitude >= bounding_box[0]) and (longitude <= bounding_box[2])
     lat = (latitude >= bounding_box[1]) and (latitude <= bounding_box[3])
     return lon and lat
 
 
-def get_coords_min_max(bounding_box: List[float]):
+def get_coords_min_max(bounding_box: list[float]):
     # longitude: xmin=west_lon, xmax=east_lon
     xmin, xmax = bounding_box[0], bounding_box[2]
     # latitude: ymin=south_lat, ymax=north_lat
@@ -54,14 +53,14 @@ def get_coords_min_max(bounding_box: List[float]):
     return xmin, xmax, ymin, ymax
 
 
-def compute_bounding_box_dims_km(bounding_box: List[float]) -> float:
+def compute_bounding_box_dims_km(bounding_box: list[float]) -> float:
     xmin, xmax, ymin, ymax = get_coords_min_max(bounding_box)
     height = geodesic((ymin, xmin), (ymax, xmin)).km
     width = geodesic((ymin, xmin), (ymin, xmax)).km
     return height, width
 
 
-def get_grid_coords(bounding_box: List[float], grid_resolution_km: float):
+def get_grid_coords(bounding_box: list[float], grid_resolution_km: float):
     height, width = compute_bounding_box_dims_km(bounding_box)
     n_parcels = (height * width) / grid_resolution_km
     n_parcels_x = int(n_parcels / height)
@@ -92,10 +91,10 @@ def set_activity_weight(
     activity,
     weighted: bool,
     weight_factor_user: float,
-    reduce_weight_lon_lat: List[Tuple[float, float]],
+    reduce_weight_lon_lat: list[tuple[float, float]],
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
-) -> List[Dict]:
+) -> list[dict]:
     # Create a list of dictionaries and remove the sqlalchemy instance state key
     activity_dict = [
         {k: v for k, v in x.__dict__.items() if k != "_sa_instance_state"}
@@ -151,7 +150,7 @@ def get_kde(
     bw_method,
     weighted: bool,
     weight_factor_user: float,
-    reduce_weight_lon_lat: List[Tuple[float, float]],
+    reduce_weight_lon_lat: list[tuple[float, float]],
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
 ):
@@ -198,7 +197,7 @@ def compare_activity_kde(
     bw_method: float,
     weighted: bool,
     weight_factor_user: float,
-    reduce_weight_lon_lat: List[Tuple[float, float]],
+    reduce_weight_lon_lat: list[tuple[float, float]],
     weight_factor_lon_lat: float,
     weight_factor_no_coords: float,
 ):

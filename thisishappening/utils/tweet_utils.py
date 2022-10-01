@@ -7,7 +7,6 @@ import urllib
 from collections import Counter, namedtuple
 from datetime import datetime
 from time import sleep
-from typing import Dict, List
 
 import emoji
 import en_core_web_sm
@@ -136,7 +135,7 @@ def get_place_bounding_box(status):
     return place_bounding_box
 
 
-def get_tweet_info(status: Dict) -> Dict:
+def get_tweet_info(status: dict) -> dict:
     status_id_str = status["id_str"]
     user_screen_name = status["user"]["screen_name"]
     user_id_str = status["user"]["id_str"]
@@ -182,12 +181,12 @@ def get_tweet_info(status: Dict) -> Dict:
 
 def check_tweet(
     status,
-    bounding_box: List[float],
-    valid_place_types: List[str] = ["admin", "city", "neighborhood", "poi"],
-    ignore_words: List[str] = [],
-    ignore_user_screen_names: List[str] = [],
-    ignore_user_id_str: List[str] = [],
-    ignore_lon_lat: List[List[str]] = [],
+    bounding_box: list[float],
+    valid_place_types: list[str] = ["admin", "city", "neighborhood", "poi"],
+    ignore_words: list[str] = [],
+    ignore_user_screen_names: list[str] = [],
+    ignore_user_id_str: list[str] = [],
+    ignore_lon_lat: list[list[str]] = [],
     ignore_possibly_sensitive: bool = False,
     ignore_quote_status: bool = False,
     ignore_reply_status: bool = False,
@@ -306,7 +305,7 @@ def date_string_to_datetime(
     return datetime.strptime(date_string, fmt).replace(tzinfo=tzinfo)
 
 
-def split_text(text: str) -> List[str]:
+def split_text(text: str) -> list[str]:
     # Put whitespace between all words and emojis
     # originally used https://stackoverflow.com/a/49930688/2592858
     emoji_list = emoji.distinct_emoji_list(text)
@@ -441,7 +440,7 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
 
 
 def get_tokens_to_tweet(
-    tweets: List,
+    tweets: list,
     token_count_min: int = None,
     reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
@@ -544,7 +543,7 @@ def get_coords(tweets):
     return lons, lats
 
 
-def get_place_name(tweets, valid_place_types: List[str] = ["neighborhood", "poi"]):
+def get_place_name(tweets, valid_place_types: list[str] = ["neighborhood", "poi"]):
     # Get the most common place name from these tweets;
     # only consider neighborhood or poi
     try:
@@ -576,7 +575,7 @@ def get_status_ids(tweets):
 
 def reverse_geocode(
     twitter, longitude: float, latitude: float, sleep_seconds: int = 10
-) -> Dict:
+) -> dict:
     # Reverse geocode latitude and longitude value
     geo_granularity = ["neighborhood", "city", "admin", "country"]
 
@@ -615,7 +614,7 @@ def reverse_geocode(
 
 def get_event_info(
     twitter,
-    event_tweets: List,
+    event_tweets: list,
     tweet_max_length: int,
     tweet_url_length: int,
     base_event_url: str,

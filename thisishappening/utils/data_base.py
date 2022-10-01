@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from typing import List
 
 import pytz
 from sqlalchemy import (
@@ -94,7 +93,7 @@ class Events(Base):
         session,
         timestamp: datetime = None,
         hours: float = 1,
-        event_type: List[str] = None,
+        event_type: list[str] = None,
     ):
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -117,7 +116,7 @@ class Events(Base):
         return q.order_by(desc(cls.timestamp)).all()
 
     @classmethod
-    def get_most_recent_event(cls, session, event_type: List[str] = None):
+    def get_most_recent_event(cls, session, event_type: list[str] = None):
         q = session.query(cls)
 
         if event_type is not None:
@@ -280,7 +279,7 @@ class RecentTweets(Base):
         session,
         timestamp: datetime = None,
         hours: float = 0,
-        bounding_box: List[float] = None,
+        bounding_box: list[float] = None,
     ):
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
@@ -311,8 +310,8 @@ class RecentTweets(Base):
         session,
         timestamp: datetime = None,
         hours: float = 1,
-        bounding_box: List[float] = None,
-        place_type: List[str] = None,
+        bounding_box: list[float] = None,
+        place_type: list[str] = None,
         has_coords: bool = None,
         place_type_or_coords: bool = True,
         include_quote_status: bool = True,
@@ -370,7 +369,7 @@ class RecentTweets(Base):
         return q.order_by(desc(cls.created_at)).all()
 
     @classmethod
-    def get_oldest_tweet(cls, session, bounding_box: List[float] = None):
+    def get_oldest_tweet(cls, session, bounding_box: list[float] = None):
         q = session.query(cls)
 
         if bounding_box is not None:
@@ -387,7 +386,7 @@ class RecentTweets(Base):
         return q.order_by(cls.created_at).first()
 
     @classmethod
-    def get_most_recent_tweet(cls, session, bounding_box: List[float] = None):
+    def get_most_recent_tweet(cls, session, bounding_box: list[float] = None):
         q = session.query(cls)
 
         if bounding_box is not None:
