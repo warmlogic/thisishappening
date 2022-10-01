@@ -3,7 +3,6 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
-from time import sleep
 
 import numpy as np
 import pytz
@@ -29,9 +28,6 @@ from utils.tweet_utils import (
 
 logging.basicConfig(format="{asctime} : {levelname} : {message}", style="{")
 logger = logging.getLogger("happening_logger")
-
-SLEEP_SECONDS_BASE = 2
-DEFAULT_SLEEP_EXPONENT = 5
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", default="development").lower()
 assert ENVIRONMENT in [
@@ -236,26 +232,107 @@ QUERY_INCLUDE_DELETED_STATUS = (
 )
 
 
+class MyTwitterClient(Twython):
+    """Wrapper around the Twython Twitter client."""
+
+    DEFAULT_LAST_POST_TIME = datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)
+
+    def __init__(self, *args, **kwargs):
+        super(MyTwitterClient, self).__init__(*args, **kwargs)
+
+    @retry(wait=wait_fixed(RETRY_WAIT_SECONDS))
+    def get_last_post_time(self):
+        """get the time of our screen_name's most recent tweet"""
+        if DEBUG_MODE:
+            return self.DEFAULT_LAST_POST_TIME
+
+        try:
+            most_recent_tweet = self.get_user_timeline(
+                screen_name=MY_SCREEN_NAME, count=1, trim_user=True
+            )
+            if len(most_recent_tweet) > 0:
+                last_post_time = date_string_to_datetime(
+                    most_recent_tweet[0]["created_at"]
+                )
+            else:
+                last_post_time = None
+        except TwythonRateLimitError as e:
+            logger.info(f"Rate limit exceeded when getting recent tweet: {e}")
+            raise
+        except Exception as e:
+            logger.info(f"Exception when getting recent tweet: {e}")
+            last_post_time = self.DEFAULT_LAST_POST_TIME
+
+        return last_post_time
+
+    @retry(wait=wait_fixed(RETRY_WAIT_SECONDS), stop=stop_after_attempt(3))
+    def _update_status(self, *args, **kwargs):
+        try:
+            _ = self.update_status(*args, **kwargs)
+            logger.info("Successfully updated status")
+        except TwythonAuthError as e:
+            logger.info(
+                f"Authorization error. Did you create read+write credentials? {e}"
+            )
+            raise
+        except TwythonRateLimitError as e:
+            logger.info(f"Rate limit exceeded when posting event: {e}")
+            raise
+        except TwythonError as e:
+            logger.info(f"Encountered some other error: {e}")
+            raise
+
+
 class MyStreamer(TwythonStreamer):
-    def __init__(self, grid_coords, event_comparison_ts=None, *args, **kwargs):
+    def __init__(
+        self,
+        twitter,
+        db_session,
+        bounding_box,
+        *args,
+        **kwargs,
+    ):
         super(MyStreamer, self).__init__(*args, **kwargs)
-        self.grid_coords = grid_coords
-        if event_comparison_ts is None:
-            event_comparison_ts = datetime.utcnow().replace(
-                tzinfo=pytz.UTC
-            ) - timedelta(hours=MIN_HOURS_BETWEEN_EVENTS)
-        self.event_comparison_ts = event_comparison_ts
+        self.twitter = twitter
+        self.db_session = db_session
+        self.grid_coords = get_grid_coords(
+            bounding_box=bounding_box, grid_resolution_km=GRID_RESOLUTION_KM
+        )
+        self.bounding_box_str = ",".join([str(x) for x in bounding_box])
+        self.event_comparison_ts = self.get_event_comparison_ts()
         self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
         self.posted_daily_events = False
-        self.sleep_exponent = DEFAULT_SLEEP_EXPONENT
+
+    @retry(wait=wait_fixed(RETRY_WAIT_SECONDS))
+    def stream_tweets(self):
+        # Use try/except to avoid ChunkedEncodingError
+        # https://github.com/ryanmcgrath/twython/issues/288#issuecomment-66360160
+        try:
+            self.statuses.filter(locations=self.bounding_box_str)
+        except TwythonRateLimitError as e:
+            logger.info(f"Rate limit exceeded when streaming tweets: {e}")
+            raise
+        except Exception as e:
+            logger.info(f"Exception when streaming tweets: {e}")
+            raise
+
+    def get_event_comparison_ts(self):
+        # Find out when the last event happened, checking the database first
+        most_recent_event = Events.get_most_recent_event(
+            self.db_session, event_type=["moment"]
+        )
+        if most_recent_event is not None:
+            event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
+        else:
+            # If no db events, use most recent tweet timestamp
+            event_comparison_ts = self.twitter.get_last_post_time()
+
+        return event_comparison_ts
 
     def on_success(self, status):
-        # Reset sleep seconds exponent
-        self.sleep_exponent = DEFAULT_SLEEP_EXPONENT
-
         # If this tweet was truncated, get the full text
         if "truncated" in status and status["truncated"]:
-            status_full = twitter.get_user_timeline(
+            status_full = self.twitter.get_user_timeline(
                 user_id=status["user"]["id"],
                 tweet_mode="extended",
                 max_id=status["id"],
@@ -304,7 +381,7 @@ class MyStreamer(TwythonStreamer):
         tweet_info = get_tweet_info(status)
 
         if LOG_TWEETS:
-            _ = RecentTweets.log_tweet(db_session, tweet_info=tweet_info)
+            _ = RecentTweets.log_tweet(self.db_session, tweet_info=tweet_info)
 
             # Check on whether recent tweets have been deleted, and update if so.
             # Assumption is that tweets are deleted quickly; then we don't need to spend
@@ -320,7 +397,7 @@ class MyStreamer(TwythonStreamer):
             )
 
         activity_curr_day = RecentTweets.get_recent_tweets(
-            db_session,
+            self.db_session,
             timestamp=tweet_info.created_at,
             hours=24,
             place_type=VALID_PLACE_TYPES,
@@ -331,7 +408,7 @@ class MyStreamer(TwythonStreamer):
             include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
         )
         activity_prev_day = RecentTweets.get_recent_tweets(
-            db_session,
+            self.db_session,
             timestamp=tweet_info.created_at - timedelta(days=1),
             hours=24,
             place_type=VALID_PLACE_TYPES,
@@ -343,7 +420,7 @@ class MyStreamer(TwythonStreamer):
         )
 
         activity_curr_hour = RecentTweets.get_recent_tweets(
-            db_session,
+            self.db_session,
             timestamp=tweet_info.created_at,
             hours=TEMPORAL_GRANULARITY_HOURS,
             place_type=VALID_PLACE_TYPES,
@@ -355,7 +432,7 @@ class MyStreamer(TwythonStreamer):
         )
 
         activity_prev_hour = RecentTweets.get_recent_tweets(
-            db_session,
+            self.db_session,
             timestamp=tweet_info.created_at
             - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
             hours=TEMPORAL_GRANULARITY_HOURS,
@@ -446,17 +523,19 @@ class MyStreamer(TwythonStreamer):
             >= timedelta(minutes=10)
         ):
             # Delete old data by row count
-            RecentTweets.keep_tweets_n_rows(db_session, n=RECENT_TWEETS_ROWS_TO_KEEP)
-            Events.keep_events_n_rows(db_session, n=EVENTS_ROWS_TO_KEEP)
+            RecentTweets.keep_tweets_n_rows(
+                self.db_session, n=RECENT_TWEETS_ROWS_TO_KEEP
+            )
+            Events.keep_events_n_rows(self.db_session, n=EVENTS_ROWS_TO_KEEP)
 
             # Delete old data by timestamp
             RecentTweets.delete_tweets_older_than(
-                db_session,
+                self.db_session,
                 timestamp=tweet_info.created_at,
                 days=RECENT_TWEETS_DAYS_TO_KEEP,
             )
             Events.delete_events_older_than(
-                db_session,
+                self.db_session,
                 timestamp=tweet_info.created_at,
                 days=EVENTS_DAYS_TO_KEEP,
             )
@@ -465,36 +544,26 @@ class MyStreamer(TwythonStreamer):
             self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
 
     def on_error(self, status_code, content, headers=None):
+        content = (
+            content.decode().strip() if isinstance(content, bytes) else content.strip()
+        )
         logger.info("Error while streaming.")
         logger.info(f"status_code: {status_code}")
         logger.info(f"content: {content}")
         logger.info(f"headers: {headers}")
-        content = (
-            content.decode().strip() if isinstance(content, bytes) else content.strip()
-        )
-        if "Server overloaded, try again in a few seconds".lower() in content.lower():
-            seconds = SLEEP_SECONDS_BASE**self.sleep_exponent
-            logger.warning(f"Server overloaded. Sleeping for {seconds} seconds.")
-            sleep(seconds)
-            self.sleep_exponent += 1
-        elif "Exceeded connection limit for user".lower() in content.lower():
-            seconds = SLEEP_SECONDS_BASE**self.sleep_exponent
-            logger.warning(
-                f"Exceeded connection limit. Sleeping for {seconds} seconds."
-            )
-            sleep(seconds)
-            self.sleep_exponent += 1
+        if status_code == 420:
+            # Server overloaded, try again in a few seconds
+            # Exceeded connection limit for user
+            # Too many requests recently
+            raise TwythonRateLimitError("Too many requests recently")
         else:
-            seconds = SLEEP_SECONDS_BASE**self.sleep_exponent
-            logger.warning(
-                f"Some other error occurred. Sleeping for {seconds} seconds."
-            )
-            sleep(seconds)
-            self.sleep_exponent += 1
+            # Unable to decode response
+            # (or something else)
+            pass
 
     def update_deleted_tweets(self, timestamp: datetime, hours: float):
         tweets = RecentTweets.get_recent_tweets(
-            db_session,
+            self.db_session,
             timestamp=timestamp,
             hours=hours,
             place_type=VALID_PLACE_TYPES,
@@ -507,14 +576,14 @@ class MyStreamer(TwythonStreamer):
 
         for t in tweets:
             try:
-                _ = twitter.show_status(id=t.status_id_str)
+                _ = self.twitter.show_status(id=t.status_id_str)
             except TwythonError as e:
                 if "No status found with that ID" in e.msg:
                     logger.info(
                         f"Tweet {t.user_screen_name}/status/{t.status_id_str}"
                         " not found, marking as deleted"
                     )
-                    RecentTweets.update_tweet_deleted(db_session, t.status_id_str)
+                    RecentTweets.update_tweet_deleted(self.db_session, t.status_id_str)
 
     def determine_if_event_occurred(
         self,
@@ -573,8 +642,10 @@ class MyStreamer(TwythonStreamer):
         reduce_token_count_min: bool,
         event_str: str = None,
         event_type: str = None,
-        update_event_comparison_ts: bool = True,
+        update_event_comparison_ts: bool = None,
     ):
+        update_event_comparison_ts = update_event_comparison_ts or True
+
         clusters = cluster_activity(
             activity=activity_w,
             min_samples=min_samples,
@@ -587,7 +658,7 @@ class MyStreamer(TwythonStreamer):
 
         for cluster in clusters.values():
             event_info = get_event_info(
-                twitter,
+                self.twitter,
                 event_tweets=cluster["event_tweets"],
                 tweet_max_length=TWEET_MAX_LENGTH,
                 tweet_url_length=TWEET_URL_LENGTH,
@@ -602,7 +673,7 @@ class MyStreamer(TwythonStreamer):
             )
 
             if LOG_EVENTS:
-                _ = Events.log_event(db_session, event_info=event_info)
+                _ = Events.log_event(self.db_session, event_info=event_info)
             else:
                 logger.info(
                     "Not logging event due to environment variable settings:"
@@ -611,78 +682,21 @@ class MyStreamer(TwythonStreamer):
                 )
 
             if POST_EVENT:
-                try:
-                    _ = twitter.update_status(
-                        status=event_info.event_str,
-                        lat=event_info.latitude if TWEET_GEOTAG else None,
-                        long=event_info.longitude if TWEET_GEOTAG else None,
-                        # place_id=(event_info.place_id if TWEET_GEOTAG else None),
-                    )
-
-                    # Update the comparison tweet time
-                    if update_event_comparison_ts:
-                        self.event_comparison_ts = event_info.timestamp
-                except TwythonAuthError as e:
-                    logger.info(
-                        "Authorization error. Did you create read+write"
-                        f" credentials? {e}"
-                    )
-                    raise
-                except TwythonRateLimitError as e:
-                    logger.info(f"Rate limit exceeded when posting event: {e}")
-                    raise
-                except TwythonError as e:
-                    logger.info(f"Encountered some other error: {e}")
-                    raise
+                self.twitter._update_status(
+                    status=event_info.event_str,
+                    lat=event_info.latitude if TWEET_GEOTAG else None,
+                    long=event_info.longitude if TWEET_GEOTAG else None,
+                    # place_id=event_info.place_id if TWEET_GEOTAG else None,
+                )
+                # Update the comparison tweet time
+                if update_event_comparison_ts:
+                    self.event_comparison_ts = event_info.timestamp
             else:
                 logger.info("Not posting event due to environment variable settings")
 
 
-# Establish connection to Twitter
-# Uses OAuth1 ("user auth") for authentication
-twitter = Twython(
-    app_key=APP_KEY,
-    app_secret=APP_SECRET,
-    oauth_token=OAUTH_TOKEN,
-    oauth_token_secret=OAUTH_TOKEN_SECRET,
-)
-
-# Establish connection to database
-db_session = session_factory(DATABASE_URL, echo=ECHO)
-
-# Find out when the last event happened
-# First check the database
-most_recent_event = Events.get_most_recent_event(db_session, event_type=["moment"])
-if most_recent_event is not None:
-    event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
-else:
-    # If no db events, use most recent tweet timestamp as the time of the last event
-    most_recent_tweet = twitter.get_user_timeline(
-        screen_name=MY_SCREEN_NAME, count=1, trim_user=True
-    )
-    if len(most_recent_tweet) > 0:
-        event_comparison_ts = date_string_to_datetime(
-            most_recent_tweet[0]["created_at"]
-        )
-    else:
-        event_comparison_ts = None
-
-if __name__ == "__main__":
-    logger.info("Initializing tweet streamer...")
-    grid_coords = get_grid_coords(
-        bounding_box=BOUNDING_BOX, grid_resolution_km=GRID_RESOLUTION_KM
-    )
-    stream = MyStreamer(
-        grid_coords=grid_coords,
-        event_comparison_ts=event_comparison_ts,
-        app_key=APP_KEY,
-        app_secret=APP_SECRET,
-        oauth_token=OAUTH_TOKEN,
-        oauth_token_secret=OAUTH_TOKEN_SECRET,
-    )
-
-    bounding_box_str = ",".join([str(x) for x in BOUNDING_BOX])
-    logger.info(f"Looking for tweets in bounding box: {bounding_box_str}")
+def main():
+    logger.info(f"Looking for tweets in bounding box: {BOUNDING_BOX}")
 
     logger.info(
         f"Keeping tweets with coordinates, or that have place type: {VALID_PLACE_TYPES}"
@@ -705,18 +719,32 @@ if __name__ == "__main__":
     else:
         logger.info("Keeping reply tweets")
 
-    while True:
-        # Use try/except to avoid ChunkedEncodingError
-        # https://github.com/ryanmcgrath/twython/issues/288
-        try:
-            stream.statuses.filter(locations=bounding_box_str)
-        except TwythonRateLimitError:
-            seconds = SLEEP_SECONDS_BASE**stream.sleep_exponent
-            logger.info(
-                "Rate limit exceeded when streaming tweets. Sleeping for"
-                f" {seconds} seconds."
-            )
-            sleep(seconds)
-            stream.sleep_exponent += 1
-        except Exception as e:
-            logger.info(f"Exception when streaming tweets: {e}")
+    # Establish connection to Twitter;
+    # Uses OAuth1 ("user auth") for authentication
+    twitter = MyTwitterClient(
+        app_key=APP_KEY,
+        app_secret=APP_SECRET,
+        oauth_token=OAUTH_TOKEN,
+        oauth_token_secret=OAUTH_TOKEN_SECRET,
+    )
+
+    # Establish connection to database
+    db_session = session_factory(DATABASE_URL, echo=ECHO)
+
+    logger.info("Initializing tweet streamer...")
+    stream = MyStreamer(
+        twitter=twitter,
+        db_session=db_session,
+        bounding_box=BOUNDING_BOX,
+        app_key=APP_KEY,
+        app_secret=APP_SECRET,
+        oauth_token=OAUTH_TOKEN,
+        oauth_token_secret=OAUTH_TOKEN_SECRET,
+    )
+
+    logger.info("Looking for events...")
+    stream.stream_tweets()
+
+
+if __name__ == "__main__":
+    main()
