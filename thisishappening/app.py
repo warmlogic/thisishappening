@@ -304,7 +304,7 @@ class MyStreamer(TwythonStreamer):
         tweet_info = get_tweet_info(status)
 
         if LOG_TWEETS:
-            _ = RecentTweets.log_tweet(session, tweet_info=tweet_info)
+            _ = RecentTweets.log_tweet(db_session, tweet_info=tweet_info)
 
             # Check on whether recent tweets have been deleted, and update if so.
             # Assumption is that tweets are deleted quickly; then we don't need to spend
@@ -320,7 +320,7 @@ class MyStreamer(TwythonStreamer):
             )
 
         activity_curr_day = RecentTweets.get_recent_tweets(
-            session,
+            db_session,
             timestamp=tweet_info.created_at,
             hours=24,
             place_type=VALID_PLACE_TYPES,
@@ -331,7 +331,7 @@ class MyStreamer(TwythonStreamer):
             include_deleted_status=QUERY_INCLUDE_DELETED_STATUS,
         )
         activity_prev_day = RecentTweets.get_recent_tweets(
-            session,
+            db_session,
             timestamp=tweet_info.created_at - timedelta(days=1),
             hours=24,
             place_type=VALID_PLACE_TYPES,
@@ -343,7 +343,7 @@ class MyStreamer(TwythonStreamer):
         )
 
         activity_curr_hour = RecentTweets.get_recent_tweets(
-            session,
+            db_session,
             timestamp=tweet_info.created_at,
             hours=TEMPORAL_GRANULARITY_HOURS,
             place_type=VALID_PLACE_TYPES,
@@ -355,7 +355,7 @@ class MyStreamer(TwythonStreamer):
         )
 
         activity_prev_hour = RecentTweets.get_recent_tweets(
-            session,
+            db_session,
             timestamp=tweet_info.created_at
             - timedelta(hours=TEMPORAL_GRANULARITY_HOURS),
             hours=TEMPORAL_GRANULARITY_HOURS,
@@ -446,17 +446,17 @@ class MyStreamer(TwythonStreamer):
             >= timedelta(minutes=10)
         ):
             # Delete old data by row count
-            RecentTweets.keep_tweets_n_rows(session, n=RECENT_TWEETS_ROWS_TO_KEEP)
-            Events.keep_events_n_rows(session, n=EVENTS_ROWS_TO_KEEP)
+            RecentTweets.keep_tweets_n_rows(db_session, n=RECENT_TWEETS_ROWS_TO_KEEP)
+            Events.keep_events_n_rows(db_session, n=EVENTS_ROWS_TO_KEEP)
 
             # Delete old data by timestamp
             RecentTweets.delete_tweets_older_than(
-                session,
+                db_session,
                 timestamp=tweet_info.created_at,
                 days=RECENT_TWEETS_DAYS_TO_KEEP,
             )
             Events.delete_events_older_than(
-                session,
+                db_session,
                 timestamp=tweet_info.created_at,
                 days=EVENTS_DAYS_TO_KEEP,
             )
@@ -494,7 +494,7 @@ class MyStreamer(TwythonStreamer):
 
     def update_deleted_tweets(self, timestamp: datetime, hours: float):
         tweets = RecentTweets.get_recent_tweets(
-            session,
+            db_session,
             timestamp=timestamp,
             hours=hours,
             place_type=VALID_PLACE_TYPES,
@@ -514,7 +514,7 @@ class MyStreamer(TwythonStreamer):
                         f"Tweet {t.user_screen_name}/status/{t.status_id_str}"
                         " not found, marking as deleted"
                     )
-                    RecentTweets.update_tweet_deleted(session, t.status_id_str)
+                    RecentTweets.update_tweet_deleted(db_session, t.status_id_str)
 
     def determine_if_event_occurred(
         self,
@@ -602,7 +602,7 @@ class MyStreamer(TwythonStreamer):
             )
 
             if LOG_EVENTS:
-                _ = Events.log_event(session, event_info=event_info)
+                _ = Events.log_event(db_session, event_info=event_info)
             else:
                 logger.info(
                     "Not logging event due to environment variable settings:"
@@ -648,11 +648,11 @@ twitter = Twython(
 )
 
 # Establish connection to database
-session = session_factory(DATABASE_URL, echo=ECHO)
+db_session = session_factory(DATABASE_URL, echo=ECHO)
 
 # Find out when the last event happened
 # First check the database
-most_recent_event = Events.get_most_recent_event(session, event_type=["moment"])
+most_recent_event = Events.get_most_recent_event(db_session, event_type=["moment"])
 if most_recent_event is not None:
     event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
 else:
