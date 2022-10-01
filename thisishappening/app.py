@@ -8,6 +8,7 @@ from time import sleep
 import numpy as np
 import pytz
 from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_fixed
 from twython import (
     Twython,
     TwythonAuthError,
@@ -99,6 +100,7 @@ OAUTH_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET", default=None)
 DATABASE_URL = os.getenv("DATABASE_URL", default=None)
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
+RETRY_WAIT_SECONDS = int(os.getenv("RETRY_WAIT_SECONDS", default="60"))
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
@@ -620,14 +622,18 @@ class MyStreamer(TwythonStreamer):
                     # Update the comparison tweet time
                     if update_event_comparison_ts:
                         self.event_comparison_ts = event_info.timestamp
-                except TwythonAuthError:
-                    logger.exception(
-                        "Authorization error, did you create read+write credentials?"
+                except TwythonAuthError as e:
+                    logger.info(
+                        "Authorization error. Did you create read+write"
+                        f" credentials? {e}"
                     )
-                except TwythonRateLimitError:
-                    logger.exception("Rate limit error")
-                except TwythonError:
-                    logger.exception("Encountered some other error")
+                    raise
+                except TwythonRateLimitError as e:
+                    logger.info(f"Rate limit exceeded when posting event: {e}")
+                    raise
+                except TwythonError as e:
+                    logger.info(f"Encountered some other error: {e}")
+                    raise
             else:
                 logger.info("Not posting event due to environment variable settings")
 
