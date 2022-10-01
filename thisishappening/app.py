@@ -40,15 +40,20 @@ assert ENVIRONMENT in [
 
 # Read .env file for local development
 if ENVIRONMENT == "development":
-    env_path = Path.cwd().parent / ".env"
-    if env_path.exists():
-        _ = load_dotenv(dotenv_path=env_path)
+    if (Path.cwd() / "data").exists():
+        root_dir = Path.cwd()
+    elif (Path.cwd().parent / "data").exists():
+        root_dir = Path.cwd().parent
     else:
-        env_path = Path.cwd() / ".env"
-        if env_path.exists():
-            _ = load_dotenv(dotenv_path=env_path)
-        else:
-            raise OSError(".env file not found. Did you set it up?")
+        raise OSError(f"Running from unsupported directory: {Path.cwd()}")
+
+    dotenv_file = root_dir / ".env"
+    try:
+        with open(dotenv_file, "r") as fp:
+            _ = load_dotenv(stream=fp)
+    except FileNotFoundError:
+        logger.info(f"{dotenv_file} file not found. Did you set it up?")
+        raise
 
 DEBUG_MODE = os.getenv("DEBUG_MODE", default="true").lower() == "true"
 
