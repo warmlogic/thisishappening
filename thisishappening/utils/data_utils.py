@@ -2,6 +2,7 @@ import itertools
 import logging
 from collections import namedtuple
 from operator import itemgetter
+from typing import Iterator
 
 import numpy as np
 from geopy.distance import geodesic
@@ -19,8 +20,8 @@ GridCoords = namedtuple(
 )
 
 
-def n_wise(iterable: list, n: int) -> zip(tuple):
-    """n_wise - Given an iterable, create a generator of successive groups of size n
+def n_wise(iterable: list, n: int) -> Iterator[tuple]:
+    """n_wise - Given an iterable, create an iterator of successive groups of size n
 
     list(n_wise([1, 2, 3, 4, 5], 3)) -> [(1, 2, 3), (2, 3, 4), (3, 4, 5)]
 
@@ -33,7 +34,7 @@ def n_wise(iterable: list, n: int) -> zip(tuple):
 
     Returns
     -------
-    zip generator of tuples
+    Iterator of tuples
         Items in groups
     """
     return zip(*(itertools.islice(iterable, i, None) for i in range(n)))
