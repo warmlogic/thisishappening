@@ -37,9 +37,9 @@ assert ENVIRONMENT in [
 
 # Read .env file for local development
 if ENVIRONMENT == "development":
-    if (Path.cwd() / "data").exists():
+    if (Path.cwd() / ".env").exists():
         root_dir = Path.cwd()
-    elif (Path.cwd().parent / "data").exists():
+    elif (Path.cwd().parent / ".env").exists():
         root_dir = Path.cwd().parent
     else:
         raise OSError(f"Running from unsupported directory: {Path.cwd()}")
