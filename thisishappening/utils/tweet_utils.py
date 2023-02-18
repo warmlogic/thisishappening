@@ -246,11 +246,11 @@ def check_tweet(
 
     valid_lat_lon = all(
         [
-            longitude != lon_lat[0]
-            if longitude
-            else True and latitude != lon_lat[1]
-            if latitude
-            else True
+            (
+                longitude != lon_lat[0]
+                if longitude
+                else True and latitude != lon_lat[1] if latitude else True
+            )
             for lon_lat in ignore_lon_lat
         ]
     )
@@ -395,9 +395,11 @@ def clean_text(text: str) -> str:
         [
             "".join(
                 [
-                    unidecode(letter)
-                    if (not emoji.is_emoji(letter) and letter not in UNICODE_KEEP)
-                    else letter
+                    (
+                        unidecode(letter)
+                        if (not emoji.is_emoji(letter) and letter not in UNICODE_KEEP)
+                        else letter
+                    )
                     for letter in word
                 ]
             )
