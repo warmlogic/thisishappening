@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytz
 from sqlalchemy import (
@@ -96,7 +96,7 @@ class Events(Base):
         hours: float = 1,
         event_type: list[str] = None,
     ):
-        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -174,7 +174,7 @@ class Events(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.now(tz=timezone.utc)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
@@ -282,7 +282,7 @@ class RecentTweets(Base):
         hours: float = 0,
         bounding_box: list[float] = None,
     ):
-        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -332,7 +332,7 @@ class RecentTweets(Base):
             include_deleted_status if include_deleted_status is not None else False
         )
 
-        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -421,7 +421,7 @@ class RecentTweets(Base):
         """Mark tweet as deleted"""
         try:
             db_session.query(cls).filter(cls.status_id_str == status_id_str).update(
-                {"deleted_at": datetime.utcnow().replace(tzinfo=pytz.UTC)}
+                {"deleted_at": datetime.now(tz=timezone.utc)}
             )
             db_session.commit()
         except Exception as e:
@@ -444,7 +444,7 @@ class RecentTweets(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.now(tz=timezone.utc)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:

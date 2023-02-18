@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -300,7 +300,7 @@ class MyStreamer(TwythonStreamer):
         )
         self.bounding_box_str = ",".join([str(x) for x in bounding_box])
         self.event_comparison_ts = self.get_event_comparison_ts()
-        self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        self.purge_data_comparison_ts = datetime.now(tz=timezone.utc)
         self.posted_daily_events = False
 
     @retry(wait=wait_fixed(RETRY_WAIT_SECONDS))
@@ -519,7 +519,7 @@ class MyStreamer(TwythonStreamer):
 
         # Purge old data every so often
         if PURGE_OLD_DATA and (
-            datetime.utcnow().replace(tzinfo=pytz.UTC) - self.purge_data_comparison_ts
+            datetime.now(tz=timezone.utc) - self.purge_data_comparison_ts
             >= timedelta(minutes=10)
         ):
             # Delete old data by row count
@@ -541,7 +541,7 @@ class MyStreamer(TwythonStreamer):
             )
 
             # Update
-            self.purge_data_comparison_ts = datetime.utcnow().replace(tzinfo=pytz.UTC)
+            self.purge_data_comparison_ts = datetime.now(tz=timezone.utc)
 
     def on_error(self, status_code, content, headers=None):
         content = (
