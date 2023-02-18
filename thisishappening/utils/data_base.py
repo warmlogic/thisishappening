@@ -27,11 +27,12 @@ logger = logging.getLogger("happening_logger")
 Base = declarative_base()
 
 
-def session_factory(DATABASE_URL: str, echo: bool = False):
-    engine = create_engine(DATABASE_URL, poolclass=NullPool, echo=echo)
+def session_factory(database_url: str, echo: bool = None):
+    echo = echo if echo is not None else False
+    engine = create_engine(database_url, poolclass=NullPool, echo=echo)
     Base.metadata.create_all(engine)
-    _SessionFactory = sessionmaker(bind=engine)
-    return _SessionFactory()
+    session_factory = sessionmaker(bind=engine)
+    return session_factory()
 
 
 class Events(Base):
@@ -313,11 +314,24 @@ class RecentTweets(Base):
         bounding_box: list[float] = None,
         place_type: list[str] = None,
         has_coords: bool = None,
-        place_type_or_coords: bool = True,
-        include_quote_status: bool = True,
-        include_reply_status: bool = True,
-        include_deleted_status: bool = False,
+        place_type_or_coords: bool = None,
+        include_quote_status: bool = None,
+        include_reply_status: bool = None,
+        include_deleted_status: bool = None,
     ):
+        place_type_or_coords = (
+            place_type_or_coords if place_type_or_coords is not None else True
+        )
+        include_quote_status = (
+            include_quote_status if include_quote_status is not None else True
+        )
+        include_reply_status = (
+            include_reply_status if include_reply_status is not None else True
+        )
+        include_deleted_status = (
+            include_deleted_status if include_deleted_status is not None else False
+        )
+
         timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
 
         ts_start = timestamp - timedelta(hours=hours)

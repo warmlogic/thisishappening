@@ -24,7 +24,7 @@ logger = logging.getLogger("happening_logger")
 url_all_re = (
     r"\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)"
     + r"(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|"
-    + r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    + r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"  # noqa: RUF001
 )
 url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
@@ -182,18 +182,33 @@ def get_tweet_info(status: dict) -> dict:
 def check_tweet(
     status,
     bounding_box: list[float],
-    valid_place_types: list[str] = ["admin", "city", "neighborhood", "poi"],
-    ignore_words: list[str] = [],
-    ignore_user_screen_names: list[str] = [],
-    ignore_user_id_str: list[str] = [],
-    ignore_lon_lat: list[list[str]] = [],
-    ignore_possibly_sensitive: bool = False,
-    ignore_quote_status: bool = False,
-    ignore_reply_status: bool = False,
+    valid_place_types: list[str] = None,
+    ignore_words: list[str] = None,
+    ignore_user_screen_names: list[str] = None,
+    ignore_user_id_str: list[str] = None,
+    ignore_lon_lat: list[list[str]] = None,
+    ignore_possibly_sensitive: bool = None,
+    ignore_quote_status: bool = None,
+    ignore_reply_status: bool = None,
     min_friends_count: int = 1,
     min_followers_count: int = 1,
 ) -> bool:
     """Return True if tweet satisfies specific criteria"""
+    valid_place_types = valid_place_types or ["admin", "city", "neighborhood", "poi"]
+    ignore_words = ignore_words or []
+    ignore_user_screen_names = ignore_user_screen_names or []
+    ignore_user_id_str = ignore_user_id_str or []
+    ignore_lon_lat = ignore_lon_lat or []
+    ignore_possibly_sensitive = (
+        ignore_possibly_sensitive if ignore_possibly_sensitive is not None else False
+    )
+    ignore_quote_status = (
+        ignore_quote_status if ignore_quote_status is not None else False
+    )
+    ignore_reply_status = (
+        ignore_reply_status if ignore_reply_status is not None else False
+    )
+
     tweet_body = get_tweet_body(status)
 
     if not tweet_body:
@@ -420,7 +435,7 @@ def clean_text(text: str) -> str:
     return " ".join(tokens)
 
 
-def filter_tokens(text: str, lemmatize: bool = False) -> str:
+def filter_tokens(text: str, lemmatize: bool = None) -> str:
     def _token_filter(token):
         return not any(
             [
@@ -431,6 +446,8 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
                 (len(token.text) <= 1),
             ]
         )
+
+    lemmatize = lemmatize if lemmatize is not None else False
 
     tokens = [
         token.lemma_ if lemmatize else token.text
@@ -626,9 +643,13 @@ def get_event_info(
     reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
     deduplicate_each_tweet: bool = None,
-    tweet_lat_lon: bool = False,
-    show_tweets_on_event: bool = True,
+    tweet_lat_lon: bool = None,
+    show_tweets_on_event: bool = None,
 ):
+    tweet_lat_lon = tweet_lat_lon if tweet_lat_lon is not None else False
+    show_tweets_on_event = (
+        show_tweets_on_event if show_tweets_on_event is not None else True
+    )
     # Compute the average tweet location
     lons, lats = get_coords(event_tweets)
     west_lon = min(lons)
