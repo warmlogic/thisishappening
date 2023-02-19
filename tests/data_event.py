@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 clusters = {
     0: {
@@ -14,7 +14,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 23, 33, 22),
+                "created_at": datetime(2022, 4, 19, 23, 33, 22, tzinfo=timezone.utc),
                 "user_screen_name": "user12301",
                 "tweet_body": (
                     "Time in a ballpark does not count against your natural lifespan."
@@ -37,7 +37,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 21, 13, 19),
+                "created_at": datetime(2022, 4, 19, 21, 13, 19, tzinfo=timezone.utc),
                 "user_screen_name": "user12302_2_tweets",
                 "tweet_body": (
                     "今日はボストンでレッドソックス対ブルージェイズ戦。菊池雄星投手が今季2度目の先発。And a legendary"
@@ -61,7 +61,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 23, 12, 11),
+                "created_at": datetime(2022, 4, 19, 23, 12, 11, tzinfo=timezone.utc),
                 "user_screen_name": "user12302_2_tweets",
                 "tweet_body": (
                     "ブルージェイズ対レッドソックス戦始まります。菊池雄星投手、新天地での初勝利なるか。加藤豪将選手、沢村拓一投手の出番はあるかどうか。"
@@ -84,7 +84,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 19, 33, 4),
+                "created_at": datetime(2022, 4, 19, 19, 33, 4, tzinfo=timezone.utc),
                 "user_screen_name": "user12303_2_tweets",
                 "tweet_body": "Oh hey 👋 https://url.co/123",
                 "is_quote_status": False,
@@ -104,7 +104,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 19, 57, 45),
+                "created_at": datetime(2022, 4, 19, 19, 57, 45, tzinfo=timezone.utc),
                 "user_screen_name": "user12303_2_tweets",
                 "tweet_body": (
                     "Toronto\nBoston\nNew York\nTampa Bay\nBaltimore\n\nBig if true."
@@ -127,7 +127,7 @@ clusters = {
                 "latitude": 42.346424,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 22, 40, 23),
+                "created_at": datetime(2022, 4, 19, 22, 40, 23, tzinfo=timezone.utc),
                 "user_screen_name": "user12304",
                 "tweet_body": (
                     "At Fenway Park for my first MLB game since before the pandemic"
@@ -151,7 +151,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 21, 57, 8),
+                "created_at": datetime(2022, 4, 19, 21, 57, 8, tzinfo=timezone.utc),
                 "user_screen_name": "user12305",
                 "tweet_body": "Back at my happy place. https://url.co/123",
                 "is_quote_status": False,
@@ -171,7 +171,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 22, 23, 31),
+                "created_at": datetime(2022, 4, 19, 22, 23, 31, tzinfo=timezone.utc),
                 "user_screen_name": "user12306",
                 "tweet_body": "👀⚾️✔️ https://url.co/123",
                 "is_quote_status": False,
@@ -191,9 +191,12 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 23, 8, 47),
+                "created_at": datetime(2022, 4, 19, 23, 8, 47, tzinfo=timezone.utc),
                 "user_screen_name": "user12307",
-                "tweet_body": "I’ve missed Fenway nights ❤️❤️❤️ https://url.co/123",
+                "tweet_body": (
+                    "I’ve missed Fenway nights ❤️❤️❤️"  # noqa: RUF001
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -211,7 +214,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 19, 25, 36),
+                "created_at": datetime(2022, 4, 19, 19, 25, 36, tzinfo=timezone.utc),
                 "user_screen_name": "user12308_2_tweets",
                 "tweet_body": "Flow looking 💯 today https://url.co/123",
                 "is_quote_status": False,
@@ -231,7 +234,7 @@ clusters = {
                 "latitude": 42.346424,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 20, 38, 35),
+                "created_at": datetime(2022, 4, 19, 20, 38, 35, tzinfo=timezone.utc),
                 "user_screen_name": "user12308_2_tweets",
                 "tweet_body": (
                     "Skies are looking a bit threatening, but we are very much ready to"
@@ -255,7 +258,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 17, 53, 15),
+                "created_at": datetime(2022, 4, 19, 17, 53, 15, tzinfo=timezone.utc),
                 "user_screen_name": "user12309",
                 "tweet_body": "😎 https://url.co/123",
                 "is_quote_status": False,
@@ -275,7 +278,7 @@ clusters = {
                 "latitude": 42.346424,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 23, 37, 30),
+                "created_at": datetime(2022, 4, 19, 23, 37, 30, tzinfo=timezone.utc),
                 "user_screen_name": "user12310",
                 "tweet_body": (
                     "My first conference talk I'm person in two years, coupled with my"
@@ -299,7 +302,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 15, 15, 18),
+                "created_at": datetime(2022, 4, 19, 15, 15, 18, tzinfo=timezone.utc),
                 "user_screen_name": "user12311",
                 "tweet_body": "Current View.\nOutside @fenwaypark. https://url.co/123",
                 "is_quote_status": False,
@@ -319,7 +322,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 23, 34, 23),
+                "created_at": datetime(2022, 4, 19, 23, 34, 23, tzinfo=timezone.utc),
                 "user_screen_name": "user12312",
                 "tweet_body": (
                     "Obviously in the house for former Seibu Lions starter Yusei"
@@ -342,7 +345,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 20, 47, 4),
+                "created_at": datetime(2022, 4, 19, 20, 47, 4, tzinfo=timezone.utc),
                 "user_screen_name": "user12313",
                 "tweet_body": (
                     "Got laughed at when I compared baseball to rounders ⚾️⚾️⚾️ #RedSox"
@@ -365,7 +368,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 20, 34, 56),
+                "created_at": datetime(2022, 4, 19, 20, 34, 56, tzinfo=timezone.utc),
                 "user_screen_name": "user12314_2_tweets",
                 "tweet_body": (
                     "マラソンから #fenwaypark に流れてきました🏃\u200d♂️⚾️ https://url.co/123"
@@ -387,7 +390,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 20, 36, 43),
+                "created_at": datetime(2022, 4, 19, 20, 36, 43, tzinfo=timezone.utc),
                 "user_screen_name": "user12314_2_tweets",
                 "tweet_body": "ブルージェイズの菊池雄星投手がレッドソックス戦に先発予定です https://url.co/123",
                 "is_quote_status": False,
@@ -407,9 +410,11 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 22, 40, 1),
+                "created_at": datetime(2022, 4, 19, 22, 40, 1, tzinfo=timezone.utc),
                 "user_screen_name": "user12315",
-                "tweet_body": "Reading y’all from here https://url.co/123",
+                "tweet_body": (
+                    "Reading y’all from here https://url.co/123"  # noqa: RUF001
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -427,7 +432,7 @@ clusters = {
                 "latitude": 42.34642,
                 "place_name": "Fenway Park",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 11, 55, 39),
+                "created_at": datetime(2022, 4, 19, 11, 55, 39, tzinfo=timezone.utc),
                 "user_screen_name": "user12316",
                 "tweet_body": "Why not #bostonmarathon126 #RedSox https://url.co/123",
                 "is_quote_status": False,
@@ -451,7 +456,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 18, 23, 52, 10),
+                "created_at": datetime(2022, 4, 18, 23, 52, 10, tzinfo=timezone.utc),
                 "user_screen_name": "user123101",
                 "tweet_body": "Boston was a major success 🤘🏽 https://url.co/123",
                 "is_quote_status": False,
@@ -471,13 +476,13 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 0, 0, 54),
+                "created_at": datetime(2022, 4, 19, 0, 0, 54, tzinfo=timezone.utc),
                 "user_screen_name": "user123102",
                 "tweet_body": (
-                    "Two years in a row! 🎉\n\nMarathon Coverage? \nHere for"
-                    " it.\n\nRunning?\nNot so much.😉\n\nCongratulations to all of the"
-                    " incredible people that reached 26.2 today. You’re all"
-                    " amazing!\n\n#Boston25 https://url.co/123"
+                    "Two years in a row! 🎉\n\nMarathon Coverage? \nHere for it.\n\n"
+                    "Running?\nNot so much.😉\n\nCongratulations to all of the"
+                    " incredible people that reached 26.2 today. You’re"  # noqa: RUF001
+                    " all amazing!\n\n#Boston25 https://url.co/123"
                 ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
@@ -496,12 +501,12 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 12, 40, 55),
+                "created_at": datetime(2022, 4, 19, 12, 40, 55, tzinfo=timezone.utc),
                 "user_screen_name": "user123102_2_tweets",
                 "tweet_body": (
-                    "Two more of my favorites from yesterday’s @bostonmarathon"
-                    " coverage. 💛💙\n\nWhat an inspiring &amp; uplifting day!"
-                    " https://url.co/123"
+                    "Two more of my favorites from yesterday’s"  # noqa: RUF001
+                    " @bostonmarathon coverage. 💛💙\n\nWhat an inspiring &amp;"
+                    " uplifting day! https://url.co/123"
                 ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
@@ -520,7 +525,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 14, 9, 4),
+                "created_at": datetime(2022, 4, 19, 14, 9, 4, tzinfo=timezone.utc),
                 "user_screen_name": "user123103",
                 "tweet_body": (
                     "@bostonmarathon it was nice to meet you! 👩🏽‍🚀 You were brutal but"
@@ -543,7 +548,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 15, 57, 22),
+                "created_at": datetime(2022, 4, 19, 15, 57, 22, tzinfo=timezone.utc),
                 "user_screen_name": "user123103",
                 "tweet_body": (
                     "Dear Boston Marathon, it was nice to meet you! 👩🏽‍🚀 Your hills"
@@ -567,7 +572,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 0, 10, 40),
+                "created_at": datetime(2022, 4, 19, 0, 10, 40, tzinfo=timezone.utc),
                 "user_screen_name": "user123105",
                 "tweet_body": (
                     "A great day 🤘🏽 with my forever running buddy and our little champ!"
@@ -590,7 +595,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 10, 29, 2),
+                "created_at": datetime(2022, 4, 19, 10, 29, 2, tzinfo=timezone.utc),
                 "user_screen_name": "user123106",
                 "tweet_body": "3:55:57 🙏🏾 https://url.co/123",
                 "is_quote_status": False,
@@ -610,7 +615,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 11, 42, 20),
+                "created_at": datetime(2022, 4, 19, 11, 42, 20, tzinfo=timezone.utc),
                 "user_screen_name": "user123107",
                 "tweet_body": (
                     "Congratulations @coryresnick for running @bostonmarathon great"
@@ -633,7 +638,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 2, 1, 10),
+                "created_at": datetime(2022, 4, 19, 2, 1, 10, tzinfo=timezone.utc),
                 "user_screen_name": "user123108",
                 "tweet_body": (
                     "The most inspirational of days spent cheering on all of the"
@@ -657,14 +662,14 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 0, 9, 33),
+                "created_at": datetime(2022, 4, 19, 0, 9, 33, tzinfo=timezone.utc),
                 "user_screen_name": "user123109",
                 "tweet_body": (
                     "26.2 miles of smiles today at the @bostonmarathon! The weather,"
                     " the course &amp; the crowds..my ears are still ringing. \nI hoped"
                     " for a 4:30 race but managed a 3:58, something I never dreamt was"
-                    " possible. I’ll be smiling about that for awhile. Thx for the"
-                    " cheers &amp; THANK YOU BOSTON!🦄 https://url.co/123"
+                    " possible. I’ll be smiling about that for awhile."  # noqa: RUF001
+                    " Thx for the cheers &amp; THANK YOU BOSTON!🦄 https://url.co/123"
                 ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
@@ -683,7 +688,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 18, 23, 53, 29),
+                "created_at": datetime(2022, 4, 18, 23, 53, 29, tzinfo=timezone.utc),
                 "user_screen_name": "user123110",
                 "tweet_body": (
                     "Great to meet you in person @davidwade !!! https://url.co/123"
@@ -705,7 +710,7 @@ clusters = {
                 "latitude": 42.349842,
                 "place_name": "Boston Marathon Finish Line",
                 "place_type": "poi",
-                "created_at": datetime(2022, 4, 19, 3, 5, 32),
+                "created_at": datetime(2022, 4, 19, 3, 5, 32, tzinfo=timezone.utc),
                 "user_screen_name": "user123111",
                 "tweet_body": "https://url.co/123",
                 "is_quote_status": False,

@@ -26,14 +26,14 @@ def cluster_activity(
 
     # haversine metric requires radians
     lons, lats = get_coords(activity)
-    X = np.radians([[lon, lat] for lon, lat in zip(lons, lats)])
+    x_ll = np.radians([[lon, lat] for lon, lat in zip(lons, lats, strict=True)])
 
     unique_labels = []
-    for km, eps in zip(kms, _eps):
+    for km, eps in zip(kms, _eps, strict=True):  # noqa: B007
         db = DBSCAN(
             eps=eps, min_samples=min_samples, algorithm="ball_tree", metric="haversine"
         )
-        db.fit(X, sample_weight=sample_weight)
+        db.fit(x_ll, sample_weight=sample_weight)
 
         # label -1 means not assigned to a cluster
         unique_labels = [x for x in set(db.labels_) if x != -1]

@@ -5,12 +5,11 @@ import string
 import unicodedata
 import urllib
 from collections import Counter, namedtuple
-from datetime import datetime
+from datetime import datetime, timezone
 from time import sleep
 
 import emoji
 import en_core_web_sm
-import pytz
 from ftfy import fix_text
 from unidecode import unidecode
 
@@ -24,7 +23,7 @@ logger = logging.getLogger("happening_logger")
 url_all_re = (
     r"\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)"
     + r"(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|"
-    + r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    + r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"  # noqa: RUF001
 )
 url_all_re = re.compile(url_all_re, flags=re.IGNORECASE)
 
@@ -182,18 +181,33 @@ def get_tweet_info(status: dict) -> dict:
 def check_tweet(
     status,
     bounding_box: list[float],
-    valid_place_types: list[str] = ["admin", "city", "neighborhood", "poi"],
-    ignore_words: list[str] = [],
-    ignore_user_screen_names: list[str] = [],
-    ignore_user_id_str: list[str] = [],
-    ignore_lon_lat: list[list[str]] = [],
-    ignore_possibly_sensitive: bool = False,
-    ignore_quote_status: bool = False,
-    ignore_reply_status: bool = False,
+    valid_place_types: list[str] = None,
+    ignore_words: list[str] = None,
+    ignore_user_screen_names: list[str] = None,
+    ignore_user_id_str: list[str] = None,
+    ignore_lon_lat: list[list[str]] = None,
+    ignore_possibly_sensitive: bool = None,
+    ignore_quote_status: bool = None,
+    ignore_reply_status: bool = None,
     min_friends_count: int = 1,
     min_followers_count: int = 1,
 ) -> bool:
     """Return True if tweet satisfies specific criteria"""
+    valid_place_types = valid_place_types or ["admin", "city", "neighborhood", "poi"]
+    ignore_words = ignore_words or []
+    ignore_user_screen_names = ignore_user_screen_names or []
+    ignore_user_id_str = ignore_user_id_str or []
+    ignore_lon_lat = ignore_lon_lat or []
+    ignore_possibly_sensitive = (
+        ignore_possibly_sensitive if ignore_possibly_sensitive is not None else False
+    )
+    ignore_quote_status = (
+        ignore_quote_status if ignore_quote_status is not None else False
+    )
+    ignore_reply_status = (
+        ignore_reply_status if ignore_reply_status is not None else False
+    )
+
     tweet_body = get_tweet_body(status)
 
     if not tweet_body:
@@ -246,11 +260,11 @@ def check_tweet(
 
     valid_lat_lon = all(
         [
-            longitude != lon_lat[0]
-            if longitude
-            else True and latitude != lon_lat[1]
-            if latitude
-            else True
+            (
+                longitude != lon_lat[0]
+                if longitude
+                else True and latitude != lon_lat[1] if latitude else True
+            )
             for lon_lat in ignore_lon_lat
         ]
     )
@@ -300,7 +314,7 @@ def check_tweet(
 def date_string_to_datetime(
     date_string: str,
     fmt: str = "%a %b %d %H:%M:%S +0000 %Y",
-    tzinfo=pytz.UTC,
+    tzinfo=timezone.utc,
 ) -> datetime:
     return datetime.strptime(date_string, fmt).replace(tzinfo=tzinfo)
 
@@ -372,7 +386,7 @@ def clean_text(text: str) -> str:
         [
             token
             for token in text.split()
-            if not (UNICODE_ELLIPSIS in token.encode("unicode-escape").decode())
+            if UNICODE_ELLIPSIS not in token.encode("unicode-escape").decode()
         ]
     )
 
@@ -395,9 +409,11 @@ def clean_text(text: str) -> str:
         [
             "".join(
                 [
-                    unidecode(letter)
-                    if (not emoji.is_emoji(letter) and letter not in UNICODE_KEEP)
-                    else letter
+                    (
+                        unidecode(letter)
+                        if (not emoji.is_emoji(letter) and letter not in UNICODE_KEEP)
+                        else letter
+                    )
                     for letter in word
                 ]
             )
@@ -418,7 +434,7 @@ def clean_text(text: str) -> str:
     return " ".join(tokens)
 
 
-def filter_tokens(text: str, lemmatize: bool = False) -> str:
+def filter_tokens(text: str, lemmatize: bool = None) -> str:
     def _token_filter(token):
         return not any(
             [
@@ -429,6 +445,8 @@ def filter_tokens(text: str, lemmatize: bool = False) -> str:
                 (len(token.text) <= 1),
             ]
         )
+
+    lemmatize = lemmatize if lemmatize is not None else False
 
     tokens = [
         token.lemma_ if lemmatize else token.text
@@ -505,7 +523,7 @@ def get_tokens_to_tweet(
         ]
 
     # Combine tokens and usernames/hashtags/emojis from each tweet
-    tweets = [t + u for t, u in zip(tweets, users_hashtags_emojis)]
+    tweets = [t + u for t, u in zip(tweets, users_hashtags_emojis, strict=True)]
 
     if deduplicate_each_tweet:
         tweets = [list(dict.fromkeys(tweet)) for tweet in tweets]
@@ -543,9 +561,12 @@ def get_coords(tweets):
     return lons, lats
 
 
-def get_place_name(tweets, valid_place_types: list[str] = ["neighborhood", "poi"]):
+def get_place_name(tweets, valid_place_types: list[str] = None):
     # Get the most common place name from these tweets;
     # only consider neighborhood or poi
+    valid_place_types = (
+        valid_place_types if valid_place_types is not None else ["neighborhood", "poi"]
+    )
     try:
         place_names = [
             x.place_name for x in tweets if x.place_type in valid_place_types
@@ -624,9 +645,13 @@ def get_event_info(
     reduce_token_count_min: bool = None,
     remove_username_at: bool = None,
     deduplicate_each_tweet: bool = None,
-    tweet_lat_lon: bool = False,
-    show_tweets_on_event: bool = True,
+    tweet_lat_lon: bool = None,
+    show_tweets_on_event: bool = None,
 ):
+    tweet_lat_lon = tweet_lat_lon if tweet_lat_lon is not None else False
+    show_tweets_on_event = (
+        show_tweets_on_event if show_tweets_on_event is not None else True
+    )
     # Compute the average tweet location
     lons, lats = get_coords(event_tweets)
     west_lon = min(lons)
@@ -638,7 +663,7 @@ def get_event_info(
 
     # Event timestamp is the most recent tweet
     timestamp = max(map(operator.itemgetter("created_at"), event_tweets)).replace(
-        tzinfo=pytz.UTC
+        tzinfo=timezone.utc
     )
 
     place_name = get_place_name(event_tweets, valid_place_types=["neighborhood", "poi"])
@@ -685,10 +710,10 @@ def get_event_info(
         " ".join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]
     ]
     mask = [len(x) <= remaining_chars for x in possible_token_sets]
-    tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
+    tokens = [t for t, m in zip(possible_token_sets, mask, strict=True) if m][0]
 
     # tweets are ordered newest to oldest
-    coords = ",".join([f"{lon}+{lat}" for lon, lat in zip(lons, lats)])
+    coords = ",".join([f"{lon}+{lat}" for lon, lat in zip(lons, lats, strict=True)])
     status_ids = get_status_ids(event_tweets)
     tweet_ids = ",".join(sorted(status_ids)[::-1])
 

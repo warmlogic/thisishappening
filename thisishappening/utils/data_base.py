@@ -1,7 +1,6 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-import pytz
 from sqlalchemy import (
     ARRAY,
     Boolean,
@@ -27,11 +26,12 @@ logger = logging.getLogger("happening_logger")
 Base = declarative_base()
 
 
-def session_factory(DATABASE_URL: str, echo: bool = False):
-    engine = create_engine(DATABASE_URL, poolclass=NullPool, echo=echo)
+def session_factory(database_url: str, echo: bool = None):
+    echo = echo if echo is not None else False
+    engine = create_engine(database_url, poolclass=NullPool, echo=echo)
     Base.metadata.create_all(engine)
-    _SessionFactory = sessionmaker(bind=engine)
-    return _SessionFactory()
+    session_factory = sessionmaker(bind=engine)
+    return session_factory()
 
 
 class Events(Base):
@@ -95,7 +95,7 @@ class Events(Base):
         hours: float = 1,
         event_type: list[str] = None,
     ):
-        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -138,7 +138,7 @@ class Events(Base):
             .first()
         )
         if event is not None:
-            timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
+            timestamp = event.timestamp.replace(tzinfo=timezone.utc)
             bounding_box = [
                 event.west_lon,
                 event.south_lat,
@@ -173,7 +173,7 @@ class Events(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.now(tz=timezone.utc)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
@@ -281,7 +281,7 @@ class RecentTweets(Base):
         hours: float = 0,
         bounding_box: list[float] = None,
     ):
-        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -313,12 +313,25 @@ class RecentTweets(Base):
         bounding_box: list[float] = None,
         place_type: list[str] = None,
         has_coords: bool = None,
-        place_type_or_coords: bool = True,
-        include_quote_status: bool = True,
-        include_reply_status: bool = True,
-        include_deleted_status: bool = False,
+        place_type_or_coords: bool = None,
+        include_quote_status: bool = None,
+        include_reply_status: bool = None,
+        include_deleted_status: bool = None,
     ):
-        timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+        place_type_or_coords = (
+            place_type_or_coords if place_type_or_coords is not None else True
+        )
+        include_quote_status = (
+            include_quote_status if include_quote_status is not None else True
+        )
+        include_reply_status = (
+            include_reply_status if include_reply_status is not None else True
+        )
+        include_deleted_status = (
+            include_deleted_status if include_deleted_status is not None else False
+        )
+
+        timestamp = timestamp or datetime.now(tz=timezone.utc)
 
         ts_start = timestamp - timedelta(hours=hours)
 
@@ -407,7 +420,7 @@ class RecentTweets(Base):
         """Mark tweet as deleted"""
         try:
             db_session.query(cls).filter(cls.status_id_str == status_id_str).update(
-                {"deleted_at": datetime.utcnow().replace(tzinfo=pytz.UTC)}
+                {"deleted_at": datetime.now(tz=timezone.utc)}
             )
             db_session.commit()
         except Exception as e:
@@ -430,7 +443,7 @@ class RecentTweets(Base):
         weeks = weeks or 0
 
         if any([hours, days, weeks]):
-            timestamp = timestamp or datetime.utcnow().replace(tzinfo=pytz.UTC)
+            timestamp = timestamp or datetime.now(tz=timezone.utc)
 
             ts_end = timestamp - timedelta(hours=hours, days=days, weeks=weeks)
             try:
