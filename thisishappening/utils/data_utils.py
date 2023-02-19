@@ -1,8 +1,8 @@
 import itertools
 import logging
 from collections import namedtuple
+from collections.abc import Iterator
 from operator import itemgetter
-from typing import Iterator
 
 import numpy as np
 from geopy.distance import geodesic
@@ -37,7 +37,7 @@ def n_wise(iterable: list, n: int) -> Iterator[tuple]:
     Iterator of tuples
         Items in groups
     """
-    return zip(*(itertools.islice(iterable, i, None) for i in range(n)))
+    return zip(*(itertools.islice(iterable, i, None) for i in range(n)), strict=True)
 
 
 def inbounds(longitude: float, latitude: float, bounding_box: list[float]) -> bool:

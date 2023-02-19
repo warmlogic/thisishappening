@@ -46,7 +46,7 @@ if ENVIRONMENT == "development":
 
     dotenv_file = root_dir / ".env"
     try:
-        with open(dotenv_file, "r") as fp:
+        with open(dotenv_file) as fp:
             _ = load_dotenv(stream=fp)
     except FileNotFoundError:
         logger.info(f"{dotenv_file} file not found. Did you set it up?")
@@ -292,7 +292,7 @@ class MyStreamer(TwythonStreamer):
         *args,
         **kwargs,
     ):
-        super(MyStreamer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.twitter = twitter
         self.db_session = db_session
         self.grid_coords = get_grid_coords(
@@ -649,7 +649,11 @@ class MyStreamer(TwythonStreamer):
         event_type: str = None,
         update_event_comparison_ts: bool = None,
     ):
-        update_event_comparison_ts = update_event_comparison_ts or True
+        update_event_comparison_ts = (
+            update_event_comparison_ts
+            if update_event_comparison_ts is not None
+            else True
+        )
 
         clusters = cluster_activity(
             activity=activity_w,

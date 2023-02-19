@@ -386,7 +386,7 @@ def clean_text(text: str) -> str:
         [
             token
             for token in text.split()
-            if not (UNICODE_ELLIPSIS in token.encode("unicode-escape").decode())
+            if UNICODE_ELLIPSIS not in token.encode("unicode-escape").decode()
         ]
     )
 
@@ -523,7 +523,7 @@ def get_tokens_to_tweet(
         ]
 
     # Combine tokens and usernames/hashtags/emojis from each tweet
-    tweets = [t + u for t, u in zip(tweets, users_hashtags_emojis)]
+    tweets = [t + u for t, u in zip(tweets, users_hashtags_emojis, strict=True)]
 
     if deduplicate_each_tweet:
         tweets = [list(dict.fromkeys(tweet)) for tweet in tweets]
@@ -561,9 +561,12 @@ def get_coords(tweets):
     return lons, lats
 
 
-def get_place_name(tweets, valid_place_types: list[str] = ["neighborhood", "poi"]):
+def get_place_name(tweets, valid_place_types: list[str] = None):
     # Get the most common place name from these tweets;
     # only consider neighborhood or poi
+    valid_place_types = (
+        valid_place_types if valid_place_types is not None else ["neighborhood", "poi"]
+    )
     try:
         place_names = [
             x.place_name for x in tweets if x.place_type in valid_place_types
@@ -707,10 +710,10 @@ def get_event_info(
         " ".join(tokens_to_tweet[:i]) for i in range(1, len(tokens_to_tweet) + 1)[::-1]
     ]
     mask = [len(x) <= remaining_chars for x in possible_token_sets]
-    tokens = [t for t, m in zip(possible_token_sets, mask) if m][0]
+    tokens = [t for t, m in zip(possible_token_sets, mask, strict=True) if m][0]
 
     # tweets are ordered newest to oldest
-    coords = ",".join([f"{lon}+{lat}" for lon, lat in zip(lons, lats)])
+    coords = ",".join([f"{lon}+{lat}" for lon, lat in zip(lons, lats, strict=True)])
     status_ids = get_status_ids(event_tweets)
     tweet_ids = ",".join(sorted(status_ids)[::-1])
 
