@@ -193,7 +193,10 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 23, 8, 47, tzinfo=timezone.utc),
                 "user_screen_name": "user12307",
-                "tweet_body": "I’ve missed Fenway nights ❤️❤️❤️ https://url.co/123",
+                "tweet_body": (
+                    "I’ve missed Fenway nights ❤️❤️❤️"  # noqa: RUF001
+                    " https://url.co/123"
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -409,7 +412,9 @@ clusters = {
                 "place_type": "poi",
                 "created_at": datetime(2022, 4, 19, 22, 40, 1, tzinfo=timezone.utc),
                 "user_screen_name": "user12315",
-                "tweet_body": "Reading y’all from here https://url.co/123",
+                "tweet_body": (
+                    "Reading y’all from here https://url.co/123"  # noqa: RUF001
+                ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
                 "longitude": -71.09816,
@@ -474,10 +479,10 @@ clusters = {
                 "created_at": datetime(2022, 4, 19, 0, 0, 54, tzinfo=timezone.utc),
                 "user_screen_name": "user123102",
                 "tweet_body": (
-                    "Two years in a row! 🎉\n\nMarathon Coverage? \nHere for"
-                    " it.\n\nRunning?\nNot so much.😉\n\nCongratulations to all of the"
-                    " incredible people that reached 26.2 today. You’re all"
-                    " amazing!\n\n#Boston25 https://url.co/123"
+                    "Two years in a row! 🎉\n\nMarathon Coverage? \nHere for it.\n\n"
+                    "Running?\nNot so much.😉\n\nCongratulations to all of the"
+                    " incredible people that reached 26.2 today. You’re"  # noqa: RUF001
+                    " all amazing!\n\n#Boston25 https://url.co/123"
                 ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
@@ -499,9 +504,9 @@ clusters = {
                 "created_at": datetime(2022, 4, 19, 12, 40, 55, tzinfo=timezone.utc),
                 "user_screen_name": "user123102_2_tweets",
                 "tweet_body": (
-                    "Two more of my favorites from yesterday’s @bostonmarathon"
-                    " coverage. 💛💙\n\nWhat an inspiring &amp; uplifting day!"
-                    " https://url.co/123"
+                    "Two more of my favorites from yesterday’s"  # noqa: RUF001
+                    " @bostonmarathon coverage. 💛💙\n\nWhat an inspiring &amp;"
+                    " uplifting day! https://url.co/123"
                 ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
@@ -663,8 +668,8 @@ clusters = {
                     "26.2 miles of smiles today at the @bostonmarathon! The weather,"
                     " the course &amp; the crowds..my ears are still ringing. \nI hoped"
                     " for a 4:30 race but managed a 3:58, something I never dreamt was"
-                    " possible. I’ll be smiling about that for awhile. Thx for the"
-                    " cheers &amp; THANK YOU BOSTON!🦄 https://url.co/123"
+                    " possible. I’ll be smiling about that for awhile."  # noqa: RUF001
+                    " Thx for the cheers &amp; THANK YOU BOSTON!🦄 https://url.co/123"
                 ),
                 "is_quote_status": False,
                 "possibly_sensitive": False,
