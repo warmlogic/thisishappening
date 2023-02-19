@@ -5,12 +5,11 @@ import string
 import unicodedata
 import urllib
 from collections import Counter, namedtuple
-from datetime import datetime
+from datetime import datetime, timezone
 from time import sleep
 
 import emoji
 import en_core_web_sm
-import pytz
 from ftfy import fix_text
 from unidecode import unidecode
 
@@ -315,7 +314,7 @@ def check_tweet(
 def date_string_to_datetime(
     date_string: str,
     fmt: str = "%a %b %d %H:%M:%S +0000 %Y",
-    tzinfo=pytz.UTC,
+    tzinfo=timezone.utc,
 ) -> datetime:
     return datetime.strptime(date_string, fmt).replace(tzinfo=tzinfo)
 
@@ -661,7 +660,7 @@ def get_event_info(
 
     # Event timestamp is the most recent tweet
     timestamp = max(map(operator.itemgetter("created_at"), event_tweets)).replace(
-        tzinfo=pytz.UTC
+        tzinfo=timezone.utc
     )
 
     place_name = get_place_name(event_tweets, valid_place_types=["neighborhood", "poi"])

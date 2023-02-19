@@ -3,9 +3,9 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import numpy as np
-import pytz
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed
 from twython import (
@@ -100,7 +100,7 @@ RETRY_WAIT_SECONDS = int(os.getenv("RETRY_WAIT_SECONDS", default="60"))
 MY_SCREEN_NAME = os.getenv("MY_SCREEN_NAME", default=None)
 assert MY_SCREEN_NAME is not None
 LANGUAGE = os.getenv("LANGUAGE", default="en")
-TIMEZONE = os.getenv("TIMEZONE", default="UTC")  # http://pytz.sourceforge.net/#helpers
+TIMEZONE = os.getenv("TIMEZONE", default="UTC")
 # Longitude and latitude pairs for SW and NE corner (in that order)
 BOUNDING_BOX = os.getenv("BOUNDING_BOX", default=None)
 BOUNDING_BOX = (
@@ -235,10 +235,10 @@ QUERY_INCLUDE_DELETED_STATUS = (
 class MyTwitterClient(Twython):
     """Wrapper around the Twython Twitter client."""
 
-    DEFAULT_LAST_POST_TIME = datetime(1970, 1, 1).replace(tzinfo=pytz.UTC)
+    DEFAULT_LAST_POST_TIME = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
     def __init__(self, *args, **kwargs):
-        super(MyTwitterClient, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @retry(wait=wait_fixed(RETRY_WAIT_SECONDS))
     def get_last_post_time(self):
@@ -322,7 +322,9 @@ class MyStreamer(TwythonStreamer):
             self.db_session, event_type=["moment"]
         )
         if most_recent_event is not None:
-            event_comparison_ts = most_recent_event.timestamp.replace(tzinfo=pytz.UTC)
+            event_comparison_ts = most_recent_event.timestamp.replace(
+                tzinfo=timezone.utc
+            )
         else:
             # If no db events, use most recent tweet timestamp
             event_comparison_ts = self.twitter.get_last_post_time()
@@ -484,11 +486,11 @@ class MyStreamer(TwythonStreamer):
         # Find events using today's tweets
         if POST_DAILY_EVENTS:
             try:
-                tz = pytz.timezone(TIMEZONE)
-            except pytz.exceptions.UnknownTimeZoneError:
+                tz = ZoneInfo(TIMEZONE)
+            except ZoneInfoNotFoundError:
                 logger.info(f"Could not find timezone {TIMEZONE}, using UTC")
-                tz = pytz.UTC
-            current_time = datetime.now(tz)
+                tz = timezone.utc
+            current_time = datetime.now(tz=timezone.utc)
 
             if current_time.hour == DAILY_EVENT_HOUR:
                 if not self.posted_daily_events:
@@ -496,7 +498,10 @@ class MyStreamer(TwythonStreamer):
                     activity_today_w = [
                         a
                         for a in activity_curr_day_w
-                        if a["created_at"].replace(tzinfo=pytz.UTC).astimezone(tz).day
+                        if a["created_at"]
+                        .replace(tzinfo=timezone.utc)
+                        .astimezone(tz)
+                        .day
                         == current_time.day
                     ]
                     self.find_and_tweet_events(

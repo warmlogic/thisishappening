@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-import pytz
 from sqlalchemy import (
     ARRAY,
     Boolean,
@@ -139,7 +138,7 @@ class Events(Base):
             .first()
         )
         if event is not None:
-            timestamp = event.timestamp.replace(tzinfo=pytz.UTC)
+            timestamp = event.timestamp.replace(tzinfo=timezone.utc)
             bounding_box = [
                 event.west_lon,
                 event.south_lat,
