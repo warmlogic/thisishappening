@@ -3,6 +3,8 @@ name = "thisishappening"
 version = "0.1.0"
 description = "Locate, summarize, and visualize geotagged social media activity"
 authors = ["Matt Mollison <matt.mollison@gmail.com>"]
+readme = "README.md"
+packages = [{include = "thisishappening"}]
 
 [tool.poetry.dependencies]
 emoji = "^2.2.0"
